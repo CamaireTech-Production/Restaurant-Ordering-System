@@ -52,9 +52,9 @@ const Invoice: React.FC<InvoiceProps> = ({ order, onPrint }) => {
               <tr key={item.id}>
                 <td className="py-2">{item.name}</td>
                 <td className="py-2 text-center">{item.quantity}</td>
-                <td className="py-2 text-right">${item.price.toFixed(2)}</td>
+                <td className="py-2 text-right">{item.price.toLocaleString('en-US', { minimumFractionDigits: 0 })} FCFA</td>
                 <td className="py-2 text-right">
-                  ${(item.price * item.quantity).toFixed(2)}
+                  {(item.price * item.quantity).toLocaleString('en-US', { minimumFractionDigits: 0 })} FCFA
                 </td>
               </tr>
             ))}
@@ -64,7 +64,7 @@ const Invoice: React.FC<InvoiceProps> = ({ order, onPrint }) => {
 
       <div className="flex justify-between items-center text-lg font-bold mb-6">
         <span>Total Amount:</span>
-        <span>${order.totalAmount.toFixed(2)}</span>
+        <span>{order.totalAmount.toLocaleString('en-US', { minimumFractionDigits: 0 })} FCFA</span>
       </div>
 
       {onPrint && (

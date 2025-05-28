@@ -99,7 +99,7 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose }) => {
             <div className="p-4 border-t border-gray-200">
               <div className="flex justify-between mb-4">
                 <span className="font-medium">Total:</span>
-                <span className="text-xl font-semibold">${getTotalPrice().toFixed(2)}</span>
+                <span className="text-xl font-semibold">{getTotalPrice().toLocaleString('en-US', { minimumFractionDigits: 0 })} FCFA</span>
               </div>
               
               <Button

@@ -100,14 +100,14 @@ const OrderCard: React.FC<OrderCardProps> = ({ order }) => {
             <span>
               {item.quantity} × {item.name}
             </span>
-            <span className="text-gray-600">${(item.price * item.quantity).toFixed(2)}</span>
+            <span className="text-gray-600">{(item.price * item.quantity).toLocaleString('en-US', { minimumFractionDigits: 0 })} FCFA</span>
           </div>
         ))}
       </div>
       
       <div className="p-4 pt-0 flex justify-between text-sm font-medium">
         <span>Total:</span>
-        <span>${order.totalAmount.toFixed(2)}</span>
+        <span>{order.totalAmount.toLocaleString('en-US', { minimumFractionDigits: 0 })} FCFA</span>
       </div>
       
       {isStatusChangeable && (

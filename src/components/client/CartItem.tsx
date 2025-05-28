@@ -50,7 +50,7 @@ const CartItem: React.FC<CartItemProps> = ({ item }) => {
             </Button>
           </div>
           <span className="text-sm font-medium text-gray-900">
-            ${(item.price * item.quantity).toFixed(2)}
+            {(item.price * item.quantity).toLocaleString('en-US', { minimumFractionDigits: 0 })} FCFA
           </span>
         </div>
       </div>

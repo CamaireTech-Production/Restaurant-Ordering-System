@@ -40,7 +40,7 @@ const MenuItem: React.FC<MenuItemProps> = ({ item }) => {
       <div className="p-4 flex-grow">
         <div className="flex justify-between items-start">
           <h3 className="text-lg font-medium text-gray-900">{item.name}</h3>
-          <p className="text-lg font-semibold text-amber-600">${item.price.toFixed(2)}</p>
+          <p className="text-lg font-semibold text-amber-600">{item.price.toLocaleString('en-US', { minimumFractionDigits: 0 })} FCFA</p>
         </div>
         <p className="mt-2 text-sm text-gray-500">{item.description}</p>
       </div>

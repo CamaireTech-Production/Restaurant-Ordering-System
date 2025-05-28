@@ -89,14 +89,14 @@ const OrderStatus: React.FC<OrderStatusProps> = ({ orders }) => {
                 <span>
                   {item.quantity} × {item.name}
                 </span>
-                <span className="text-gray-600">${(item.price * item.quantity).toFixed(2)}</span>
+                <span className="text-gray-600">{(item.price * item.quantity).toLocaleString('en-US', { minimumFractionDigits: 0 })} FCFA</span>
               </div>
             ))}
           </div>
           
           <div className="mt-3 pt-2 border-t border-gray-100 flex justify-between">
             <span className="font-medium">Total:</span>
-            <span className="font-semibold">${order.totalAmount.toFixed(2)}</span>
+            <span className="font-semibold">{order.totalAmount.toLocaleString('en-US', { minimumFractionDigits: 0 })} FCFA</span>
           </div>
         </motion.div>
       ))}
