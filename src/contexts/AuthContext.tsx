@@ -1,0 +1,169 @@
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { 
+  User, 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  signOut as firebaseSignOut, 
+  onAuthStateChanged,
+  GoogleAuthProvider,
+  signInWithPopup
+} from 'firebase/auth';
+import { auth, db } from '../firebase/config';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { useNavigate } from 'react-router-dom';
+
+// Define types
+type Restaurant = {
+  id: string;
+  name: string;
+  logo?: string;
+  address?: string;
+  description?: string;
+  email: string;
+  phone?: string;
+  createdAt: any;
+};
+
+interface AuthContextType {
+  currentUser: User | null;
+  restaurant: Restaurant | null;
+  loading: boolean;
+  signIn: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
+  signOut: () => Promise<void>;
+  updateRestaurantProfile: (restaurantData: Partial<Restaurant>) => Promise<void>;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
+
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      setCurrentUser(user);
+      if (user) {
+        // Fetch restaurant data
+        try {
+          const restaurantDoc = await getDoc(doc(db, 'restaurants', user.uid));
+          if (restaurantDoc.exists()) {
+            setRestaurant({ id: restaurantDoc.id, ...restaurantDoc.data() } as Restaurant);
+          }
+        } catch (error) {
+          console.error('Error fetching restaurant data:', error);
+        }
+      } else {
+        setRestaurant(null);
+      }
+      setLoading(false);
+    });
+
+    return unsubscribe;
+  }, []);
+
+  const signIn = async (email: string, password: string) => {
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      navigate('/dashboard');
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const signUp = async (email: string, password: string) => {
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      // Create restaurant document
+      await setDoc(doc(db, 'restaurants', userCredential.user.uid), {
+        email,
+        createdAt: serverTimestamp()
+      });
+      navigate('/profile-setup');
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const signInWithGoogle = async () => {
+    try {
+      const provider = new GoogleAuthProvider();
+      const userCredential = await signInWithPopup(auth, provider);
+      
+      // Check if the restaurant document exists
+      const restaurantDoc = await getDoc(doc(db, 'restaurants', userCredential.user.uid));
+      
+      if (!restaurantDoc.exists()) {
+        // Create new restaurant document
+        await setDoc(doc(db, 'restaurants', userCredential.user.uid), {
+          email: userCredential.user.email,
+          name: userCredential.user.displayName || '',
+          createdAt: serverTimestamp()
+        });
+        navigate('/profile-setup');
+      } else {
+        navigate('/dashboard');
+      }
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const signOut = async () => {
+    try {
+      await firebaseSignOut(auth);
+      navigate('/login');
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const updateRestaurantProfile = async (restaurantData: Partial<Restaurant>) => {
+    if (!currentUser) throw new Error('No authenticated user');
+    
+    try {
+      await setDoc(doc(db, 'restaurants', currentUser.uid), {
+        ...restaurantData,
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+      
+      // Update local state
+      if (restaurant) {
+        setRestaurant({
+          ...restaurant,
+          ...restaurantData
+        });
+      }
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const value = {
+    currentUser,
+    restaurant,
+    loading,
+    signIn,
+    signUp,
+    signInWithGoogle,
+    signOut,
+    updateRestaurantProfile
+  };
+
+  return (
+    <AuthContext.Provider value={value}>
+      {!loading && children}
+    </AuthContext.Provider>
+  );
+};
