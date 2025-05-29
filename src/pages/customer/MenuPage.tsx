@@ -298,8 +298,9 @@ const MenuPage: React.FC = () => {
       {/* Header */}
       <header className="bg-primary text-white sticky top-0 z-10 shadow-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center">
+          {/* Use flex-col on small screens, flex-row on larger */}
+          <div className="flex flex-col sm:flex-row justify-between items-center py-4">
+            <div className="flex items-center w-full sm:w-auto mb-2 sm:mb-0">
               <button
                 onClick={() => setSidebarOpen(true)}
                 className="mr-2 md:hidden"
@@ -316,7 +317,7 @@ const MenuPage: React.FC = () => {
                 ) : (
                   <ChefHat size={24} className="mr-3" />
                 )}
-                <div>
+                <div className="flex flex-col">
                   <h1 className="text-xl font-bold">{restaurant.name}</h1>
                   <div className="flex items-center">
                     <Table size={14} className="mr-1" />
@@ -325,33 +326,33 @@ const MenuPage: React.FC = () => {
                 </div>
               </div>
             </div>
-            
-            <button
-              onClick={() => setShowCart(true)}
-              className="relative p-2 rounded-full hover:bg-primary-dark transition-colors"
-            >
-              <ShoppingCart size={24} />
-              {totalCartItems > 0 && (
-                <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-[#FFD700] rounded-full">
-                  {totalCartItems}
-                </span>
-              )}
-            </button>
-            {/* Orders navigation button */}
-            {ordersPageUrl && (
-              <Link
-                to={ordersPageUrl}
-                className="ml-4 px-4 py-2 rounded-md bg-white text-primary font-semibold border border-primary hover:bg-primary hover:text-white transition-colors"
+            <div className="flex items-center w-full sm:w-auto justify-end">
+              <button
+                onClick={() => setShowCart(true)}
+                className="relative p-2 rounded-full hover:bg-primary-dark transition-colors"
               >
-                View My Orders
-              </Link>
-            )}
+                <ShoppingCart size={24} />
+                {totalCartItems > 0 && (
+                  <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-[#FFD700] rounded-full">
+                    {totalCartItems}
+                  </span>
+                )}
+              </button>
+              {ordersPageUrl && (
+                <Link
+                  to={ordersPageUrl}
+                  className="ml-4 px-4 py-2 rounded-md bg-white text-primary font-semibold border border-primary hover:bg-primary hover:text-white transition-colors"
+                >
+                  View My Orders
+                </Link>
+              )}
+            </div>
           </div>
         </div>
       </header>
 
       {/* Search bar */}
-      <div className="bg-white shadow-sm sticky top-16 z-10">
+      <div className="bg-white shadow-sm sm:sticky sm:top-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">

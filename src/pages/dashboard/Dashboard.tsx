@@ -78,15 +78,23 @@ const Dashboard: React.FC = () => {
 
   return (
     <DashboardLayout title={
-      <div className="flex items-center justify-between w-full">
-        <span>Dashboard</span>
+      <div className="flex flex-col sm:flex-row items-center justify-between w-full">
+        <span className="text-base sm:text-lg md:text-xl">
+          Dashboard
+        </span>
         {restaurant && (
-          <span className="flex items-center gap-2 text-primary font-semibold">
-            Restaurant connected: {restaurant.name}
+          <div className="flex items-center justify-start p-2 sm:p-4">
+            <span className="text-sm sm:text-base md:text-lg font-semibold text-primary">
+              {restaurant.name}
+            </span>
             {restaurant.logo && (
-              <img src={restaurant.logo} alt="logo" className="w-8 h-8 rounded-full object-cover border border-primary" />
+              <img
+                src={restaurant.logo}
+                alt="logo"
+                className="w-6 h-6 sm:w-8 sm:h-8 ml-2 rounded-full object-cover border border-primary"
+              />
             )}
-          </span>
+          </div>
         )}
       </div>
     }>
