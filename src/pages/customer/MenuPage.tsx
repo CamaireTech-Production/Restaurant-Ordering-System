@@ -28,6 +28,8 @@ import {
 } from 'lucide-react';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import { Restaurant, Dish as MenuItem, Category, OrderItem } from '../../types';
+import DishDetailModal from './DishDetailModal';
+import { Eye } from 'lucide-react';
 
 const MenuPage: React.FC = () => {
   const { restaurantId } = useParams<{ restaurantId: string }>();
@@ -42,6 +44,8 @@ const MenuPage: React.FC = () => {
   const [tableNumber, setTableNumber] = useState<number | null>(null);
   const [submittingOrder, setSubmittingOrder] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [selectedDish, setSelectedDish] = useState<MenuItem | null>(null);
+  const [isModalOpen, setModalOpen] = useState(false);
 
   // Helper to navigate to orders page
   const ordersPageUrl = tableNumber && restaurantId
@@ -508,18 +512,34 @@ const MenuPage: React.FC = () => {
                   <div className="p-4">
                     <div className="flex justify-between items-start">
                       <div>
-                        <h3 className="text-lg font-medium text-gray-900">{item.title} <span className="text-xs text-gray-500">(Plat)</span></h3>
-                        {item.description && (
-                          <p className="mt-1 text-sm text-gray-500">{item.description}</p>
-                        )}
+                        <h3 className="text-lg font-medium text-gray-900">
+                          {item.title} <span className="text-xs text-gray-500">(Dish)</span>
+                        </h3>
+                        {/* {item.description && (
+                          <p className="mt-1 text-sm text-gray-500 line-clamp-2">
+                            {item.description}
+                          </p>
+                        )} */}
                       </div>
-        <div className="text-lg font-semibold text-primary px-2 py-1">
-                        {item.price.toLocaleString()} FCFA
+                      <div>
+                        <button
+                          onClick={() => {
+                            setSelectedDish(item);
+                            setModalOpen(true);
+                          }}
+                          className="text-gray-500 hover:text-gray-700"
+                          aria-label="View details"
+                        >
+                          <Eye size={20} />
+                        </button>
                       </div>
+                    </div>
+                    <div className="text-lg font-semibold text-primary px-2 py-1">
+                      {item.price.toLocaleString()} FCFA
                     </div>
                     <button
                       onClick={() => addToCart(item)}
-                      className="mt-4 w-full inline-flex justify-center items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary px-4 py-2"
+                      className="mt-4 w-full inline-flex justify-center items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
                     >
                       <PlusCircle size={16} className="mr-2" />
                       Add to Order
@@ -659,6 +679,13 @@ const MenuPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+    <DishDetailModal
+      isOpen={isModalOpen}
+      dish={selectedDish}
+      onClose={() => setModalOpen(false)}
+    />
+
     </div>
   );
 };
