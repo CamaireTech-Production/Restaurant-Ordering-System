@@ -1,4 +1,10 @@
 import React, { useState, useEffect } from 'react';
+// Helper to queue admin actions offline
+function queuePendingAction(action: { type: string; payload: { title: string; price: number; description: string; categoryId: string; status: "active" | "inactive"; image: string; restaurantId: string; } | { id: string; data: { title: string; price: number; description: string; categoryId: string; status: "active" | "inactive"; image: string; restaurantId: string; }; } | { id: string; }; }) {
+  const arr = JSON.parse(localStorage.getItem('pendingActions') || '[]');
+  arr.push({ ...action, timestamp: Date.now() });
+  localStorage.setItem('pendingActions', JSON.stringify(arr));
+}
 import { useAuth } from '../../contexts/AuthContext';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import { db } from '../../firebase/config';
@@ -25,11 +31,10 @@ import {
   X,
   Upload,
   Image,
-  CheckSquare,
   Filter
 } from 'lucide-react';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
-import { MenuItem, Category } from '../../types';
+import { Dish as MenuItem, Category } from '../../types';
 
 const MenuManagement: React.FC = () => {
   const { restaurant } = useAuth();
@@ -58,41 +63,45 @@ const MenuManagement: React.FC = () => {
   useEffect(() => {
     const fetchMenuItems = async () => {
       if (!restaurant?.id) return;
-
       try {
-        // Fetch categories first
-        const categoriesQuery = query(
-          collection(db, 'categories'),
-          where('restaurantId', '==', restaurant.id),
-          orderBy('title')
-        );
-        const categoriesSnapshot = await getDocs(categoriesQuery);
-        const categoriesData = categoriesSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as Category[];
-        setCategories(categoriesData);
-        
-        // Then fetch menu items
-        const menuItemsQuery = query(
-          collection(db, 'menuItems'),
-          where('restaurantId', '==', restaurant.id),
-          orderBy('title')
-        );
-        const menuItemsSnapshot = await getDocs(menuItemsQuery);
-        const menuItemsData = menuItemsSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as MenuItem[];
-        setMenuItems(menuItemsData);
+        if (!navigator.onLine) {
+          // Offline: load from localStorage
+          const offlineCategories = localStorage.getItem('offline_menuCategories');
+          const offlineMenuItems = localStorage.getItem('offline_menuItems');
+          setCategories(offlineCategories ? JSON.parse(offlineCategories).filter((c: { restaurantId: string; })=>c.restaurantId===restaurant.id) : []);
+          setMenuItems(offlineMenuItems ? JSON.parse(offlineMenuItems).filter((m: { restaurantId: string; })=>m.restaurantId===restaurant.id) : []);
+        } else {
+          // Online: fetch from Firestore
+          const categoriesQuery = query(
+            collection(db, 'categories'),
+            where('restaurantId', '==', restaurant.id),
+            orderBy('title')
+          );
+          const categoriesSnapshot = await getDocs(categoriesQuery);
+          const categoriesData = categoriesSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          })) as Category[];
+          setCategories(categoriesData);
+          const menuItemsQuery = query(
+            collection(db, 'menuItems'),
+            where('restaurantId', '==', restaurant.id),
+            orderBy('title')
+          );
+          const menuItemsSnapshot = await getDocs(menuItemsQuery);
+          const menuItemsData = menuItemsSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          })) as MenuItem[];
+          setMenuItems(menuItemsData);
+        }
       } catch (error) {
-        console.error('Error fetching menu items:', error);
-        toast.error('Failed to load menu items');
+        console.error('Error fetching dishes:', error);
+        toast.error('Failed to load dishes');
       } finally {
         setLoading(false);
       }
     };
-
     fetchMenuItems();
   }, [restaurant]);
 
@@ -211,14 +220,27 @@ const MenuManagement: React.FC = () => {
         restaurantId: restaurant.id,
       };
       
+      if (!navigator.onLine) {
+        // Offline: queue action
+        if (editingItem) {
+          queuePendingAction({ type: 'updateMenuItem', payload: { id: editingItem.id, data: menuItemData } });
+          setMenuItems(prevItems => prevItems.map(item => item.id === editingItem.id ? { ...item, ...menuItemData, updatedAt: new Date() } : item));
+          toast.success('Dish update queued for sync!');
+        } else {
+          queuePendingAction({ type: 'createMenuItem', payload: menuItemData });
+          setMenuItems(prevItems => [...prevItems, { ...menuItemData, id: Date.now().toString(), createdAt: new Date() }]);
+          toast.success('Dish creation queued for sync!');
+        }
+        closeModal();
+        setLoading(false);
+        return;
+      }
       if (editingItem) {
         // Update existing item
         await updateDoc(doc(db, 'menuItems', editingItem.id), {
           ...menuItemData,
           updatedAt: serverTimestamp(),
         });
-        
-        // Update local state
         setMenuItems(prevItems => 
           prevItems.map(item => 
             item.id === editingItem.id 
@@ -226,31 +248,25 @@ const MenuManagement: React.FC = () => {
               : item
           )
         );
-        
-        toast.success('Menu item updated successfully!');
+        toast.success('Dish updated successfully!');
       } else {
         // Add new item
         const docRef = await addDoc(collection(db, 'menuItems'), {
           ...menuItemData,
           createdAt: serverTimestamp(),
         });
-        
-        // Update local state
         const newItem = {
           id: docRef.id,
           ...menuItemData,
           createdAt: new Date(),
         } as MenuItem;
-        
         setMenuItems(prevItems => [...prevItems, newItem]);
-        
-        toast.success('Menu item added successfully!');
+        toast.success('Dish added successfully!');
       }
-      
       closeModal();
     } catch (error) {
-      console.error('Error saving menu item:', error);
-      toast.error('Failed to save menu item');
+      console.error('Error saving dish:', error);
+      toast.error('Failed to save dish');
     } finally {
       setLoading(false);
     }
@@ -276,7 +292,7 @@ const MenuManagement: React.FC = () => {
         )
       );
       
-      toast.success(`Menu item ${newStatus === 'active' ? 'activated' : 'deactivated'} successfully!`);
+      toast.success(`Dish ${newStatus === 'active' ? 'activated' : 'deactivated'} successfully!`);
     } catch (error) {
       console.error('Error updating item status:', error);
       toast.error('Failed to update item status');
@@ -288,22 +304,20 @@ const MenuManagement: React.FC = () => {
     
     try {
       setIsDeleting(true);
-      
+      if (!navigator.onLine) {
+        queuePendingAction({ type: 'deleteMenuItem', payload: { id: itemId } });
+        setMenuItems(prevItems => prevItems.filter(item => item.id !== itemId));
+        toast.success('Dish delete queued for sync!');
+        setIsDeleting(false);
+        return;
+      }
       // Find the item to get the image URL
-      const itemToDelete = menuItems.find(item => item.id === itemId);
-      
-      // Delete the document
       await deleteDoc(doc(db, 'menuItems', itemId));
-      
-      // No need to delete image from storage, as it's stored in Firestore
-      
-      // Update local state
       setMenuItems(prevItems => prevItems.filter(item => item.id !== itemId));
-      
-      toast.success('Menu item deleted successfully!');
+      toast.success('Dish deleted successfully!');
     } catch (error) {
-      console.error('Error deleting menu item:', error);
-      toast.error('Failed to delete menu item');
+      console.error('Error deleting dish:', error);
+      toast.error('Failed to delete dish');
     } finally {
       setIsDeleting(false);
     }
@@ -334,7 +348,6 @@ const MenuManagement: React.FC = () => {
       if (action === 'delete') {
         // Delete multiple items
         for (const itemId of selectedItems) {
-          const itemToDelete = menuItems.find(item => item.id === itemId);
           
           // Delete the document
           await deleteDoc(doc(db, 'menuItems', itemId));
@@ -345,7 +358,7 @@ const MenuManagement: React.FC = () => {
         // Update local state
         setMenuItems(prevItems => prevItems.filter(item => !selectedItems.includes(item.id)));
         
-        toast.success(`${selectedItems.length} menu items deleted successfully!`);
+        toast.success(`${selectedItems.length} dishes deleted successfully!`);
       } else {
         // Activate or deactivate multiple items
         const newStatus = action === 'activate' ? 'active' : 'inactive';
@@ -366,20 +379,20 @@ const MenuManagement: React.FC = () => {
           )
         );
         
-        toast.success(`${selectedItems.length} menu items ${action === 'activate' ? 'activated' : 'deactivated'} successfully!`);
+        toast.success(`${selectedItems.length} dishes ${action === 'activate' ? 'activated' : 'deactivated'} successfully!`);
       }
       
       // Clear selection
       setSelectedItems([]);
     } catch (error) {
       console.error(`Error performing bulk ${action}:`, error);
-      toast.error(`Failed to ${action} menu items`);
+      toast.error(`Failed to ${action} dishes`);
     } finally {
       setIsDeleting(false);
     }
   };
 
-  // Filter and search menu items
+  // Filter and search dishes
   const filteredItems = menuItems.filter(item => {
     const matchesCategory = filterCategory ? item.categoryId === filterCategory : true;
     const matchesSearch = searchQuery 
@@ -410,15 +423,15 @@ const MenuManagement: React.FC = () => {
         <div className="p-4 sm:p-6 border-b border-gray-200">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-              <h2 className="text-xl font-semibold text-gray-800">Menu Items</h2>
-              <p className="text-gray-600 text-sm">Manage your restaurant menu items</p>
+              <h2 className="text-xl font-semibold text-gray-800">Dishes</h2>
+              <p className="text-gray-600 text-sm">Manage your restaurant dishes</p>
             </div>
             <button
               onClick={openAddModal}
               className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors"
             >
               <PlusCircle size={16} className="mr-2" />
-              Add Menu Item
+              Add Dish
             </button>
           </div>
           
@@ -432,7 +445,7 @@ const MenuManagement: React.FC = () => {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search menu items..."
+                placeholder="Search dishes..."
                 className="pl-10 block w-full py-3 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
               />
               {searchQuery && (
@@ -499,7 +512,7 @@ const MenuManagement: React.FC = () => {
           )}
         </div>
 
-        {/* Menu Items Table */}
+        {/* Dishes Table */}
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
@@ -515,7 +528,7 @@ const MenuManagement: React.FC = () => {
                   </div>
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Item
+                  Plat (Dish)
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Category
@@ -536,8 +549,8 @@ const MenuManagement: React.FC = () => {
                 <tr>
                   <td colSpan={6} className="px-6 py-10 text-center text-gray-500">
                     {menuItems.length === 0 ? 
-                      "No menu items found. Add your first menu item!" : 
-                      "No menu items match your search criteria."}
+                    "No dishes found. Add your first dish!" : 
+                    "No dishes match your search criteria."}
                   </td>
                 </tr>
               ) : (
@@ -563,7 +576,7 @@ const MenuManagement: React.FC = () => {
                           )}
                         </div>
                         <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">{item.title}</div>
+                          <div className="text-sm font-medium text-gray-900">{item.title} <span className="text-xs text-gray-500">(Plat)</span></div>
                           {item.description && (
                             <div className="text-sm text-gray-500 truncate max-w-xs">{item.description}</div>
                           )}
@@ -635,7 +648,7 @@ const MenuManagement: React.FC = () => {
                 <div className="sm:flex sm:items-start">
                   <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
                     <h3 className="text-lg leading-6 font-medium text-gray-900">
-                      {editingItem ? 'Edit Menu Item' : 'Add Menu Item'}
+                      {editingItem ? 'Edit Dishes' : 'Add Dishes'}
                     </h3>
                     <div className="mt-4">
                       <form onSubmit={handleSubmit}>
@@ -734,7 +747,7 @@ const MenuManagement: React.FC = () => {
                               <div className="relative">
                                 <img
                                   src={formData.imageURL}
-                                  alt="Menu item preview"
+                                  alt="Dishes preview"
                                   className="w-24 h-24 object-cover rounded-lg"
                                 />
                                 <button

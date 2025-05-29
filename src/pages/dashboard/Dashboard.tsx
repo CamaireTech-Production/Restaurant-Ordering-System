@@ -2,15 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import { db } from '../../firebase/config';
-import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 import { TrendingUp, UtensilsCrossed, Layers, Table, ClipboardList } from 'lucide-react';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
-import { ReactNode } from 'react';
 
-interface DashboardLayoutProps {
-  children: ReactNode;
-  title: ReactNode;
-}
 
 const Dashboard: React.FC = () => {
   const { restaurant } = useAuth();
@@ -27,7 +22,7 @@ const Dashboard: React.FC = () => {
       if (!restaurant?.id) return;
 
       try {
-        // Fetch menu items count
+        // Fetch dishes count
         const menuItemsQuery = query(
           collection(db, 'menuItems'),
           where('restaurantId', '==', restaurant.id)
@@ -103,7 +98,7 @@ const Dashboard: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        {/* Menu Items Stat */}
+        {/* Dishes Stat */}
         <div className="bg-white overflow-hidden shadow rounded-lg">
           <div className="p-5">
             <div className="flex items-center">
@@ -112,7 +107,7 @@ const Dashboard: React.FC = () => {
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Menu Items</dt>
+                  <dt className="text-sm font-medium text-gray-500 truncate">Dishes</dt>
                   <dd>
                     <div className="text-lg font-semibold text-gray-900">{stats.menuItems}</div>
                   </dd>
@@ -123,7 +118,7 @@ const Dashboard: React.FC = () => {
           <div className="bg-gray-50 px-5 py-3">
             <div className="text-sm">
               <a href="/menu-management" className="font-medium text-primary hover:text-primary-dark">
-                Manage menu items
+                Manage dishes
               </a>
             </div>
           </div>
@@ -224,13 +219,13 @@ const Dashboard: React.FC = () => {
               <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                 <dt className="text-sm font-medium text-gray-500">Categories</dt>
                 <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
-                  First, create categories to organize your menu items.
+                  First, create categories to organize your dishes.
                 </dd>
               </div>
               <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                <dt className="text-sm font-medium text-gray-500">Menu Items</dt>
+                <dt className="text-sm font-medium text-gray-500">Dishes</dt>
                 <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
-                  Add your menu items with descriptions, prices, and images.
+                  Add your dishes with descriptions, prices, and images.
                 </dd>
               </div>
               <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">

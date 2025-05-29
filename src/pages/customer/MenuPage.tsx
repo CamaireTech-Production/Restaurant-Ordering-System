@@ -12,6 +12,7 @@ import {
   addDoc,
   serverTimestamp
 } from 'firebase/firestore';
+// import { useOfflineStorage } from '../../hooks/useOfflineStorage';
 import { toast } from 'react-hot-toast';
 import { 
   ShoppingCart,
@@ -26,7 +27,7 @@ import {
   Menu as MenuIcon
 } from 'lucide-react';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
-import { Restaurant, MenuItem, Category, OrderItem } from '../../types';
+import { Restaurant, Dish as MenuItem, Category, OrderItem } from '../../types';
 
 const MenuPage: React.FC = () => {
   const { restaurantId } = useParams<{ restaurantId: string }>();
@@ -53,7 +54,7 @@ const MenuPage: React.FC = () => {
     if (storedTable) {
       setTableNumber(parseInt(storedTable));
     }
-    
+
     // Get the cart from localStorage
     const storedCart = localStorage.getItem(`cart_${restaurantId}`);
     if (storedCart) {
@@ -63,7 +64,7 @@ const MenuPage: React.FC = () => {
         localStorage.removeItem(`cart_${restaurantId}`);
       }
     }
-    
+
     const fetchRestaurantData = async () => {
       if (!restaurantId) return;
 
@@ -73,34 +74,42 @@ const MenuPage: React.FC = () => {
         if (restaurantDoc.exists()) {
           setRestaurant({ id: restaurantDoc.id, ...restaurantDoc.data() } as Restaurant);
         }
-        
-        // Fetch categories
-        const categoriesQuery = query(
-          collection(db, 'categories'),
-          where('restaurantId', '==', restaurantId),
-          where('status', '==', 'active'),
-          orderBy('title')
-        );
-        const categoriesSnapshot = await getDocs(categoriesQuery);
-        const categoriesData = categoriesSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as Category[];
-        setCategories(categoriesData);
-        
-        // Fetch menu items
-        const menuItemsQuery = query(
-          collection(db, 'menuItems'),
-          where('restaurantId', '==', restaurantId),
-          where('status', '==', 'active'),
-          orderBy('title')
-        );
-        const menuItemsSnapshot = await getDocs(menuItemsQuery);
-        const menuItemsData = menuItemsSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as MenuItem[];
-        setMenuItems(menuItemsData);
+
+        if (!navigator.onLine) {
+          // Offline: load from localStorage
+          const offlineCategories = localStorage.getItem('offline_menuCategories');
+          const offlineMenuItems = localStorage.getItem('offline_menuItems');
+          setCategories(offlineCategories ? JSON.parse(offlineCategories).filter((c:any)=>c.restaurantId===restaurantId&&c.status==='active') : []);
+          setMenuItems(offlineMenuItems ? JSON.parse(offlineMenuItems).filter((m:any)=>m.restaurantId===restaurantId&&m.status==='active') : []);
+          // Optionally, could load tables for table selection
+        } else {
+          // Online: fetch from Firestore
+          const categoriesQuery = query(
+            collection(db, 'categories'),
+            where('restaurantId', '==', restaurantId),
+            where('status', '==', 'active'),
+            orderBy('title')
+          );
+          const categoriesSnapshot = await getDocs(categoriesQuery);
+          const categoriesData = categoriesSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          })) as Category[];
+          setCategories(categoriesData);
+
+          const menuItemsQuery = query(
+            collection(db, 'menuItems'),
+            where('restaurantId', '==', restaurantId),
+            where('status', '==', 'active'),
+            orderBy('title')
+          );
+          const menuItemsSnapshot = await getDocs(menuItemsQuery);
+          const menuItemsData = menuItemsSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          })) as MenuItem[];
+          setMenuItems(menuItemsData);
+        }
       } catch (error) {
         console.error('Error fetching restaurant data:', error);
         toast.error('Failed to load menu');
@@ -184,31 +193,42 @@ const MenuPage: React.FC = () => {
     toast.success('Cart cleared');
   };
 
+  // Use pendingOrders for offline queue
   const submitOrder = async () => {
     if (!restaurantId || !tableNumber || cart.length === 0) {
       toast.error('Cannot place order. Please check your table and cart.');
       return;
     }
-    
     setSubmittingOrder(true);
-    
-    try {
-      const totalAmount = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-      
-      // Create order in Firestore
-      await addDoc(collection(db, 'orders'), {
-        items: cart,
-        tableNumber,
-        restaurantId,
-        status: 'pending',
-        totalAmount,
-        createdAt: serverTimestamp(),
-      });
-      
-      // Clear cart
+    const totalAmount = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const orderPayload = {
+      items: cart,
+      tableNumber,
+      restaurantId,
+      status: 'pending',
+      totalAmount,
+      createdAt: new Date().toISOString(),
+    };
+    if (!navigator.onLine) {
+      // Offline: queue the order for later sync in pendingOrders
+      const pendingOrders = JSON.parse(localStorage.getItem('pendingOrders') || '[]');
+      pendingOrders.push({ type: 'createOrder', payload: orderPayload, timestamp: Date.now() });
+      localStorage.setItem('pendingOrders', JSON.stringify(pendingOrders));
       setCart([]);
       localStorage.removeItem(`cart_${restaurantId}`);
-      
+      toast.success('Order will be sent when back online!');
+      setShowCart(false);
+      setSubmittingOrder(false);
+      return;
+    }
+    try {
+      // Online: send to Firestore
+      await addDoc(collection(db, 'orders'), {
+        ...orderPayload,
+        createdAt: serverTimestamp(),
+      });
+      setCart([]);
+      localStorage.removeItem(`cart_${restaurantId}`);
       toast.success('Order placed successfully!');
       setShowCart(false);
     } catch (error) {
@@ -341,7 +361,7 @@ const MenuPage: React.FC = () => {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search menu items..."
+              placeholder="Search dishes..."
               className="pl-10 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-[#8B0000] focus:border-[#8B0000] sm:text-sm"
             />
             {searchQuery && (
@@ -456,8 +476,8 @@ const MenuPage: React.FC = () => {
         <main className="flex-1 p-4 md:p-6">
           <h2 className="text-2xl font-semibold text-gray-900 mb-4">
             {selectedCategory === 'all' 
-              ? 'All Menu Items' 
-              : categories.find(c => c.id === selectedCategory)?.title || 'Menu Items'}
+              ? 'All Dishes' 
+              : categories.find(c => c.id === selectedCategory)?.title || 'Dishes'}
           </h2>
           
           {filteredItems.length === 0 ? (
@@ -487,7 +507,7 @@ const MenuPage: React.FC = () => {
                   <div className="p-4">
                     <div className="flex justify-between items-start">
                       <div>
-                        <h3 className="text-lg font-medium text-gray-900">{item.title}</h3>
+                        <h3 className="text-lg font-medium text-gray-900">{item.title} <span className="text-xs text-gray-500">(Plat)</span></h3>
                         {item.description && (
                           <p className="mt-1 text-sm text-gray-500">{item.description}</p>
                         )}

@@ -1,3 +1,16 @@
+
+// PendingAction type for offline admin actions
+export type PendingAction =
+  | { type: 'createMenuItem'; payload: any; timestamp?: number }
+  | { type: 'updateMenuItem'; payload: any; timestamp?: number }
+  | { type: 'deleteMenuItem'; payload: any; timestamp?: number }
+  | { type: 'createCategory'; payload: any; timestamp?: number }
+  | { type: 'updateCategory'; payload: any; timestamp?: number }
+  | { type: 'deleteCategory'; payload: any; timestamp?: number }
+  | { type: 'createTable'; payload: any; timestamp?: number }
+  | { type: 'updateTable'; payload: any; timestamp?: number }
+  | { type: 'deleteTable'; payload: any; timestamp?: number }
+  | { type: 'updateOrderStatus'; payload: any; timestamp?: number };
 // Restaurant Types
 export interface Restaurant {
   id: string;
@@ -11,8 +24,8 @@ export interface Restaurant {
   updatedAt?: any;
 }
 
-// Menu Item Types
-export interface MenuItem {
+// Dish Types
+export interface Dish {
   id: string;
   title: string;
   price: number;

@@ -1,3 +1,10 @@
+// Helper to queue admin actions offline
+import type { PendingAction } from '../../types';
+function queuePendingAction(action: PendingAction) {
+  const arr = JSON.parse(localStorage.getItem('pendingActions') || '[]');
+  arr.push({ ...action, timestamp: Date.now() });
+  localStorage.setItem('pendingActions', JSON.stringify(arr));
+}
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import DashboardLayout from '../../components/layout/DashboardLayout';
@@ -46,19 +53,25 @@ const CategoryManagement: React.FC = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       if (!restaurant?.id) return;
-
       try {
-        const categoriesQuery = query(
-          collection(db, 'categories'),
-          where('restaurantId', '==', restaurant.id),
-          orderBy('title')
-        );
-        const categoriesSnapshot = await getDocs(categoriesQuery);
-        const categoriesData = categoriesSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as Category[];
-        setCategories(categoriesData);
+        if (!navigator.onLine) {
+          // Offline: load from localStorage
+          const offlineCategories = localStorage.getItem('offline_menuCategories');
+          setCategories(offlineCategories ? JSON.parse(offlineCategories).filter((c: { restaurantId: string; })=>c.restaurantId===restaurant.id) : []);
+        } else {
+          // Online: fetch from Firestore
+          const categoriesQuery = query(
+            collection(db, 'categories'),
+            where('restaurantId', '==', restaurant.id),
+            orderBy('title')
+          );
+          const categoriesSnapshot = await getDocs(categoriesQuery);
+          const categoriesData = categoriesSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          })) as Category[];
+          setCategories(categoriesData);
+        }
       } catch (error) {
         console.error('Error fetching categories:', error);
         toast.error('Failed to load categories');
@@ -66,7 +79,6 @@ const CategoryManagement: React.FC = () => {
         setLoading(false);
       }
     };
-
     fetchCategories();
   }, [restaurant]);
 
@@ -126,15 +138,29 @@ const CategoryManagement: React.FC = () => {
         status: formData.status,
         restaurantId: restaurant.id,
       };
-      
+      if (!navigator.onLine) {
+        if (editingCategory) {
+          queuePendingAction({ type: 'updateCategory', payload: { id: editingCategory.id, data: categoryData } });
+          setCategories(prevCategories => prevCategories.map(category => category.id === editingCategory.id ? { ...category, ...categoryData, updatedAt: new Date() } : category));
+          toast.success('Category update queued for sync!');
+        } else {
+          queuePendingAction({ type: 'createCategory', payload: categoryData });
+          setCategories(prevCategories => [
+            ...prevCategories,
+            { ...categoryData, id: Date.now().toString(), createdAt: new Date(), status: 'active' as 'active' | 'inactive' }
+          ]);
+          toast.success('Category creation queued for sync!');
+        }
+        closeModal();
+        setLoading(false);
+        return;
+      }
       if (editingCategory) {
         // Update existing category
         await updateDoc(doc(db, 'categories', editingCategory.id), {
           ...categoryData,
           updatedAt: serverTimestamp(),
         });
-        
-        // Update local state
         setCategories(prevCategories => 
           prevCategories.map(category => 
             category.id === editingCategory.id 
@@ -142,7 +168,6 @@ const CategoryManagement: React.FC = () => {
               : category
           )
         );
-        
         toast.success('Category updated successfully!');
       } else {
         // Add new category
@@ -150,19 +175,14 @@ const CategoryManagement: React.FC = () => {
           ...categoryData,
           createdAt: serverTimestamp(),
         });
-        
-        // Update local state
         const newCategory = {
           id: docRef.id,
           ...categoryData,
           createdAt: new Date(),
         } as Category;
-        
         setCategories(prevCategories => [...prevCategories, newCategory]);
-        
         toast.success('Category added successfully!');
       }
-      
       closeModal();
     } catch (error) {
       console.error('Error saving category:', error);
@@ -204,13 +224,15 @@ const CategoryManagement: React.FC = () => {
     
     try {
       setIsDeleting(true);
-      
-      // Delete the document
+      if (!navigator.onLine) {
+        queuePendingAction({ type: 'deleteCategory', payload: { id: categoryId } });
+        setCategories(prevCategories => prevCategories.filter(category => category.id !== categoryId));
+        toast.success('Category delete queued for sync!');
+        setIsDeleting(false);
+        return;
+      }
       await deleteDoc(doc(db, 'categories', categoryId));
-      
-      // Update local state
       setCategories(prevCategories => prevCategories.filter(category => category.id !== categoryId));
-      
       toast.success('Category deleted successfully!');
     } catch (error) {
       console.error('Error deleting category:', error);

@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './contexts/AuthContext';
+import { OfflineSyncProvider } from './contexts/OfflineSyncContext';
 
 // Pages
 import Login from './pages/auth/Login';
@@ -35,7 +36,6 @@ function AppRoutes() {
           </ProtectedRoute>
         } 
       />
-      
       {/* Admin routes */}
       <Route 
         path="/dashboard" 
@@ -77,7 +77,6 @@ function AppRoutes() {
           </ProtectedRoute>
         } 
       />
-      
       <Route
         path="/customer/orders/:tableNumber"
         element={
@@ -88,10 +87,9 @@ function AppRoutes() {
       />
       <Route path="/table-selection" element={<TableSelection />} />
       <Route path="/menu/:restaurantId" element={<MenuPage />} />
-      
       {/* Default routes */}
-      <Route path="/" element={<Navigate to="/login\" replace />} />
-      <Route path="*" element={<Navigate to="/login\" replace />} />
+      <Route path="/" element={<Navigate to="/login" replace />} />
+      <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   );
 }
@@ -100,17 +98,19 @@ function App() {
   return (
     <Router>
       <AuthProvider>
-        <AppRoutes />
-        <Toaster
-          position="top-right"
-          toastOptions={{
-            duration: 3000,
-            style: {
-              background: '#363636',
-              color: '#fff',
-            },
-          }}
-        />
+        <OfflineSyncProvider>
+          <AppRoutes />
+          <Toaster
+            position="top-right"
+            toastOptions={{
+              duration: 3000,
+              style: {
+                background: '#363636',
+                color: '#fff',
+              },
+            }}
+          />
+        </OfflineSyncProvider>
       </AuthProvider>
     </Router>
   );

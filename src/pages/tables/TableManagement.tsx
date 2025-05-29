@@ -1,3 +1,10 @@
+// Helper to queue admin actions offline
+import { PendingAction } from '../../types';
+function queuePendingAction(action: PendingAction) {
+  const arr: PendingAction[] = JSON.parse(localStorage.getItem('pendingActions') || '[]');
+  arr.push({ ...action, timestamp: Date.now() });
+  localStorage.setItem('pendingActions', JSON.stringify(arr));
+}
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import DashboardLayout from '../../components/layout/DashboardLayout';
@@ -48,19 +55,25 @@ const TableManagement: React.FC = () => {
   useEffect(() => {
     const fetchTables = async () => {
       if (!restaurant?.id) return;
-
       try {
-        const tablesQuery = query(
-          collection(db, 'tables'),
-          where('restaurantId', '==', restaurant.id),
-          orderBy('number')
-        );
-        const tablesSnapshot = await getDocs(tablesQuery);
-        const tablesData = tablesSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as Table[];
-        setTables(tablesData);
+        if (!navigator.onLine) {
+          // Offline: load from localStorage
+          const offlineTables = localStorage.getItem('offline_tables');
+          setTables(offlineTables ? (JSON.parse(offlineTables) as Table[]).filter((t: Table) => t.restaurantId === restaurant.id) : []);
+        } else {
+          // Online: fetch from Firestore
+          const tablesQuery = query(
+            collection(db, 'tables'),
+            where('restaurantId', '==', restaurant.id),
+            orderBy('number')
+          );
+          const tablesSnapshot = await getDocs(tablesQuery);
+          const tablesData = tablesSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          })) as Table[];
+          setTables(tablesData);
+        }
       } catch (error) {
         console.error('Error fetching tables:', error);
         toast.error('Failed to load tables');
@@ -68,7 +81,6 @@ const TableManagement: React.FC = () => {
         setLoading(false);
       }
     };
-
     fetchTables();
   }, [restaurant]);
 
@@ -139,11 +151,61 @@ const TableManagement: React.FC = () => {
     setLoading(true);
     
     try {
+      if (!navigator.onLine) {
+        if (bulkMode) {
+          for (let i = 0; i < tableCount; i++) {
+            // Generate a robust unique ID for each offline table
+            let uniqueId = '';
+            if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+              uniqueId = `offline_${crypto.randomUUID()}`;
+            } else {
+              uniqueId = `offline_${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${i}`;
+            }
+            const tableData: Table = {
+              number: formData.number + i,
+              name: `Table ${formData.number + i}`,
+              status: 'available',
+              restaurantId: restaurant.id,
+              id: uniqueId,
+              createdAt: new Date(),
+              updatedAt: undefined,
+            };
+            queuePendingAction({ type: 'createTable', payload: { ...tableData } });
+            setTables(prevTables => [...prevTables, tableData]);
+          }
+          toast.success(`${tableCount} tables queued for sync!`);
+        } else if (editingTable) {
+          const tableData: Omit<Table, 'id' | 'createdAt' | 'updatedAt'> = {
+            number: formData.number,
+            name: formData.name.trim() || `Table ${formData.number}`,
+            status: formData.status,
+            restaurantId: restaurant.id,
+          };
+          queuePendingAction({ type: 'updateTable', payload: { id: editingTable.id, data: tableData } });
+          setTables(prevTables => prevTables.map(table => table.id === editingTable.id ? { ...table, ...tableData, updatedAt: new Date() } : table));
+          toast.success('Table update queued for sync!');
+        } else {
+          const tableData: Table = {
+            number: formData.number,
+            name: formData.name.trim() || `Table ${formData.number}`,
+            status: formData.status,
+            restaurantId: restaurant.id,
+            id: Date.now().toString(),
+            createdAt: new Date(),
+            updatedAt: undefined,
+          };
+          queuePendingAction({ type: 'createTable', payload: tableData });
+          setTables(prevTables => [...prevTables, tableData]);
+          toast.success('Table creation queued for sync!');
+        }
+        closeModal();
+        setLoading(false);
+        return;
+      }
       if (bulkMode) {
         // Add multiple tables
         const startingNumber = formData.number;
         const newTables: { createdAt: Date; number: number; name: string; status: "available"; restaurantId: string; id: string; }[] = [];
-        
         for (let i = 0; i < tableCount; i++) {
           const tableData = {
             number: startingNumber + i,
@@ -152,19 +214,14 @@ const TableManagement: React.FC = () => {
             restaurantId: restaurant.id,
             createdAt: serverTimestamp(),
           };
-          
           const docRef = await addDoc(collection(db, 'tables'), tableData);
-          
           newTables.push({
             id: docRef.id,
             ...tableData,
             createdAt: new Date(),
           });
         }
-        
-        // Update local state
         setTables(prevTables => [...prevTables, ...newTables]);
-        
         toast.success(`${tableCount} tables added successfully!`);
       } else if (editingTable) {
         // Update existing table
@@ -174,13 +231,10 @@ const TableManagement: React.FC = () => {
           status: formData.status,
           restaurantId: restaurant.id,
         };
-        
         await updateDoc(doc(db, 'tables', editingTable.id), {
           ...tableData,
           updatedAt: serverTimestamp(),
         });
-        
-        // Update local state
         setTables(prevTables => 
           prevTables.map(table => 
             table.id === editingTable.id 
@@ -188,7 +242,6 @@ const TableManagement: React.FC = () => {
               : table
           )
         );
-        
         toast.success('Table updated successfully!');
       } else {
         // Add single table
@@ -198,24 +251,18 @@ const TableManagement: React.FC = () => {
           status: formData.status,
           restaurantId: restaurant.id,
         };
-        
         const docRef = await addDoc(collection(db, 'tables'), {
           ...tableData,
           createdAt: serverTimestamp(),
         });
-        
-        // Update local state
         const newTable = {
           id: docRef.id,
           ...tableData,
           createdAt: new Date(),
         } as Table;
-        
         setTables(prevTables => [...prevTables, newTable]);
-        
         toast.success('Table added successfully!');
       }
-      
       closeModal();
     } catch (error) {
       console.error('Error saving table:', error);
@@ -230,13 +277,15 @@ const TableManagement: React.FC = () => {
     
     try {
       setIsDeleting(true);
-      
-      // Delete the document
+      if (!navigator.onLine) {
+        queuePendingAction({ type: 'deleteTable', payload: { id: tableId } });
+        setTables(prevTables => prevTables.filter(table => table.id !== tableId));
+        toast.success('Table delete queued for sync!');
+        setIsDeleting(false);
+        return;
+      }
       await deleteDoc(doc(db, 'tables', tableId));
-      
-      // Update local state
       setTables(prevTables => prevTables.filter(table => table.id !== tableId));
-      
       toast.success('Table deleted successfully!');
     } catch (error) {
       console.error('Error deleting table:', error);

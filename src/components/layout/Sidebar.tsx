@@ -43,7 +43,7 @@ const Sidebar: React.FC = () => {
       icon: <LayoutDashboard size={20} />,
     },
     {
-      name: 'Menu Items',
+      name: 'Dishes',
       path: '/menu-management',
       icon: <UtensilsCrossed size={20} />,
     },

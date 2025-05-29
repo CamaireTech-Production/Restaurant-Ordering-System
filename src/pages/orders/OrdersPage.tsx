@@ -1,3 +1,9 @@
+// Helper to queue admin actions offline
+function queuePendingAction(action: { type: string; payload: any }) {
+  const arr = JSON.parse(localStorage.getItem('pendingActions') || '[]');
+  arr.push({ ...action, timestamp: Date.now() });
+  localStorage.setItem('pendingActions', JSON.stringify(arr));
+}
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import DashboardLayout from '../../components/layout/DashboardLayout';
@@ -5,8 +11,7 @@ import { db } from '../../firebase/config';
 import { 
   collection, 
   query, 
-  where, 
-  getDocs, 
+  where,  
   doc, 
   updateDoc, 
   orderBy, 
@@ -35,23 +40,25 @@ const OrdersPage: React.FC = () => {
 
   useEffect(() => {
     if (!restaurant?.id) return;
-
     setLoading(true);
-
+    if (!navigator.onLine) {
+      // Offline: load from localStorage
+      const offlineOrders = localStorage.getItem('offline_orders');
+      setOrders(offlineOrders ? JSON.parse(offlineOrders).filter((o: { restaurantId: string; })=>o.restaurantId===restaurant.id) : []);
+      setLoading(false);
+      return;
+    }
     let prevOrderIds: Set<string> = new Set();
-
     const ordersQuery = query(
       collection(db, 'orders'),
       where('restaurantId', '==', restaurant.id),
       orderBy('createdAt', 'desc')
     );
-
     const unsubscribe = onSnapshot(ordersQuery, (snapshot) => {
       const ordersData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as Order[];
-
       // Toast notification for new orders
       const newOrderIds = new Set(ordersData.map(o => o.id));
       ordersData.forEach(order => {
@@ -60,7 +67,6 @@ const OrdersPage: React.FC = () => {
         }
       });
       prevOrderIds = newOrderIds;
-
       setOrders(ordersData);
       setLoading(false);
     }, (error) => {
@@ -68,21 +74,24 @@ const OrdersPage: React.FC = () => {
       toast.error('Failed to load orders');
       setLoading(false);
     });
-
     return () => unsubscribe();
   }, [restaurant]);
 
   const updateOrderStatus = async (orderId: string, newStatus: 'pending' | 'preparing' | 'ready' | 'completed' | 'cancelled') => {
     if (!restaurant?.id) return;
-    
     setUpdatingOrderId(orderId);
-    
     try {
+      if (!navigator.onLine) {
+        queuePendingAction({ type: 'updateOrderStatus', payload: { id: orderId, status: newStatus } });
+        setOrders(prevOrders => prevOrders.map(order => order.id === orderId ? { ...order, status: newStatus, updatedAt: new Date() } : order));
+        toast.success('Order status update queued for sync!');
+        setUpdatingOrderId(null);
+        return;
+      }
       await updateDoc(doc(db, 'orders', orderId), {
         status: newStatus,
         updatedAt: serverTimestamp(),
       });
-      
       toast.success(`Order status updated to ${newStatus}`);
     } catch (error) {
       console.error('Error updating order status:', error);

@@ -17,7 +17,21 @@ const OrdersPage: React.FC = () => {
   const { tableNumber } = useParams<{ tableNumber: string }>();
   const [orders, setOrders] = useState<Order[]>([]);
   const [restaurant, setRestaurant] = useState<{ name: string; logo?: string } | null>(null);
+  const [hiddenOrderIds, setHiddenOrderIds] = useState<string[]>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('hiddenOrders') || '[]');
+    } catch {
+      return [];
+    }
+  });
   const navigate = useNavigate();
+
+  // Hide order handler
+  const hideOrder = (orderId: string) => {
+    const updated = [...hiddenOrderIds, orderId];
+    setHiddenOrderIds(updated);
+    localStorage.setItem('hiddenOrders', JSON.stringify(updated));
+  };
 
   useEffect(() => {
     if (!tableNumber) return;
@@ -44,15 +58,26 @@ const OrdersPage: React.FC = () => {
           Back to Home
         </button>
       </div>
-      {orders.length === 0 ? (
+      {orders.filter(order => !hiddenOrderIds.includes(order.id)).length === 0 ? (
         <div className="bg-white p-6 rounded-lg shadow text-center">
           <ChefHat size={40} className="mx-auto mb-2 text-primary" />
           <p className="text-gray-600">No orders yet. Place an order to get started!</p>
         </div>
       ) : (
         <div className="space-y-8">
-          {orders.map(order => (
-            <div key={order.id} className="bg-white rounded-lg shadow p-6 border border-gray-100">
+          {orders.filter(order => !hiddenOrderIds.includes(order.id)).map(order => (
+            <div key={order.id} className="bg-white rounded-lg shadow p-6 border border-gray-100 relative">
+              {/* Close/Hide Order Button */}
+              <button
+                onClick={() => hideOrder(order.id)}
+                className="absolute top-2 right-2 text-gray-400 hover:text-red-500 focus:outline-none"
+                title="Close this order"
+              >
+                <span className="sr-only">Close</span>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
               {/* Invoice header */}
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center space-x-3">
