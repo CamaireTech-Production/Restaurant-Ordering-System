@@ -45,18 +45,21 @@ export const OfflineSyncProvider: React.FC<{ children: React.ReactNode }> = ({ c
     // eslint-disable-next-line
   }, [isOnline]);
 
+  // TODO: Replace this with the actual way you get the restaurantId in your app
+  const restaurantId = localStorage.getItem('restaurantId') || '';
+
   const syncNow = useCallback(async () => {
     if (syncingRef.current) return;
     syncingRef.current = true;
     setSyncing(true);
     try {
-      await replayQueuedActions();
+      await replayQueuedActions(restaurantId);
       setLastSync(Date.now());
     } finally {
       setSyncing(false);
       syncingRef.current = false;
     }
-  }, []);
+  }, [restaurantId]);
 
   return (
     <OfflineSyncContext.Provider value={{ isOnline, syncing, syncNow, lastSync }}>
