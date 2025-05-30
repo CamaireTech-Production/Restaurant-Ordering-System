@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { db } from '../../firebase/config';
 import { 
@@ -43,10 +43,13 @@ const MenuPage: React.FC = () => {
   const [showCart, setShowCart] = useState(false);
   const [tableNumber, setTableNumber] = useState<number | null>(null);
   const [submittingOrder, setSubmittingOrder] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [, setSidebarOpen] = useState(false);
   const [selectedDish, setSelectedDish] = useState<MenuItem | null>(null);
   const [isModalOpen, setModalOpen] = useState(false);
-
+  const [activeCategory, setActiveCategory] = useState<string>('all');
+  const sectionRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
+  const categoryTabsRef = useRef<HTMLDivElement | null>(null);
+  
   // Helper to navigate to orders page
   const ordersPageUrl = tableNumber && restaurantId
     ? `/customer/orders/${tableNumber}`
@@ -243,14 +246,53 @@ const MenuPage: React.FC = () => {
     }
   };
 
-  const filteredItems = menuItems.filter(item => {
-    const matchesCategory = selectedCategory === 'all' || item.categoryId === selectedCategory;
-    const matchesSearch = searchQuery 
-      ? item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (item.description && item.description.toLowerCase().includes(searchQuery.toLowerCase()))
-      : true;
-    return matchesCategory && matchesSearch;
-  });
+  // --- Scroll Spy Effect ---
+  useEffect(() => {
+    if (!categories.length) return;
+
+    const handleScroll = () => {
+      const scrollY = window.scrollY + 120; // Offset for sticky header
+      let found = 'all';
+      for (const cat of categories) {
+        const ref = sectionRefs.current[cat.id];
+        if (ref) {
+          const { top } = ref.getBoundingClientRect();
+          if (top + window.scrollY - 120 <= scrollY) {
+            found = cat.id;
+          }
+        }
+      }
+      setActiveCategory(found);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [categories]);
+
+  // --- Scroll to Section ---
+  const handleCategoryClick = (catId: string) => {
+    setSelectedCategory(catId);
+    setActiveCategory(catId);
+    if (catId === 'all') {
+      window.scrollTo({ top: categoryTabsRef.current?.offsetTop! + 1 - 64, behavior: 'smooth' });
+      return;
+    }
+    const ref = sectionRefs.current[catId];
+    if (ref) {
+      const y = ref.getBoundingClientRect().top + window.scrollY - 64; // 64px header offset
+      window.scrollTo({ top: y, behavior: 'smooth' });
+    }
+  };
+
+  // --- Group dishes by category for section rendering ---
+  const dishesByCategory = React.useMemo(() => {
+    const map: { [catId: string]: MenuItem[] } = {};
+    categories.forEach(cat => {
+      map[cat.id] = menuItems.filter(item => item.categoryId === cat.id);
+    });
+    return map;
+  }, [categories, menuItems]);
+
 
   const totalCartItems = cart.reduce((sum, item) => sum + item.quantity, 0);
   const totalCartAmount = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
@@ -299,258 +341,302 @@ const MenuPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Header */}
-      <header className="bg-primary text-white sticky top-0 z-10 shadow-md">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Use flex-col on small screens, flex-row on larger */}
-          <div className="flex flex-col sm:flex-row justify-between items-center py-4">
-            <div className="flex items-center w-full sm:w-auto mb-2 sm:mb-0">
-              <button
-                onClick={() => setSidebarOpen(true)}
-                className="mr-2 md:hidden"
-              >
-                <MenuIcon size={24} />
-              </button>
-              <div className="flex items-center">
-                {restaurant.logo ? (
-                  <img 
-                    src={restaurant.logo} 
-                    alt={restaurant.name} 
-                    className="h-10 w-10 rounded-full object-cover mr-3"
-                  />
-                ) : (
-                  <ChefHat size={24} className="mr-3" />
-                )}
-                <div className="flex flex-col">
-                  <h1 className="text-xl font-bold">{restaurant.name}</h1>
-                  <div className="flex items-center">
-                    <Table size={14} className="mr-1" />
-                    <span className="text-sm">Table #{tableNumber}</span>
+      {/* Sticky Header + Category Tabs */}
+      <div className="sticky top-0 z-30 bg-primary shadow-md">
+        {/* Header */}
+        <header className="text-white">
+          <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6">
+            <div className="flex flex-col sm:flex-row justify-between items-center py-3">
+              <div className="flex items-center w-full sm:w-auto mb-2 sm:mb-0">
+                <button
+                  onClick={() => setSidebarOpen(true)}
+                  className="mr-2 md:hidden"
+                >
+                  <MenuIcon size={24} />
+                </button>
+                <div className="flex items-center">
+                  {restaurant?.logo ? (
+                    <img
+                      src={restaurant.logo}
+                      alt={restaurant.name}
+                      className="h-10 w-10 rounded-full object-cover mr-3"
+                    />
+                  ) : (
+                    <ChefHat size={24} className="mr-3" />
+                  )}
+                  <div className="flex flex-col">
+                    <h1 className="text-xl font-bold">{restaurant?.name}</h1>
+                    <div className="flex items-center">
+                      <Table size={14} className="mr-1" />
+                      <span className="text-sm">Table #{tableNumber}</span>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-            <div className="flex items-center w-full sm:w-auto justify-end">
-              <button
-                onClick={() => setShowCart(true)}
-                className="relative p-2 rounded-full hover:bg-primary-dark transition-colors"
-              >
-                <ShoppingCart size={24} />
-                {totalCartItems > 0 && (
-                  <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-[#FFD700] rounded-full">
-                    {totalCartItems}
-                  </span>
-                )}
-              </button>
-              {ordersPageUrl && (
-                <Link
-                  to={ordersPageUrl}
-                  className="ml-4 px-4 py-2 rounded-md bg-white text-primary font-semibold border border-primary hover:bg-primary hover:text-white transition-colors"
+              <div className="flex items-center w-full sm:w-auto justify-end">
+                <button
+                  onClick={() => setShowCart(true)}
+                  className="relative p-2 rounded-full hover:bg-primary-dark transition-colors"
                 >
-                  View My Orders
-                </Link>
-              )}
+                  <ShoppingCart size={24} />
+                  {totalCartItems > 0 && (
+                    <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-[#FFD700] rounded-full">
+                      {totalCartItems}
+                    </span>
+                  )}
+                </button>
+                {ordersPageUrl && (
+                  <Link
+                    to={ordersPageUrl}
+                    className="ml-4 px-4 py-2 rounded-md bg-white text-primary font-semibold border border-primary hover:bg-primary hover:text-white transition-colors"
+                  >
+                    View My Orders
+                  </Link>
+                )}
+              </div>
+            </div>
+          </div>
+        </header>
+        {/* Category Tabs */}
+        <div
+          ref={categoryTabsRef}
+          className="bg-white pt-2 pb-2 border-b border-gray-200 shadow-sm"
+          style={{ WebkitOverflowScrolling: 'touch' }}
+        >
+          <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6">
+            <div className="flex space-x-2 overflow-x-auto no-scrollbar py-2">
+              <button
+                onClick={() => handleCategoryClick('all')}
+                className={`flex-shrink-0 px-3 py-1.5 rounded-full font-medium transition text-xs sm:text-sm ${
+                  activeCategory === 'all'
+                    ? 'bg-primary text-white shadow'
+                    : 'bg-gray-100 text-gray-700 hover:bg-primary/10'
+                }`}
+              >
+                All
+              </button>
+              {categories.map(cat => (
+                <button
+                  key={cat.id}
+                  onClick={() => handleCategoryClick(cat.id)}
+                  className={`flex-shrink-0 px-3 py-1.5 rounded-full font-medium transition text-xs sm:text-sm ${
+                    activeCategory === cat.id
+                      ? 'bg-primary text-white shadow'
+                      : 'bg-gray-100 text-gray-700 hover:bg-primary/10'
+                  }`}
+                >
+                  {cat.title}
+                </button>
+              ))}
             </div>
           </div>
         </div>
-      </header>
+      </div>
 
       {/* Search bar */}
-      <div className="bg-white shadow-sm sm:sticky sm:top-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
+      <div className="bg-white shadow-sm">
+        <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 py-2">
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search size={18} className="text-gray-400" />
+              <Search size={16} className="text-gray-400" />
             </div>
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search dishes..."
-              className="pl-10 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-[#8B0000] focus:border-[#8B0000] sm:text-sm"
+              className="pl-9 p-2 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-[#8B0000] focus:border-[#8B0000] text-xs sm:text-sm"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
                 className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
               >
-                <X size={18} />
+                <X size={16} />
               </button>
             )}
           </div>
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col md:flex-row">
-        {/* Mobile Category Sidebar Overlay */}
-        {sidebarOpen && (
-          <div className="fixed inset-0 z-40 md:hidden">
-            <div 
-              className="absolute inset-0 bg-gray-600 bg-opacity-75"
-              onClick={() => setSidebarOpen(false)}
-            ></div>
-            
-            <div className="relative flex-1 flex flex-col max-w-xs w-full bg-white">
-              <div className="absolute top-0 right-0 -mr-12 pt-2">
-                <button
-                  className="ml-1 flex items-center justify-center h-10 w-10 rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
-                  onClick={() => setSidebarOpen(false)}
+      {/* Menu Sections */}
+      <main className="flex-1 max-w-7xl mx-auto w-full px-1 sm:px-4 lg:px-6 pt-2">
+        {selectedCategory === 'all' && (
+          <div>
+            {categories.map((cat, idx) => (
+              <div
+                key={cat.id}
+                ref={el => (sectionRefs.current[cat.id] = el)}
+                className={`mb-10 ${idx !== 0 ? 'pt-6' : ''}`}
+              >
+                <h2
+                  className="text-lg sm:text-xl font-bold text-gray-900 mb-4"
+                  style={{
+                    top: 104, // header + tabs height
+                    background: 'rgba(249,250,251,0.97)',
+                    zIndex: 10,
+                  }}
                 >
-                  <span className="sr-only">Close sidebar</span>
-                  <X size={24} className="text-white" />
-                </button>
-              </div>
-              
-              <div className="flex-1 h-0 pt-5 pb-4 overflow-y-auto">
-                <div className="px-4">
-                  <h2 className="text-lg font-medium text-gray-900">Categories</h2>
+                  {cat.title}
+                </h2>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5">
+                  {dishesByCategory[cat.id]?.length ? (
+                    dishesByCategory[cat.id]
+                      .filter(item => {
+                        const matchesSearch = searchQuery
+                          ? item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                            (item.description && item.description.toLowerCase().includes(searchQuery.toLowerCase()))
+                          : true;
+                        return matchesSearch;
+                      })
+                      .map(item => (
+                        <div
+                          key={item.id}
+                          className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow flex flex-col h-full"
+                          style={{ minHeight: '320px', maxHeight: '370px' }}
+                        >
+                          {item.image && (
+                            <div className="h-28 sm:h-32 w-full overflow-hidden">
+                              <img
+                                src={item.image}
+                                alt={item.title}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          )}
+                          <div className="p-3 flex-1 flex flex-col">
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <h3 className="text-base sm:text-lg font-medium text-gray-900 truncate">
+                                  {item.title}
+                                </h3>
+                                {item.description && (
+                                  <p className="mt-1 text-xs sm:text-sm text-gray-500 line-clamp-2">
+                                    {item.description}
+                                  </p>
+                                )}
+                              </div>
+                              <button
+                                onClick={() => {
+                                  setSelectedDish(item);
+                                  setModalOpen(true);
+                                }}
+                                className="text-gray-500 hover:text-gray-700"
+                                aria-label="View details"
+                              >
+                                <Eye size={18} />
+                              </button>
+                            </div>
+                            <div className="text-base sm:text-lg font-semibold text-primary mt-2">
+                              {item.price.toLocaleString()} FCFA
+                            </div>
+                            <button
+                              onClick={() => addToCart(item)}
+                              className="mt-auto w-full inline-flex justify-center items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-xs sm:text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+                            >
+                              <PlusCircle size={14} className="mr-2" />
+                              Add to Order
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                  ) : (
+                    <div className="bg-white rounded-lg shadow-sm p-8 text-center col-span-full">
+                      <p className="text-gray-500 text-xs sm:text-base">No items in this category</p>
+                    </div>
+                  )}
                 </div>
-                <nav className="mt-5 px-2 space-y-1">
-                  <button
-                    onClick={() => {
-                      setSelectedCategory('all');
-                      setSidebarOpen(false);
-                    }}
-                    className={`w-full group flex items-center px-3 py-2 text-sm font-medium rounded-md ${
-                      selectedCategory === 'all'
-                        ? 'bg-primary text-white'
-                        : 'text-gray-700 hover:bg-gray-100'
-                    }`}
-                  >
-                    All Items
-                  </button>
-                  
-                  {categories.map(category => (
-                    <button
-                      key={category.id}
-                      onClick={() => {
-                        setSelectedCategory(category.id);
-                        setSidebarOpen(false);
-                      }}
-                      className={`w-full group flex items-center px-3 py-2 text-sm font-medium rounded-md ${
-                        selectedCategory === category.id
-                          ? 'bg-primary text-white'
-                          : 'text-gray-700 hover:bg-gray-100'
-                      }`}
-                    >
-                      {category.title}
-                    </button>
-                  ))}
-                </nav>
               </div>
-            </div>
+            ))}
           </div>
         )}
 
-        {/* Desktop category sidebar */}
-        <div className="hidden md:flex md:flex-col md:w-64 bg-white border-r border-gray-200">
-          <div className="h-0 flex-1 flex flex-col pt-5 pb-4 overflow-y-auto">
-            <div className="px-4">
-              <h2 className="text-lg font-medium text-gray-900">Categories</h2>
-            </div>
-            <nav className="mt-5 px-2 space-y-1">
-              <button
-                onClick={() => setSelectedCategory('all')}
-                className={`w-full group flex items-center px-3 py-2 text-sm font-medium rounded-md ${
-                  selectedCategory === 'all'
-                    ? 'bg-primary text-white'
-                    : 'text-gray-700 hover:bg-gray-100'
-                }`}
-              >
-                All Items
-              </button>
-              
-              {categories.map(category => (
-                <button
-                  key={category.id}
-                  onClick={() => setSelectedCategory(category.id)}
-                  className={`w-full group flex items-center px-3 py-2 text-sm font-medium rounded-md ${
-                    selectedCategory === category.id
-                      ? 'bg-primary text-white'
-                      : 'text-gray-700 hover:bg-gray-100'
-                  }`}
-                >
-                  {category.title}
-                </button>
-              ))}
-            </nav>
-          </div>
-        </div>
-
-        {/* Menu content */}
-        <main className="flex-1 p-4 md:p-6">
-          <h2 className="text-2xl font-semibold text-gray-900 mb-4">
-            {selectedCategory === 'all' 
-              ? 'All Dishes' 
-              : categories.find(c => c.id === selectedCategory)?.title || 'Dishes'}
-          </h2>
-          
-          {filteredItems.length === 0 ? (
-            <div className="bg-white rounded-lg shadow-sm p-8 text-center">
-              <p className="text-gray-500">
-                {searchQuery 
-                  ? 'No items match your search criteria' 
-                  : 'No items available in this category'}
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredItems.map(item => (
-                <div 
-                  key={item.id}
-                  className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow"
-                >
-                  {item.image && (
-                    <div className="h-48 w-full overflow-hidden">
-                      <img 
-                        src={item.image} 
-                        alt={item.title}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  )}
-                  <div className="p-4">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="text-lg font-medium text-gray-900">
-                          {item.title} <span className="text-xs text-gray-500">(Dish)</span>
-                        </h3>
-                        {/* {item.description && (
-                          <p className="mt-1 text-sm text-gray-500 line-clamp-2">
-                            {item.description}
-                          </p>
-                        )} */}
-                      </div>
-                      <div>
+        {/* Single Category Section */}
+        {selectedCategory !== 'all' && (
+          <div
+            ref={el => (sectionRefs.current[selectedCategory] = el)}
+            className="mb-10 pt-6"
+          >
+            <h2
+              className="text-lg sm:text-xl font-bold text-gray-900 mb-4 sticky"
+              style={{
+                top: 104,
+                background: 'rgba(249,250,251,0.97)',
+                zIndex: 10,
+              }}
+            >
+              {categories.find(c => c.id === selectedCategory)?.title || 'Dishes'}
+            </h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5">
+              {dishesByCategory[selectedCategory]?.length ? (
+                dishesByCategory[selectedCategory]
+                  .filter(item => {
+                    const matchesSearch = searchQuery 
+                      ? item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                        (item.description && item.description.toLowerCase().includes(searchQuery.toLowerCase()))
+                      : true;
+                    return matchesSearch;
+                  })
+                  .map(item => (
+                    <div
+                      key={item.id}
+                      className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow flex flex-col h-full"
+                      style={{ minHeight: '320px', maxHeight: '370px' }}
+                    >
+                      {item.image && (
+                        <div className="h-28 sm:h-32 w-full overflow-hidden">
+                          <img
+                            src={item.image}
+                            alt={item.title}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      )}
+                      <div className="p-3 flex-1 flex flex-col">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h3 className="text-base sm:text-lg font-medium text-gray-900 truncate">
+                              {item.title}
+                            </h3>
+                            {item.description && (
+                              <p className="mt-1 text-xs sm:text-sm text-gray-500 line-clamp-2">
+                                {item.description}
+                              </p>
+                            )}
+                          </div>
+                          <button
+                            onClick={() => {
+                              setSelectedDish(item);
+                              setModalOpen(true);
+                            }}
+                            className="text-gray-500 hover:text-gray-700"
+                            aria-label="View details"
+                          >
+                            <Eye size={18} />
+                          </button>
+                        </div>
+                        <div className="text-base sm:text-lg font-semibold text-primary mt-2">
+                          {item.price.toLocaleString()} FCFA
+                        </div>
                         <button
-                          onClick={() => {
-                            setSelectedDish(item);
-                            setModalOpen(true);
-                          }}
-                          className="text-gray-500 hover:text-gray-700"
-                          aria-label="View details"
+                          onClick={() => addToCart(item)}
+                          className="mt-auto w-full inline-flex justify-center items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-xs sm:text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
                         >
-                          <Eye size={20} />
+                          <PlusCircle size={14} className="mr-2" />
+                          Add to Order
                         </button>
                       </div>
                     </div>
-                    <div className="text-lg font-semibold text-primary px-2 py-1">
-                      {item.price.toLocaleString()} FCFA
-                    </div>
-                    <button
-                      onClick={() => addToCart(item)}
-                      className="mt-4 w-full inline-flex justify-center items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
-                    >
-                      <PlusCircle size={16} className="mr-2" />
-                      Add to Order
-                    </button>
-                  </div>
+                  ))
+              ) : (
+                <div className="bg-white rounded-lg shadow-sm p-8 text-center col-span-full">
+                  <p className="text-gray-500 text-xs sm:text-base">No items in this category</p>
                 </div>
-              ))}
+              )}
             </div>
-          )}
-        </main>
-      </div>
+          </div>
+        )}
+      </main>
 
       {/* Cart Sidebar */}
       <div 

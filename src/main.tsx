@@ -20,6 +20,14 @@ createRoot(document.getElementById('root')!).render(
     <App />
   </StrictMode>
 )
+
+// Service Worker registration (fix for dev)
+if ('serviceWorker' in navigator && location.protocol === 'https:') {
+  navigator.serviceWorker.register('/service-worker.js').catch((err) => {
+    console.warn('Service worker registration failed:', err);
+  });
+}
+
 function registerSW({
   onNeedRefresh,
   onOfflineReady,

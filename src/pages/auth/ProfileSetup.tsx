@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../../contexts/AuthContext';
-import { Store, MapPin, Phone, FileText, Upload, X, ChefHat } from 'lucide-react';
-
+import { Store, MapPin, FileText, Upload, X, ChefHat } from 'lucide-react';
 
 const ProfileSetup: React.FC = () => {
   const { currentUser, restaurant, updateRestaurantProfile } = useAuth();
@@ -13,7 +12,7 @@ const ProfileSetup: React.FC = () => {
   const [address, setAddress] = useState(restaurant?.address || '');
   const [phone, setPhone] = useState(restaurant?.phone || '');
   const [description, setDescription] = useState(restaurant?.description || '');
-  const [logo, setLogo] = useState<File | null>(null);
+  const [, setLogo] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(restaurant?.logo || null);
   // Store base64 string for logo
   const [logoBase64, setLogoBase64] = useState<string | null>(restaurant?.logo || null);
@@ -103,6 +102,14 @@ const ProfileSetup: React.FC = () => {
           <p className="mt-2 text-gray-600">
             Provide information about your restaurant to get started
           </p>
+          {currentUser && (
+            <Link
+              to="/dashboard"
+              className="inline-flex items-center mt-4 px-4 py-2 border border-primary rounded-md shadow-sm text-sm font-medium text-primary bg-white hover:bg-primary hover:text-white transition-colors"
+            >
+              Back to Dashboard
+            </Link>
+          )}
         </div>
 
         <div className="bg-white shadow overflow-hidden sm:rounded-lg">

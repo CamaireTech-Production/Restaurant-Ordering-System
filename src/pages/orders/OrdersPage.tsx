@@ -4,7 +4,7 @@ function queuePendingAction(action: { type: string; payload: any }) {
   arr.push({ ...action, timestamp: Date.now() });
   localStorage.setItem('pendingActions', JSON.stringify(arr));
 }
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import { db } from '../../firebase/config';
@@ -38,9 +38,17 @@ const OrdersPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
 
+  // Persist previous order IDs across renders
+  const prevOrderIdsRef = useRef<Set<string>>(new Set());
+  const isFirstSnapshot = useRef(true);
+
+  // Track last seen order timestamp in localStorage
+  const LAST_SEEN_KEY = `last_seen_order_${restaurant?.id || ''}`;
+
   useEffect(() => {
     if (!restaurant?.id) return;
     setLoading(true);
+
     if (!navigator.onLine) {
       // Offline: load from localStorage
       const offlineOrders = localStorage.getItem('offline_orders');
@@ -48,25 +56,50 @@ const OrdersPage: React.FC = () => {
       setLoading(false);
       return;
     }
-    let prevOrderIds: Set<string> = new Set();
+
     const ordersQuery = query(
       collection(db, 'orders'),
       where('restaurantId', '==', restaurant.id),
       orderBy('createdAt', 'desc')
     );
+
     const unsubscribe = onSnapshot(ordersQuery, (snapshot) => {
       const ordersData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as Order[];
-      // Toast notification for new orders
-      const newOrderIds = new Set(ordersData.map(o => o.id));
-      ordersData.forEach(order => {
-        if (!prevOrderIds.has(order.id)) {
-          toast.success(`New order received for Table #${order.tableNumber}`);
-        }
-      });
-      prevOrderIds = newOrderIds;
+
+      const prevOrderIds = prevOrderIdsRef.current;
+      const lastSeen = localStorage.getItem(LAST_SEEN_KEY);
+
+      // Only show toast for truly new orders after initial load
+      if (!isFirstSnapshot.current) {
+        ordersData.forEach(order => {
+          // Show toast if not in previous snapshot OR if createdAt > lastSeen
+          const orderTime = typeof order.createdAt === 'string'
+            ? new Date(order.createdAt).getTime()
+            : order.createdAt?.toMillis?.() || 0;
+          if (
+            (!prevOrderIds.has(order.id)) ||
+            (lastSeen && orderTime > Number(lastSeen))
+          ) {
+            toast.success(`New order received for Table #${order.tableNumber}`);
+          }
+        });
+      } else {
+        isFirstSnapshot.current = false;
+      }
+
+      // Update last seen order timestamp
+      if (ordersData.length > 0) {
+        const latestOrder = ordersData[0];
+        const latestTime = typeof latestOrder.createdAt === 'string'
+          ? new Date(latestOrder.createdAt).getTime()
+          : latestOrder.createdAt?.toMillis?.() || 0;
+        localStorage.setItem(LAST_SEEN_KEY, String(latestTime));
+      }
+
+      prevOrderIdsRef.current = new Set(ordersData.map(o => o.id));
       setOrders(ordersData);
       setLoading(false);
     }, (error) => {
@@ -74,6 +107,7 @@ const OrdersPage: React.FC = () => {
       toast.error('Failed to load orders');
       setLoading(false);
     });
+
     return () => unsubscribe();
   }, [restaurant]);
 
