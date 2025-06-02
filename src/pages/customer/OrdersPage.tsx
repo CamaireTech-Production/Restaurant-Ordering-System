@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { subscribeToTableOrders } from '../../services/orderService';
+import { subscribeToTableOrders, updateOrderCustomerStatus } from '../../services/orderService';
 import { Order } from '../../types';
 import { ChefHat, Clock, CheckCircle2, XCircle } from 'lucide-react';
 
@@ -12,31 +12,21 @@ const statusMap: Record<string, { label: string; icon: React.ReactNode; color: s
   cancelled: { label: 'Cancelled', icon: <XCircle className="text-red-500" />, color: 'text-red-700' },
 };
 
-
 const OrdersPage: React.FC = () => {
   const { tableNumber } = useParams<{ tableNumber: string }>();
   const [orders, setOrders] = useState<Order[]>([]);
   const [restaurant, setRestaurant] = useState<{ name: string; logo?: string } | null>(null);
-  const [hiddenOrderIds, setHiddenOrderIds] = useState<string[]>(() => {
-    try {
-      return JSON.parse(localStorage.getItem('hiddenOrders') || '[]');
-    } catch {
-      return [];
-    }
-  });
   const navigate = useNavigate();
 
-  // Hide order handler
-  const hideOrder = (orderId: string) => {
-    const updated = [...hiddenOrderIds, orderId];
-    setHiddenOrderIds(updated);
-    localStorage.setItem('hiddenOrders', JSON.stringify(updated));
+  // Hide order handler: update customerViewStatus in DB to 'deleted'
+  const hideOrder = async (orderId: string) => {
+    await updateOrderCustomerStatus(orderId, 'deleted');
+    setOrders(prev => prev.filter(order => order.id !== orderId));
   };
 
   useEffect(() => {
     if (!tableNumber) return;
     const unsubscribe = subscribeToTableOrders(Number(tableNumber), setOrders);
-    // Try to get restaurant info from localStorage
     const storedRestaurant = localStorage.getItem('selectedRestaurant');
     if (storedRestaurant) {
       try {
@@ -46,6 +36,9 @@ const OrdersPage: React.FC = () => {
     }
     return () => unsubscribe();
   }, [tableNumber]);
+
+  // Only show orders that are not deleted for the customer
+  const visibleOrders = orders.filter(order => order.customerViewStatus !== 'deleted');
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 max-w-2xl mx-auto">
@@ -58,14 +51,14 @@ const OrdersPage: React.FC = () => {
           Back to Home
         </button>
       </div>
-      {orders.filter(order => !hiddenOrderIds.includes(order.id)).length === 0 ? (
+      {visibleOrders.length === 0 ? (
         <div className="bg-white p-6 rounded-lg shadow text-center">
           <ChefHat size={40} className="mx-auto mb-2 text-primary" />
           <p className="text-gray-600">No orders yet. Place an order to get started!</p>
         </div>
       ) : (
         <div className="space-y-8">
-          {orders.filter(order => !hiddenOrderIds.includes(order.id)).map(order => (
+          {visibleOrders.map(order => (
             <div key={order.id} className="bg-white rounded-lg shadow p-6 border border-gray-100 relative">
               {/* Close/Hide Order Button */}
               <button

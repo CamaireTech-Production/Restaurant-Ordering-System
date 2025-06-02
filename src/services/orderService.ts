@@ -1,6 +1,6 @@
 import { collection, addDoc, updateDoc, doc, onSnapshot, query, orderBy, Timestamp, where, getDocs } from 'firebase/firestore';
 import { db } from '../firebase/config';
-import { Order, OrderItem } from '../types';
+import { Order } from '../types';
 
 const ordersCollection = collection(db, 'orders');
 
@@ -20,22 +20,13 @@ export const createOrder = async (order: Omit<Order, 'id' | 'createdAt' | 'updat
   }
 };
 
-export const updateOrderStatus = async (orderId: string, status: Order['status']) => {
-  try {
-    const orderRef = doc(db, 'orders', orderId);
-    await updateDoc(orderRef, {
-      status,
-      updatedAt: Timestamp.now()
-    });
-  } catch (error) {
-    console.error('Error updating order status:', error);
-    throw error;
-  }
+export const updateOrderStatus = async (orderId: string, status: string) => {
+  const orderRef = doc(db, 'orders', orderId);
+  await updateDoc(orderRef, { status });
 };
 
 export const getOrder = async (orderId: string): Promise<Order | null> => {
   try {
-    const orderRef = doc(db, 'orders', orderId);
     const orderSnap = await getDocs(query(collection(db, 'orders'), where('id', '==', orderId)));
     if (!orderSnap.empty) {
       const data = orderSnap.docs[0].data();
@@ -102,3 +93,8 @@ export const getFilteredOrders = async (
     ...doc.data()
   } as Order));
 };
+
+export async function updateOrderCustomerStatus(orderId: string, customerViewStatus: string) {
+  const orderRef = doc(db, 'orders', orderId);
+  await updateDoc(orderRef, { customerViewStatus });
+}

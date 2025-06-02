@@ -70,11 +70,12 @@ export interface OrderItem {
 }
 
 export interface Order {
+  customerViewStatus: string;
   id: string;
   items: OrderItem[];
   tableNumber: number;
   restaurantId: string;
-  status: 'pending' | 'preparing' | 'ready' | 'completed' | 'cancelled';
+  status: 'pending' | 'preparing' | 'ready' | 'completed' | 'cancelled' | 'deleted';
   totalAmount: number;
   createdAt: any;
   updatedAt?: any;

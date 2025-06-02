@@ -11,9 +11,14 @@ export default function DishDetailModal({ isOpen, dish, onClose }: DishDetailMod
   if (!dish) return null;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={dish.title}>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={dish.title}
+      className="max-w-2xl" // Slightly smaller modal
+    >
       {dish.image && (
-        <div className="w-full h-48 overflow-hidden rounded-md">
+        <div className="w-full h-64 sm:h-80 overflow-hidden rounded-md mb-4">
           <img
             src={dish.image}
             alt={dish.title}
@@ -21,7 +26,7 @@ export default function DishDetailModal({ isOpen, dish, onClose }: DishDetailMod
           />
         </div>
       )}
-      <p className="text-gray-700">{dish.description || 'No description available.'}</p>
+      <p className="text-gray-700 mb-4">{dish.description || 'No description available.'}</p>
       <div className="flex justify-between items-center">
         <span className="font-medium text-lg">{dish.price.toLocaleString()} FCFA</span>
       </div>

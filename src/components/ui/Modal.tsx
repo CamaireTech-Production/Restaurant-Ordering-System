@@ -6,9 +6,10 @@ interface ModalProps {
   title?: string;
   onClose: () => void;
   children: ReactNode;
+  className?: string;
 }
 
-export default function Modal({ isOpen, title, onClose, children }: ModalProps) {
+export default function Modal({ isOpen, title, onClose, children, className }: ModalProps) {
   // close on ESC
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -25,7 +26,7 @@ export default function Modal({ isOpen, title, onClose, children }: ModalProps) 
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4 p-6 relative"
+        className={`bg-white rounded-lg shadow-xl w-full mx-4 p-6 relative ${className || 'max-w-lg'} max-h-[90vh] overflow-y-auto`}
         onClick={e => e.stopPropagation()}
       >
         <button

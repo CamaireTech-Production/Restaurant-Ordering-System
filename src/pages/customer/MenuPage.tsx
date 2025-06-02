@@ -407,7 +407,7 @@ const MenuPage: React.FC = () => {
             <div className="flex space-x-2 overflow-x-auto no-scrollbar py-2">
               <button
                 onClick={() => handleCategoryClick('all')}
-                className={`flex-shrink-0 px-3 py-1.5 rounded-full font-medium transition text-xs sm:text-sm ${
+                className={`flex-shrink-0 px-5 py-2 rounded-full font-bold text-base sm:text-lg transition ${
                   activeCategory === 'all'
                     ? 'bg-primary text-white shadow'
                     : 'bg-gray-100 text-gray-700 hover:bg-primary/10'
@@ -419,7 +419,7 @@ const MenuPage: React.FC = () => {
                 <button
                   key={cat.id}
                   onClick={() => handleCategoryClick(cat.id)}
-                  className={`flex-shrink-0 px-3 py-1.5 rounded-full font-medium transition text-xs sm:text-sm ${
+                  className={`flex-shrink-0 px-5 py-2 rounded-full font-bold text-base sm:text-lg transition ${
                     activeCategory === cat.id
                       ? 'bg-primary text-white shadow'
                       : 'bg-gray-100 text-gray-700 hover:bg-primary/10'
@@ -492,46 +492,51 @@ const MenuPage: React.FC = () => {
                       .map(item => (
                         <div
                           key={item.id}
-                          className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow flex flex-col h-full"
+                          className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow flex flex-col h-full cursor-pointer group"
                           style={{ minHeight: '320px', maxHeight: '370px' }}
+                          onClick={() => {
+                            setSelectedDish(item);
+                            setModalOpen(true);
+                          }}
                         >
-                          {item.image && (
-                            <div className="h-28 sm:h-32 w-full overflow-hidden">
+                          {/* Dish section (clickable) */}
+                          {item.image ? (
+                            <div className="h-32 sm:h-48 w-full overflow-hidden">
                               <img
                                 src={item.image}
                                 alt={item.title}
                                 className="w-full h-full object-cover"
                               />
                             </div>
+                          ) : (
+                            <div className="h-32 sm:h-48 w-full bg-gray-100 flex items-center justify-center">
+                              <img
+                                src="/icons/placeholder.png"
+                                alt="No dish"
+                                className="h-16 w-16 opacity-60"
+                              />
+                            </div>
                           )}
-                          <div className="p-3 flex-1 flex flex-col">
-                            <div className="flex justify-between items-start">
-                              <div>
-                                <h3 className="text-base sm:text-lg font-medium text-gray-900 truncate">
-                                  {item.title}
-                                </h3>
-                                {item.description && (
-                                  <p className="mt-1 text-xs sm:text-sm text-gray-500 line-clamp-2">
-                                    {item.description}
-                                  </p>
-                                )}
-                              </div>
-                              <button
-                                onClick={() => {
-                                  setSelectedDish(item);
-                                  setModalOpen(true);
-                                }}
-                                className="text-gray-500 hover:text-gray-700"
-                                aria-label="View details"
-                              >
-                                <Eye size={18} />
-                              </button>
+                          <div className="p-3 flex-1 flex flex-col w-full">
+                            <div>
+                              <h3 className="text-base sm:text-lg font-medium text-gray-900 truncate">
+                                {item.title}
+                              </h3>
+                              {item.description && (
+                                <p className="mt-1 text-xs sm:text-sm text-gray-500 line-clamp-2">
+                                  {item.description}
+                                </p>
+                              )}
                             </div>
                             <div className="text-base sm:text-lg font-semibold text-primary mt-2">
                               {item.price.toLocaleString()} FCFA
                             </div>
+                            {/* Order button (stop click propagation so it doesn't open modal) */}
                             <button
-                              onClick={() => addToCart(item)}
+                              onClick={e => {
+                                e.stopPropagation();
+                                addToCart(item);
+                              }}
                               className="mt-auto w-full inline-flex justify-center items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-xs sm:text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
                             >
                               <PlusCircle size={14} className="mr-2" />
@@ -583,12 +588,20 @@ const MenuPage: React.FC = () => {
                       className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow flex flex-col h-full"
                       style={{ minHeight: '320px', maxHeight: '370px' }}
                     >
-                      {item.image && (
+                      {item.image ? (
                         <div className="h-28 sm:h-32 w-full overflow-hidden">
                           <img
                             src={item.image}
                             alt={item.title}
                             className="w-full h-full object-cover"
+                          />
+                        </div>
+                      ) : (
+                        <div className="h-28 sm:h-32 w-full bg-gray-100 flex items-center justify-center">
+                          <img
+                            src="/icons/dish-placeholder.png"
+                            alt="No dish"
+                            className="h-16 w-16 opacity-60"
                           />
                         </div>
                       )}
