@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { db } from '../../firebase/config';
 import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { toast } from 'react-hot-toast';
@@ -14,18 +14,22 @@ const TableSelection: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [selectedTable, setSelectedTable] = useState<number | null>(null);
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
+    // Exclude /public-menu/ routes from table-selection redirect logic
+    if (location.pathname.startsWith('/public-menu/')) {
+      setLoading(false);
+      return;
+    }
     // Check if a table is already selected in localStorage
     const storedTable = localStorage.getItem('selectedTable');
     const storedRestaurant = localStorage.getItem('selectedRestaurant');
-    
     if (storedTable && storedRestaurant) {
       try {
         const restaurantData = JSON.parse(storedRestaurant);
         setSelectedRestaurant(restaurantData);
         setSelectedTable(parseInt(storedTable));
-        
         // Navigate to the menu page
         navigate(`/menu/${restaurantData.id}`);
       } catch (error) {
@@ -34,7 +38,6 @@ const TableSelection: React.FC = () => {
         localStorage.removeItem('selectedRestaurant');
       }
     }
-    
     const fetchRestaurants = async () => {
       try {
         const restaurantsQuery = query(
@@ -54,9 +57,8 @@ const TableSelection: React.FC = () => {
         setLoading(false);
       }
     };
-
     fetchRestaurants();
-  }, [navigate]);
+  }, [navigate, location]);
 
   useEffect(() => {
     if (selectedRestaurant) {

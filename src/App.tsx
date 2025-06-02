@@ -16,6 +16,8 @@ import OrdersPage from './pages/orders/OrdersPage';
 import MenuPage from './pages/customer/MenuPage';
 import { Suspense } from 'react';
 
+import PublicMenuPage from './pages/PublicMenuPage';
+
 const CustomerOrdersPage = React.lazy(() => import('./pages/customer/OrdersPage'));
 
 // Components
@@ -87,6 +89,7 @@ function AppRoutes() {
       />
       <Route path="/table-selection" element={<TableSelection />} />
       <Route path="/menu/:restaurantId" element={<MenuPage />} />
+      <Route path="/public-menu/:restaurantId" element={<PublicMenuPage />} />
       {/* Default routes */}
       <Route path="/" element={<Navigate to="/login" replace />} />
       <Route path="*" element={<Navigate to="/login" replace />} />

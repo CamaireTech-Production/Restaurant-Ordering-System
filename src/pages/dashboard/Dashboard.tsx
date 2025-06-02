@@ -1,4 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { toast } from 'react-hot-toast';
+import { Copy } from 'lucide-react';
+// import QRCode from 'qrcode.react'; // Uncomment if you add qrcode.react to dependencies
 import { useAuth } from '../../contexts/AuthContext';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import { db } from '../../firebase/config';
@@ -98,6 +101,35 @@ const Dashboard: React.FC = () => {
         )}
       </div>
     }>
+      {/* Generate View Link Section */}
+      {restaurant?.id && (
+        <div className="my-6 p-4 bg-white rounded shadow flex flex-col sm:flex-row items-center gap-4">
+          <div className="flex-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Public Menu Link</label>
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                className="w-full px-2 py-1 border rounded bg-gray-100 text-gray-700 text-xs sm:text-sm"
+                value={`${window.location.origin}/public-menu/${restaurant.id}`}
+                readOnly
+                id="public-menu-link"
+              />
+              <button
+                className="inline-flex items-center px-2 py-1 bg-primary text-white rounded hover:bg-primary-dark text-xs sm:text-sm"
+                onClick={() => {
+                  navigator.clipboard.writeText(`${window.location.origin}/public-menu/${restaurant.id}`);
+                  toast.success('Link copied!');
+                }}
+                type="button"
+              >
+                <Copy size={16} className="mr-1" /> Copy Link
+              </button>
+            </div>
+            {/* Uncomment below to show QR code if qrcode.react is installed */}
+            {/* <div className="mt-2 flex justify-center"><QRCode value={`${window.location.origin}/public-menu/${restaurant.id}`} size={96} /></div> */}
+          </div>
+        </div>
+      )}
       <div className="mb-8">
         <h2 className="text-lg font-medium text-gray-700">
           Welcome back, {restaurant?.name || 'Restaurant'}!
