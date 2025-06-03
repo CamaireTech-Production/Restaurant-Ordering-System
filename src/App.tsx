@@ -16,105 +16,105 @@ import OrdersPage from './pages/orders/OrdersPage';
 import MenuPage from './pages/customer/MenuPage';
 import { Suspense } from 'react';
 
-import PublicMenuPage from './pages/PublicMenuPage';
-
 const CustomerOrdersPage = React.lazy(() => import('./pages/customer/OrdersPage'));
 
 // Components
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import TableSelection from './components/tables/TableSelection';
 
-function AppRoutes() {
-  return (
-    <Routes>
-      {/* Auth routes */}
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
-      <Route 
-        path="/profile-setup" 
-        element={
-          <ProtectedRoute>
-            <ProfileSetup />
-          </ProtectedRoute>
-        } 
-      />
-      {/* Admin routes */}
-      <Route 
-        path="/dashboard" 
-        element={
-          <ProtectedRoute>
-            <Dashboard />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/menu-management" 
-        element={
-          <ProtectedRoute>
-            <MenuManagement />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/category-management" 
-        element={
-          <ProtectedRoute>
-            <CategoryManagement />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/table-management" 
-        element={
-          <ProtectedRoute>
-            <TableManagement />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/orders" 
-        element={
-          <ProtectedRoute>
-            <OrdersPage />
-          </ProtectedRoute>
-        } 
-      />
-      <Route
-        path="/customer/orders/:tableNumber"
-        element={
-          <Suspense fallback={<div>Loading...</div>}>
-            <CustomerOrdersPage />
-          </Suspense>
-        }
-      />
-      <Route path="/table-selection" element={<TableSelection />} />
-      <Route path="/menu/:restaurantId" element={<MenuPage />} />
-      <Route path="/public-menu/:restaurantId" element={<PublicMenuPage />} />
-      {/* Default routes */}
-      <Route path="/" element={<Navigate to="/login" replace />} />
-      <Route path="*" element={<Navigate to="/login" replace />} />
-    </Routes>
-  );
-}
+
+import PublicMenuPage from './pages/PublicMenuPage';
 
 function App() {
   return (
     <Router>
-      <AuthProvider>
-        <OfflineSyncProvider>
-          <AppRoutes />
-          <Toaster
-            position="top-right"
-            toastOptions={{
-              duration: 3000,
-              style: {
-                background: '#363636',
-                color: '#fff',
-              },
-            }}
-          />
-        </OfflineSyncProvider>
-      </AuthProvider>
+      <Routes>
+        <Route path="/public-menu/:restaurantId" element={<PublicMenuPage />} />
+        <Route
+          path="*"
+          element={
+            <AuthProvider>
+              <OfflineSyncProvider>
+                <Routes>
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/register" element={<Register />} />
+                  <Route 
+                    path="/profile-setup" 
+                    element={
+                      <ProtectedRoute>
+                        <ProfileSetup />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/dashboard" 
+                    element={
+                      <ProtectedRoute>
+                        <Dashboard />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/menu-management" 
+                    element={
+                      <ProtectedRoute>
+                        <MenuManagement />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/category-management" 
+                    element={
+                      <ProtectedRoute>
+                        <CategoryManagement />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/table-management" 
+                    element={
+                      <ProtectedRoute>
+                        <TableManagement />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/orders" 
+                    element={
+                      <ProtectedRoute>
+                        <OrdersPage />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route
+                    path="/customer/orders/:tableNumber"
+                    element={
+                      <Suspense fallback={<div>Loading...</div>}>
+                        <CustomerOrdersPage />
+                      </Suspense>
+                    }
+                  />
+                  <Route path="/table-selection" element={<TableSelection />} />
+                  <Route path="/menu/:restaurantId" element={<MenuPage />} />
+                  {/* Default routes */}
+                  <Route path="/" element={<Navigate to="/login" replace />} />
+                  <Route path="*" element={<Navigate to="/login" replace />} />
+                </Routes>
+                <Toaster
+                  position="top-right"
+                  toastOptions={{
+                    duration: 3000,
+                    style: {
+                      background: '#363636',
+                      color: '#fff',
+                    },
+                  }}
+                />
+              </OfflineSyncProvider>
+            </AuthProvider>
+          }
+        />
+      </Routes>
     </Router>
   );
 }

@@ -599,7 +599,7 @@ const MenuPage: React.FC = () => {
                       ) : (
                         <div className="h-28 sm:h-32 w-full bg-gray-100 flex items-center justify-center">
                           <img
-                            src="/icons/dish-placeholder.png"
+                            src="/icons/placeholder.png"
                             alt="No dish"
                             className="h-16 w-16 opacity-60"
                           />
