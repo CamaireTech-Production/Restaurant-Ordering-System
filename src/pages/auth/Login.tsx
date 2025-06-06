@@ -172,14 +172,14 @@ const Login: React.FC = () => {
             </div>
           </div>
 
-          <div className="mt-6 text-center">
+          {/* <div className="mt-6 text-center">
             <p className="text-sm">
               Don't have an account?{' '}
               <Link to="/register" className="font-medium text-primary hover:text-primary-dark">
                 Register here
               </Link>
             </p>
-          </div>
+          </div> */}
         </div>
       </div>
     </div>

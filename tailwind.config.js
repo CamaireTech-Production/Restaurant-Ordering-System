@@ -5,10 +5,16 @@ export default {
     extend: {
       colors: {
         primary: {
-          DEFAULT: '#D97706',
-          dark: '#B45309',
-          light: '#FBBF24',
+          DEFAULT: '#000000',
+          dark: '#111111',
+          light: '#222222',
         },
+        secondary: '#FFFFFF',
+        accent: '#FFD700',
+        rose: '#8B0000',
+        background: '#111111',
+        sidebarBackground: '#1E1E1E',
+        success: '#4CAF50',
       },
     },
   },

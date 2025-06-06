@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './contexts/AuthContext';
 import { OfflineSyncProvider } from './contexts/OfflineSyncContext';
+import designSystem from './designSystem';
 
 // Pages
 import Login from './pages/auth/Login';
@@ -37,7 +38,7 @@ function App() {
               <OfflineSyncProvider>
                 <Routes>
                   <Route path="/login" element={<Login />} />
-                  <Route path="/register" element={<Register />} />
+                  <Route path="/newResturant" element={<Register />} />
                   <Route 
                     path="/profile-setup" 
                     element={
@@ -105,8 +106,8 @@ function App() {
                   toastOptions={{
                     duration: 3000,
                     style: {
-                      background: '#363636',
-                      color: '#fff',
+                      background: designSystem.colors.background,
+                      color: designSystem.colors.text,
                     },
                   }}
                 />
@@ -115,6 +116,9 @@ function App() {
           }
         />
       </Routes>
+      <footer className="text-center py-4 bg-gray-100 text-gray-600">
+        Powered by Camairetech
+      </footer>
     </Router>
   );
 }

@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import { Table } from '../../types';
+import designSystem from '../../designSystem';
 
 const TableManagement: React.FC = () => {
   const { restaurant } = useAuth();
@@ -317,20 +318,20 @@ const TableManagement: React.FC = () => {
         <div className="p-4 sm:p-6 border-b border-gray-200">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-              <h2 className="text-xl font-semibold text-gray-800">Tables</h2>
-              <p className="text-gray-600 text-sm">Manage your restaurant tables</p>
+              <h2 className="text-xl font-semibold text-primary">Tables</h2>
+              <p className="text-secondary text-sm">Manage your restaurant tables</p>
             </div>
             <div className="flex flex-col sm:flex-row gap-2">
               <button
                 onClick={openBulkAddModal}
-                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#008080] hover:bg-[#006666] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#008080] transition-colors"
+                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-accent hover:bg-primary focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent transition-colors"
               >
                 <PlusCircle size={16} className="mr-2" />
                 Bulk Add Tables
               </button>
               <button
                 onClick={openAddModal}
-                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors"
+                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-accent focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors"
               >
                 <PlusCircle size={16} className="mr-2" />
                 Add Table
@@ -342,19 +343,19 @@ const TableManagement: React.FC = () => {
             {/* Search */}
             <div className="relative max-w-xs">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Search size={18} className="text-gray-400" />
+                <Search size={18} className="text-accent" />
               </div>
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search tables..."
-                className="pl-10 block w-full py-3 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
+                className="pl-10 block w-full py-3 border border-accent rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery('')}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-accent hover:text-rose"
                 >
                   <X size={18} />
                 </button>
@@ -367,9 +368,9 @@ const TableManagement: React.FC = () => {
         <div className="p-4 sm:p-6">
           {filteredTables.length === 0 ? (
             <div className="text-center py-10">
-              <TableIcon size={48} className="mx-auto text-gray-400" />
-              <h3 className="mt-2 text-sm font-medium text-gray-900">No tables</h3>
-              <p className="mt-1 text-sm text-gray-500">
+              <TableIcon size={48} className="mx-auto text-accent" />
+              <h3 className="mt-2 text-sm font-medium text-primary">No tables</h3>
+              <p className="mt-1 text-sm text-secondary">
                 {tables.length === 0 ? 
                   "Get started by creating a new table" : 
                   "No tables match your search criteria"}
@@ -378,7 +379,7 @@ const TableManagement: React.FC = () => {
                 <div className="mt-6">
                   <button
                     onClick={openAddModal}
-                    className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+                    className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-accent focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
                   >
                     <PlusCircle size={16} className="mr-2" />
                     Add Table
@@ -391,26 +392,26 @@ const TableManagement: React.FC = () => {
               {filteredTables.map((table) => (
                 <div 
                   key={table.id} 
-                  className="relative bg-white border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+                  className="relative bg-secondary border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow"
                 >
                   <div className={`absolute top-0 left-0 w-2 h-full ${
-                    table.status === 'available' ? 'bg-green-500' :
-                    table.status === 'reserved' ? 'bg-yellow-500' :
-                    'bg-red-500'
+                    table.status === 'available' ? 'bg-success' :
+                    table.status === 'reserved' ? 'bg-accent' :
+                    'bg-rose'
                   }`} />
                   <div className="p-4 pl-6">
                     <div className="flex justify-between items-start">
                       <div>
-                        <h3 className="text-lg font-semibold text-gray-900">
+                        <h3 className="text-lg font-semibold text-primary">
                           {table.name || `Table ${table.number}`}
                         </h3>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-sm text-secondary">
                           Table #{table.number}
                         </p>
                         <span className={`mt-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          table.status === 'available' ? 'bg-green-100 text-green-800' :
-                          table.status === 'reserved' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-red-100 text-red-800'
+                          table.status === 'available' ? 'bg-success/10 text-success' :
+                          table.status === 'reserved' ? 'bg-accent/10 text-accent' :
+                          'bg-rose/10 text-rose'
                         }`}>
                           {table.status.charAt(0).toUpperCase() + table.status.slice(1)}
                         </span>
@@ -418,14 +419,14 @@ const TableManagement: React.FC = () => {
                       <div className="flex space-x-1">
                         <button
                           onClick={() => openEditModal(table)}
-                          className="text-indigo-600 hover:text-indigo-900 p-1"
+                          className="text-accent hover:text-accent-dark p-1"
                         >
                           <Edit size={18} />
                         </button>
                         <button
                           onClick={() => deleteTable(table.id)}
                           disabled={isDeleting}
-                          className="text-red-600 hover:text-red-900 p-1 disabled:opacity-50"
+                          className="text-rose hover:text-rose-dark p-1 disabled:opacity-50"
                         >
                           <Trash2 size={18} />
                         </button>
@@ -444,16 +445,16 @@ const TableManagement: React.FC = () => {
         <div className="fixed inset-0 z-50 overflow-y-auto">
           <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
             <div className="fixed inset-0 transition-opacity" aria-hidden="true">
-              <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
+              <div className="absolute inset-0 bg-accent opacity-75"></div>
             </div>
 
             <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
             
-            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+            <div className="inline-block align-bottom bg-secondary rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
               <div className="px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                 <div className="sm:flex sm:items-start">
                   <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
-                    <h3 className="text-lg leading-6 font-medium text-gray-900">
+                    <h3 className="text-lg leading-6 font-medium text-primary">
                       {editingTable ? 'Edit Table' : (bulkMode ? 'Add Multiple Tables' : 'Add Table')}
                     </h3>
                     <div className="mt-4">
@@ -461,7 +462,7 @@ const TableManagement: React.FC = () => {
                         {bulkMode ? (
                           <>
                             <div className="mb-4">
-                              <label htmlFor="number\" className="block text-sm font-medium text-gray-700">
+                              <label htmlFor="number" className="block text-sm font-medium text-primary">
                                 Starting Table Number*
                               </label>
                               <input
@@ -471,13 +472,13 @@ const TableManagement: React.FC = () => {
                                 min="1"
                                 value={formData.number}
                                 onChange={handleInputChange}
-                                className="mt-1 block w-full py-3 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
+                                className="mt-1 block w-full py-3 border border-accent rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
                                 required
                               />
                             </div>
                             
                             <div className="mb-4">
-                              <label htmlFor="tableCount" className="block text-sm font-medium text-gray-700">
+                              <label htmlFor="tableCount" className="block text-sm font-medium text-primary">
                                 Number of Tables to Add*
                               </label>
                               <input
@@ -486,21 +487,21 @@ const TableManagement: React.FC = () => {
                                 min="1"
                                 value={tableCount}
                                 onChange={handleTableCountChange}
-                                className="mt-1 block w-full py-3 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
+                                className="mt-1 block w-full py-3 border border-accent rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
                                 required
                               />
                             </div>
                             
-                            <div className="p-4 bg-gray-50 rounded-md">
-                              <h4 className="text-sm font-medium text-gray-700 mb-2">Preview:</h4>
-                              <div className="text-sm text-gray-600">
+                            <div className="p-4 bg-background rounded-md">
+                              <h4 className="text-sm font-medium text-primary mb-2">Preview:</h4>
+                              <div className="text-sm text-secondary">
                                 {Array.from({ length: Math.min(tableCount, 5) }, (_, i) => (
                                   <div key={i} className="mb-1">
                                     Table #{formData.number + i}: Table {formData.number + i}
                                   </div>
                                 ))}
                                 {tableCount > 5 && (
-                                  <div className="text-gray-500 italic">
+                                  <div className="text-accent italic">
                                     ...and {tableCount - 5} more tables
                                   </div>
                                 )}
@@ -510,7 +511,7 @@ const TableManagement: React.FC = () => {
                         ) : (
                           <>
                             <div className="mb-4">
-                              <label htmlFor="number" className="block text-sm font-medium text-gray-700">
+                              <label htmlFor="number" className="block text-sm font-medium text-primary">
                                 Table Number*
                               </label>
                               <input
@@ -520,13 +521,13 @@ const TableManagement: React.FC = () => {
                                 min="1"
                                 value={formData.number}
                                 onChange={handleInputChange}
-                                className="mt-1 block w-full py-3 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
+                                className="mt-1 block w-full py-3 border border-accent rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
                                 required
                               />
                             </div>
                             
                             <div className="mb-4">
-                              <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                              <label htmlFor="name" className="block text-sm font-medium text-primary">
                                 Table Name (Optional)
                               </label>
                               <input
@@ -536,12 +537,12 @@ const TableManagement: React.FC = () => {
                                 value={formData.name}
                                 onChange={handleInputChange}
                                 placeholder={`Table ${formData.number}`}
-                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-[#8B0000] focus:border-[#8B0000] sm:text-sm"
+                                className="mt-1 block w-full border border-accent rounded-md shadow-sm focus:ring-accent focus:border-accent sm:text-sm"
                               />
                             </div>
                             
                             <div className="mb-4">
-                              <label htmlFor="status" className="block text-sm font-medium text-gray-700">
+                              <label htmlFor="status" className="block text-sm font-medium text-primary">
                                 Status
                               </label>
                               <select
@@ -549,7 +550,7 @@ const TableManagement: React.FC = () => {
                                 name="status"
                                 value={formData.status}
                                 onChange={handleInputChange}
-                                className="mt-1 block w-full py-3 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
+                                className="mt-1 block w-full py-3 border border-accent rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
                               >
                                 <option value="available">Available</option>
                                 <option value="reserved">Reserved</option>
@@ -568,7 +569,7 @@ const TableManagement: React.FC = () => {
                   type="button"
                   onClick={handleSubmit}
                   disabled={loading}
-                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-primary text-base font-medium text-white hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50"
+                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-primary text-base font-medium text-white hover:bg-accent focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50"
                 >
                   {loading ? (
                     <LoadingSpinner size={20} color="#ffffff" />

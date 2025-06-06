@@ -1,5 +1,3 @@
-
-
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { db } from '../firebase/config';
@@ -8,6 +6,7 @@ import LoadingSpinner from '../components/ui/LoadingSpinner';
 import { Dish as MenuItem, Category, Restaurant } from '../types';
 import { ChefHat, Search, X } from 'lucide-react';
 import DishDetailModal from './customer/DishDetailModal';
+import designSystem from '../designSystem';
 
 const PublicMenuPage: React.FC = () => {
   const { restaurantId } = useParams<{ restaurantId: string }>();
@@ -79,19 +78,31 @@ const PublicMenuPage: React.FC = () => {
   // --- Scroll Spy Effect ---
   useEffect(() => {
     if (!categories.length) return;
+    let ticking = false;
     const handleScroll = () => {
-      const scrollY = window.scrollY + 120;
-      let found = 'all';
-      for (const cat of categories) {
-        const ref = sectionRefs.current[cat.id];
-        if (ref) {
-          const { top } = ref.getBoundingClientRect();
-          if (top + window.scrollY - 120 <= scrollY) {
-            found = cat.id;
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const scrollY = window.scrollY + 120;
+          let found = 'all';
+          for (const cat of categories) {
+            const ref = sectionRefs.current[cat.id];
+            if (ref) {
+              const { top } = ref.getBoundingClientRect();
+              if (top + window.scrollY - 120 <= scrollY) {
+                found = cat.id;
+              }
+            }
           }
-        }
+          setActiveCategory(found);
+          // Scroll the active tab into view
+          const tab = document.getElementById(`category-tab-${found}`);
+          if (tab && tab.scrollIntoView) {
+            tab.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+          }
+          ticking = false;
+        });
+        ticking = true;
       }
-      setActiveCategory(found);
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
@@ -109,6 +120,11 @@ const PublicMenuPage: React.FC = () => {
     if (ref) {
       const y = ref.getBoundingClientRect().top + window.scrollY - 64;
       window.scrollTo({ top: y, behavior: 'smooth' });
+    }
+    // Scroll the tab into view
+    const tab = document.getElementById(`category-tab-${catId}`);
+    if (tab && tab.scrollIntoView) {
+      tab.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
     }
   };
 
@@ -150,11 +166,14 @@ const PublicMenuPage: React.FC = () => {
               <div className="flex items-center w-full sm:w-auto mb-2 sm:mb-0">
                 <div className="flex items-center">
                   {restaurant?.logo ? (
-                    <img
-                      src={restaurant.logo}
-                      alt={restaurant.name}
-                      className="h-10 w-10 rounded-full object-cover mr-3"
-                    />
+                    <div className="h-12 w-12 rounded-full flex items-center justify-center bg-white shadow-lg ring-2 ring-accent mr-3">
+                      <img
+                        src={restaurant.logo}
+                        alt={restaurant.name}
+                        className="h-10 w-10 rounded-full object-contain drop-shadow-md"
+                        style={{ background: 'transparent' }}
+                      />
+                    </div>
                   ) : (
                     <ChefHat size={24} className="mr-3" />
                   )}
@@ -187,6 +206,7 @@ const PublicMenuPage: React.FC = () => {
               {categories.map(cat => (
                 <button
                   key={cat.id}
+                  id={`category-tab-${cat.id}`}
                   onClick={() => handleCategoryClick(cat.id)}
                   className={`flex-shrink-0 px-5 py-2 rounded-full font-bold text-base sm:text-lg transition ${
                     activeCategory === cat.id
@@ -214,7 +234,7 @@ const PublicMenuPage: React.FC = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search dishes..."
-              className="pl-9 p-2 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-[#8B0000] focus:border-[#8B0000] text-xs sm:text-sm"
+              className="pl-9 p-2 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-rose focus:border-rose text-xs sm:text-sm"
             />
             {searchQuery && (
               <button
@@ -261,8 +281,8 @@ const PublicMenuPage: React.FC = () => {
                       .map(item => (
                         <div
                           key={item.id}
-                          className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow flex flex-col h-full cursor-pointer group"
-                          style={{ minHeight: '320px', maxHeight: '370px' }}
+                          className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow flex flex-col h-full cursor-pointer group min-h-0 flex-1"
+                          style={{ minHeight: '220px', maxHeight: '370px' }}
                           onClick={() => {
                             setSelectedDish(item);
                             setModalOpen(true);
@@ -342,8 +362,8 @@ const PublicMenuPage: React.FC = () => {
                   .map(item => (
                     <div
                       key={item.id}
-                      className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow flex flex-col h-full cursor-pointer group"
-                      style={{ minHeight: '320px', maxHeight: '370px' }}
+                      className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow flex flex-col h-full cursor-pointer group min-h-0 flex-1"
+                      style={{ minHeight: '220px', maxHeight: '370px' }}
                       onClick={() => {
                         setSelectedDish(item);
                         setModalOpen(true);

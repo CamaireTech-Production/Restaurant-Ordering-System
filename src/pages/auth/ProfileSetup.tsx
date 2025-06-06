@@ -240,7 +240,7 @@ const ProfileSetup: React.FC = () => {
                     rows={4}
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    className="pl-10 block w-full py-2 border border-gray-300 rounded-md shadow-sm focus:ring-[#8B0000] focus:border-[#8B0000] sm:text-sm"
+                    className="pl-10 block w-full py-2 border border-gray-300 rounded-md shadow-sm focus:ring-rose focus:border-rose sm:text-sm"
                     placeholder="Describe your restaurant, cuisine type, specialties, etc."
                   />
                 </div>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import designSystem from '../../designSystem';
 import { 
   LayoutDashboard, 
   UtensilsCrossed, 
@@ -89,15 +90,15 @@ const Sidebar: React.FC = () => {
 
       {/* Sidebar */}
       <aside
-        className={`fixed top-0 left-0 h-full w-64 bg-[#1E293B] text-white z-40 transform transition-transform duration-300 ease-in-out ${
+        className={`fixed top-0 left-0 h-full w-64 bg-[${designSystem.colors.sidebarBackground}] text-white z-40 shadow-xl border-l-4 border-accent transform transition-transform duration-300 ease-in-out ${
           isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         }`}
       >
         <div className="p-4 h-full flex flex-col">
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center">
-              <ChefHat size={28} className="text-[#FFD700] mr-2" />
-              <h1 className="text-xl font-bold truncate">
+              <ChefHat size={28} className={`text-accent mr-2 drop-shadow-[0_1px_2px_rgba(0,0,0,0.3)]`} />
+              <h1 className="text-xl font-bold truncate text-accent drop-shadow-[0_1px_2px_rgba(0,0,0,0.3)]">
                 {restaurant?.name || 'Restaurant'}
               </h1>
             </div>
@@ -117,10 +118,10 @@ const Sidebar: React.FC = () => {
                     to={item.path}
                     onClick={closeSidebar}
                     className={({ isActive }) =>
-                      `flex items-center px-4 py-3 rounded-md transition-colors ${
+                      `flex items-center px-4 py-3 rounded-md transition-colors font-semibold text-base ${
                         isActive
-                          ? 'bg-primary text-white'
-                          : 'hover:bg-gray-700 text-gray-300'
+                          ? 'bg-accent text-black shadow-md border-l-4 border-white'
+                          : 'text-primary hover:bg-accent/20 hover:text-accent'
                       }`
                     }
                   >
@@ -135,7 +136,7 @@ const Sidebar: React.FC = () => {
           <div className="mt-auto">
             <button
               onClick={handleSignOut}
-              className="flex items-center w-full px-4 py-3 text-gray-300 hover:bg-gray-700 rounded-md transition-colors"
+              className="flex items-center w-full px-4 py-3 text-gray-300 hover:bg-accent/20 hover:text-accent rounded-md transition-colors"
             >
               <LogOut size={20} className="mr-3" />
               Sign Out

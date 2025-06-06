@@ -30,6 +30,7 @@ import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import { Restaurant, Dish as MenuItem, Category, OrderItem } from '../../types';
 import DishDetailModal from './DishDetailModal';
 import { Eye } from 'lucide-react';
+import designSystem from '../../designSystem';
 
 const MenuPage: React.FC = () => {
   const { restaurantId } = useParams<{ restaurantId: string }>();
@@ -250,19 +251,31 @@ const MenuPage: React.FC = () => {
   useEffect(() => {
     if (!categories.length) return;
 
+    let ticking = false;
     const handleScroll = () => {
-      const scrollY = window.scrollY + 120; // Offset for sticky header
-      let found = 'all';
-      for (const cat of categories) {
-        const ref = sectionRefs.current[cat.id];
-        if (ref) {
-          const { top } = ref.getBoundingClientRect();
-          if (top + window.scrollY - 120 <= scrollY) {
-            found = cat.id;
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const scrollY = window.scrollY + 120; // Offset for sticky header
+          let found = 'all';
+          for (const cat of categories) {
+            const ref = sectionRefs.current[cat.id];
+            if (ref) {
+              const { top } = ref.getBoundingClientRect();
+              if (top + window.scrollY - 120 <= scrollY) {
+                found = cat.id;
+              }
+            }
           }
-        }
+          setActiveCategory(found);
+          // Scroll the active tab into view
+          const tab = document.getElementById(`category-tab-${found}`);
+          if (tab && tab.scrollIntoView) {
+            tab.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+          }
+          ticking = false;
+        });
+        ticking = true;
       }
-      setActiveCategory(found);
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -281,6 +294,11 @@ const MenuPage: React.FC = () => {
     if (ref) {
       const y = ref.getBoundingClientRect().top + window.scrollY - 64; // 64px header offset
       window.scrollTo({ top: y, behavior: 'smooth' });
+    }
+    // Scroll the tab into view
+    const tab = document.getElementById(`category-tab-${catId}`);
+    if (tab && tab.scrollIntoView) {
+      tab.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
     }
   };
 
@@ -356,16 +374,19 @@ const MenuPage: React.FC = () => {
                 </button>
                 <div className="flex items-center">
                   {restaurant?.logo ? (
-                    <img
-                      src={restaurant.logo}
-                      alt={restaurant.name}
-                      className="h-10 w-10 rounded-full object-cover mr-3"
-                    />
+                    <div className="h-12 w-12 rounded-full flex items-center justify-center bg-white shadow-lg ring-2 ring-accent mr-3">
+                      <img
+                        src={restaurant.logo}
+                        alt={restaurant.name}
+                        className="h-10 w-10 rounded-full object-contain drop-shadow-md"
+                        style={{ background: 'transparent' }}
+                      />
+                    </div>
                   ) : (
                     <ChefHat size={24} className="mr-3" />
                   )}
                   <div className="flex flex-col">
-                    <h1 className="text-xl font-bold">{restaurant?.name}</h1>
+                    <h1 className="text-xl font-bold text-white drop-shadow-md">{restaurant?.name}</h1>
                     <div className="flex items-center">
                       <Table size={14} className="mr-1" />
                       <span className="text-sm">Table #{tableNumber}</span>
@@ -380,7 +401,7 @@ const MenuPage: React.FC = () => {
                 >
                   <ShoppingCart size={24} />
                   {totalCartItems > 0 && (
-                    <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-[#FFD700] rounded-full">
+                    <span className={`absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-accent rounded-full`}>
                       {totalCartItems}
                     </span>
                   )}
@@ -418,6 +439,7 @@ const MenuPage: React.FC = () => {
               {categories.map(cat => (
                 <button
                   key={cat.id}
+                  id={`category-tab-${cat.id}`}
                   onClick={() => handleCategoryClick(cat.id)}
                   className={`flex-shrink-0 px-5 py-2 rounded-full font-bold text-base sm:text-lg transition ${
                     activeCategory === cat.id
@@ -445,7 +467,7 @@ const MenuPage: React.FC = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search dishes..."
-              className="pl-9 p-2 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-[#8B0000] focus:border-[#8B0000] text-xs sm:text-sm"
+              className="pl-9 p-2 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-rose focus:border-rose text-xs sm:text-sm"
             />
             {searchQuery && (
               <button
@@ -492,8 +514,8 @@ const MenuPage: React.FC = () => {
                       .map(item => (
                         <div
                           key={item.id}
-                          className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow flex flex-col h-full cursor-pointer group"
-                          style={{ minHeight: '320px', maxHeight: '370px' }}
+                          className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow flex flex-col h-full cursor-pointer group min-h-0 flex-1"
+                          style={{ minHeight: '220px', maxHeight: '370px' }}
                           onClick={() => {
                             setSelectedDish(item);
                             setModalOpen(true);

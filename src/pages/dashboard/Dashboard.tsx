@@ -8,6 +8,7 @@ import { db } from '../../firebase/config';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { TrendingUp, UtensilsCrossed, Layers, Table, ClipboardList } from 'lucide-react';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
+import designSystem from '../../designSystem'; // Import design system
 
 
 const Dashboard: React.FC = () => {
@@ -142,7 +143,7 @@ const Dashboard: React.FC = () => {
         <div className="bg-white overflow-hidden shadow rounded-lg">
           <div className="p-5">
             <div className="flex items-center">
-              <div className="flex-shrink-0 bg-[#8B0000] rounded-md p-3">
+              <div className="flex-shrink-0 bg-${designSystem.colors.primary} rounded-md p-3">
                 <UtensilsCrossed className="h-6 w-6 text-white" />
               </div>
               <div className="ml-5 w-0 flex-1">
@@ -168,7 +169,7 @@ const Dashboard: React.FC = () => {
         <div className="bg-white overflow-hidden shadow rounded-lg">
           <div className="p-5">
             <div className="flex items-center">
-              <div className="flex-shrink-0 bg-[#FFD700] rounded-md p-3">
+              <div className="flex-shrink-0 bg-${designSystem.colors.secondary} rounded-md p-3">
                 <Layers className="h-6 w-6 text-white" />
               </div>
               <div className="ml-5 w-0 flex-1">
@@ -194,7 +195,7 @@ const Dashboard: React.FC = () => {
         <div className="bg-white overflow-hidden shadow rounded-lg">
           <div className="p-5">
             <div className="flex items-center">
-              <div className="flex-shrink-0 bg-[#008080] rounded-md p-3">
+              <div className="flex-shrink-0 bg-${designSystem.colors.tertiary} rounded-md p-3">
                 <Table className="h-6 w-6 text-white" />
               </div>
               <div className="ml-5 w-0 flex-1">
@@ -220,7 +221,7 @@ const Dashboard: React.FC = () => {
         <div className="bg-white overflow-hidden shadow rounded-lg">
           <div className="p-5">
             <div className="flex items-center">
-              <div className="flex-shrink-0 bg-[#4CAF50] rounded-md p-3">
+              <div className="flex-shrink-0 bg-${designSystem.colors.success} rounded-md p-3">
                 <ClipboardList className="h-6 w-6 text-white" />
               </div>
               <div className="ml-5 w-0 flex-1">

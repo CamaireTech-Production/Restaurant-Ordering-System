@@ -1,5 +1,6 @@
 import React from 'react';
 import { Oval } from 'react-loader-spinner';
+import designSystem from '../../designSystem';
 
 interface LoadingSpinnerProps {
   size?: number;
@@ -8,7 +9,7 @@ interface LoadingSpinnerProps {
 
 const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({ 
   size = 40, 
-  color = '#8B0000' 
+  color = designSystem.colors.primary 
 }) => {
   return (
     <Oval
@@ -16,7 +17,7 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
       width={size}
       color={color}
       visible={true}
-      secondaryColor="#FFD700"
+      secondaryColor={designSystem.colors.secondary}
       strokeWidth={4}
       strokeWidthSecondary={4}
     />

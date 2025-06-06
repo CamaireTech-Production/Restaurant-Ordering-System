@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import { Order } from '../../types';
+import designSystem from '../../designSystem';
 
 const OrdersPage: React.FC = () => {
   const { restaurant } = useAuth();
@@ -83,7 +84,12 @@ const OrdersPage: React.FC = () => {
             (!prevOrderIds.has(order.id)) ||
             (lastSeen && orderTime > Number(lastSeen))
           ) {
-            toast.success(`New order received for Table #${order.tableNumber}`);
+            toast.success(`New order received for Table #${order.tableNumber}`, {
+              style: {
+                background: designSystem.colors.success,
+                color: designSystem.colors.text,
+              },
+            });
           }
         });
       } else {
