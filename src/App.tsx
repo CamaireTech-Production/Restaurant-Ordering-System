@@ -22,103 +22,91 @@ const CustomerOrdersPage = React.lazy(() => import('./pages/customer/OrdersPage'
 // Components
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import TableSelection from './components/tables/TableSelection';
-
-
 import PublicMenuPage from './pages/PublicMenuPage';
 
 function App() {
   return (
     <Router>
-      <Routes>
-        <Route path="/public-menu/:restaurantId" element={<PublicMenuPage />} />
-        <Route
-          path="*"
-          element={
-            <AuthProvider>
-              <OfflineSyncProvider>
-                <Routes>
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/newResturant" element={<Register />} />
-                  <Route 
-                    path="/profile-setup" 
-                    element={
-                      <ProtectedRoute>
-                        <ProfileSetup />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  <Route 
-                    path="/dashboard" 
-                    element={
-                      <ProtectedRoute>
-                        <Dashboard />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  <Route 
-                    path="/menu-management" 
-                    element={
-                      <ProtectedRoute>
-                        <MenuManagement />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  <Route 
-                    path="/category-management" 
-                    element={
-                      <ProtectedRoute>
-                        <CategoryManagement />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  <Route 
-                    path="/table-management" 
-                    element={
-                      <ProtectedRoute>
-                        <TableManagement />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  <Route 
-                    path="/orders" 
-                    element={
-                      <ProtectedRoute>
-                        <OrdersPage />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  <Route
-                    path="/customer/orders/:tableNumber"
-                    element={
-                      <Suspense fallback={<div>Loading...</div>}>
-                        <CustomerOrdersPage />
-                      </Suspense>
-                    }
-                  />
-                  <Route path="/table-selection" element={<TableSelection />} />
-                  <Route path="/menu/:restaurantId" element={<MenuPage />} />
-                  {/* Default routes */}
-                  <Route path="/" element={<Navigate to="/login" replace />} />
-                  <Route path="*" element={<Navigate to="/login" replace />} />
-                </Routes>
-                <Toaster
-                  position="top-right"
-                  toastOptions={{
-                    duration: 3000,
-                    style: {
-                      background: designSystem.colors.background,
-                      color: designSystem.colors.text,
-                    },
-                  }}
-                />
-              </OfflineSyncProvider>
-            </AuthProvider>
-          }
-        />
-      </Routes>
-      <footer className="text-center py-4 bg-gray-100 text-gray-600">
-        Powered by Camairetech
-      </footer>
+      <AuthProvider>
+        <OfflineSyncProvider>
+          <Routes>
+            <Route path="/public-menu/:restaurantId" element={<PublicMenuPage />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/newResturant" element={<Register />} />
+            <Route 
+              path="/profile-setup" 
+              element={
+                <ProtectedRoute>
+                  <ProfileSetup />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/dashboard" 
+              element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/menu-management" 
+              element={
+                <ProtectedRoute>
+                  <MenuManagement />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/category-management" 
+              element={
+                <ProtectedRoute>
+                  <CategoryManagement />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/table-management" 
+              element={
+                <ProtectedRoute>
+                  <TableManagement />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/orders" 
+              element={
+                <ProtectedRoute>
+                  <OrdersPage />
+                </ProtectedRoute>
+              } 
+            />
+            <Route
+              path="/customer/orders/:tableNumber"
+              element={
+                <Suspense fallback={<div>Loading...</div>}>
+                  <CustomerOrdersPage />
+                </Suspense>
+              }
+            />
+            <Route path="/table-selection" element={<TableSelection />} />
+            <Route path="/menu/:restaurantId" element={<MenuPage />} />
+            {/* Default routes */}
+            <Route path="/" element={<Navigate to="/login" replace />} />
+            <Route path="*" element={<Navigate to="/login" replace />} />
+          </Routes>
+          <Toaster
+            position="top-right"
+            toastOptions={{
+              duration: 3000,
+              style: {
+                background: designSystem.colors.background,
+                color: designSystem.colors.text,
+              },
+            }}
+          />
+        </OfflineSyncProvider>
+      </AuthProvider>
     </Router>
   );
 }

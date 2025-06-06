@@ -8,7 +8,6 @@ import { db } from '../../firebase/config';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { TrendingUp, UtensilsCrossed, Layers, Table, ClipboardList } from 'lucide-react';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
-import designSystem from '../../designSystem'; // Import design system
 
 
 const Dashboard: React.FC = () => {
@@ -86,7 +85,7 @@ const Dashboard: React.FC = () => {
         <span className="text-base sm:text-lg md:text-xl">
           Dashboard
         </span>
-        {restaurant && (
+        {/* {restaurant && (
           <div className="flex items-center justify-start p-2 sm:p-4">
             <span className="text-sm sm:text-base md:text-lg font-semibold text-primary">
               {restaurant.name}
@@ -99,7 +98,7 @@ const Dashboard: React.FC = () => {
               />
             )}
           </div>
-        )}
+        )} */}
       </div>
     }>
       {/* Generate View Link Section */}
@@ -123,7 +122,7 @@ const Dashboard: React.FC = () => {
                 }}
                 type="button"
               >
-                <Copy size={16} className="mr-1" /> Copy Link
+                <Copy size={16} className="mr-1" /> Copy
               </button>
             </div>
             {/* Uncomment below to show QR code if qrcode.react is installed */}

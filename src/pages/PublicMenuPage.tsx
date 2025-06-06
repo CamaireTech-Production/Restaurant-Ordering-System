@@ -7,9 +7,11 @@ import { Dish as MenuItem, Category, Restaurant } from '../types';
 import { ChefHat, Search, X } from 'lucide-react';
 import DishDetailModal from './customer/DishDetailModal';
 import designSystem from '../designSystem';
+import { useOfflineSync } from '../contexts/OfflineSyncContext';
 
 const PublicMenuPage: React.FC = () => {
   const { restaurantId } = useParams<{ restaurantId: string }>();
+  const { loadCollection, getCachedCollection } = useOfflineSync();
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
@@ -21,6 +23,8 @@ const PublicMenuPage: React.FC = () => {
   const categoryTabsRef = useRef<HTMLDivElement | null>(null);
   const [selectedDish, setSelectedDish] = useState<MenuItem | null>(null);
   const [isModalOpen, setModalOpen] = useState(false);
+  const [page, setPage] = useState(1);
+  const pageSize = 20;
 
   useEffect(() => {
     const fetchRestaurantData = async () => {
@@ -31,40 +35,21 @@ const PublicMenuPage: React.FC = () => {
         if (restaurantDoc.exists()) {
           setRestaurant({ id: restaurantDoc.id, ...restaurantDoc.data() } as Restaurant);
         }
-        if (!navigator.onLine) {
-          // Offline: load from localStorage
-          const offlineCategories = localStorage.getItem('offline_menuCategories');
-          const offlineMenuItems = localStorage.getItem('offline_menuItems');
-          setCategories(offlineCategories ? JSON.parse(offlineCategories).filter((c:any)=>c.restaurantId===restaurantId&&c.status==='active') : []);
-          setMenuItems(offlineMenuItems ? JSON.parse(offlineMenuItems).filter((m:any)=>m.restaurantId===restaurantId&&m.status==='active') : []);
-        } else {
-          // Online: fetch from Firestore
-          const categoriesQuery = query(
-            collection(db, 'categories'),
-            where('restaurantId', '==', restaurantId),
-            where('status', '==', 'active'),
-            orderBy('title')
-          );
-          const categoriesSnapshot = await getDocs(categoriesQuery);
-          const categoriesData = categoriesSnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          })) as Category[];
-          setCategories(categoriesData);
 
-          const menuItemsQuery = query(
-            collection(db, 'menuItems'),
-            where('restaurantId', '==', restaurantId),
-            where('status', '==', 'active'),
-            orderBy('title')
-          );
-          const menuItemsSnapshot = await getDocs(menuItemsQuery);
-          const menuItemsData = menuItemsSnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          })) as MenuItem[];
-          setMenuItems(menuItemsData);
-        }
+        // Load categories and menu items with pagination
+        const categoriesResult = await loadCollection('categories');
+        const menuItemsResult = await loadCollection('menuItems');
+
+        // Filter for this restaurant and active items
+        const filteredCategories = categoriesResult.items.filter(
+          (c: any) => c.restaurantId === restaurantId && c.status === 'active'
+        );
+        const filteredMenuItems = menuItemsResult.items.filter(
+          (m: any) => m.restaurantId === restaurantId && m.status === 'active'
+        );
+
+        setCategories(filteredCategories);
+        setMenuItems(filteredMenuItems);
       } catch (error) {
         setCategories([]);
         setMenuItems([]);
@@ -73,7 +58,7 @@ const PublicMenuPage: React.FC = () => {
       }
     };
     fetchRestaurantData();
-  }, [restaurantId]);
+  }, [restaurantId, loadCollection]);
 
   // --- Scroll Spy Effect ---
   useEffect(() => {
@@ -132,10 +117,30 @@ const PublicMenuPage: React.FC = () => {
   const dishesByCategory = React.useMemo(() => {
     const map: { [catId: string]: MenuItem[] } = {};
     categories.forEach(cat => {
-      map[cat.id] = menuItems.filter(item => item.categoryId === cat.id);
+      const items = menuItems.filter(item => item.categoryId === cat.id);
+      // Only include categories that have items
+      if (items.length > 0) {
+        map[cat.id] = items;
+      }
     });
     return map;
   }, [categories, menuItems]);
+
+  // Filter categories to only show those with items
+  const filteredCategories = React.useMemo(() => {
+    return categories.filter(cat => {
+      const items = dishesByCategory[cat.id] || [];
+      if (searchQuery) {
+        // During search, only show categories with matching items
+        return items.some(item => 
+          item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (item.description && item.description.toLowerCase().includes(searchQuery.toLowerCase()))
+        );
+      }
+      // When not searching, show all categories with items
+      return items.length > 0;
+    });
+  }, [categories, dishesByCategory, searchQuery]);
 
   if (loading) {
     return (
@@ -249,10 +254,10 @@ const PublicMenuPage: React.FC = () => {
       </div>
 
       {/* Menu Sections */}
-      <main className="flex-1 max-w-7xl mx-auto w-full px-1 sm:px-4 lg:px-6 pt-2">
+      <main className="flex-1 max-w-7xl mx-auto w-full px-1 sm:px-4 lg:px-6 pt-2 pb-20">
         {selectedCategory === 'all' && (
           <div>
-            {categories.map((cat, idx) => (
+            {filteredCategories.map((cat, idx) => (
               <div
                 key={cat.id}
                 ref={el => (sectionRefs.current[cat.id] = el)}
@@ -261,7 +266,7 @@ const PublicMenuPage: React.FC = () => {
                 <h2
                   className="text-lg sm:text-xl font-bold text-gray-900 mb-4"
                   style={{
-                    top: 104, // header + tabs height
+                    top: 104,
                     background: 'rgba(249,250,251,0.97)',
                     zIndex: 10,
                   }}
@@ -322,14 +327,15 @@ const PublicMenuPage: React.FC = () => {
                           </div>
                         </div>
                       ))
-                  ) : (
-                    <div className="bg-white rounded-lg shadow-sm p-8 text-center col-span-full">
-                      <p className="text-gray-500 text-xs sm:text-base">No items in this category</p>
-                    </div>
-                  )}
+                  ) : null}
                 </div>
               </div>
             ))}
+            {filteredCategories.length === 0 && (
+              <div className="text-center py-8">
+                <p className="text-gray-500">No items found matching your search</p>
+              </div>
+            )}
           </div>
         )}
 
@@ -404,15 +410,31 @@ const PublicMenuPage: React.FC = () => {
                     </div>
                   ))
               ) : (
-                <div className="bg-white rounded-lg shadow-sm p-8 text-center col-span-full">
-                  <p className="text-gray-500 text-xs sm:text-base">No items in this category</p>
+                <div className="col-span-full text-center py-8">
+                  <p className="text-gray-500">No items found matching your search</p>
                 </div>
               )}
             </div>
           </div>
         )}
       </main>
-      {/* Dish Detail Modal (read-only) */}
+
+      {/* Sticky Footer */}
+      <footer className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-sm border-t border-gray-200 py-2 px-4 text-center">
+        <p className="text-xs text-gray-500">
+          Powered by{' '}
+          <a 
+            href="https://camairetech.com" 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="font-medium text-primary hover:text-primary/80 transition-colors"
+          >
+            Camairetech
+          </a>
+        </p>
+      </footer>
+
+      {/* Dish Detail Modal */}
       <DishDetailModal
         isOpen={isModalOpen}
         dish={selectedDish}

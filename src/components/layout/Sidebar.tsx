@@ -97,8 +97,17 @@ const Sidebar: React.FC = () => {
         <div className="p-4 h-full flex flex-col">
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center">
-              <ChefHat size={28} className={`text-accent mr-2 drop-shadow-[0_1px_2px_rgba(0,0,0,0.3)]`} />
-              <h1 className="text-xl font-bold truncate text-accent drop-shadow-[0_1px_2px_rgba(0,0,0,0.3)]">
+              {restaurant?.logo ? (
+                <img
+                  src={restaurant?.logo}
+                  alt="logo"
+                  className="w-16 h-16 sm:w-12 sm:h-12 ml-2 mr-2 rounded-full object-cover border-2 border-primary"
+                />
+              ) : 
+                <ChefHat size={28} className={`text-accent mr-2 drop-shadow-[0_1px_2px_rgba(0,0,0,0.3)]`} />
+              }
+              
+              <h1 className="text-xl font-bold text-primary drop-shadow-[0_1px_2px_rgba(0,0,0,0.3)] break-words line-clamp-2">
                 {restaurant?.name || 'Restaurant'}
               </h1>
             </div>
