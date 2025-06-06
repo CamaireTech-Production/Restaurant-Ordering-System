@@ -1,12 +1,14 @@
 import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
 import { useOfflineDB } from '../hooks/useOfflineDB';
-import { fetchAndCacheAll, replayQueuedActions } from '../services/offlineSync';
+import { fetchAndCacheAll, replayQueuedActions, loadCollectionWithPagination, getCachedData } from '../services/offlineSync';
 
 interface OfflineSyncContextType {
   isOnline: boolean;
   syncing: boolean;
   syncNow: () => Promise<void>;
   lastSync: number | null;
+  loadCollection: (collectionName: string, pageSize?: number) => Promise<any>;
+  getCachedCollection: (collectionKey: string, pageSize?: number, page?: number) => any;
 }
 
 const OfflineSyncContext = createContext<OfflineSyncContextType | undefined>(undefined);
@@ -30,10 +32,11 @@ export const OfflineSyncProvider: React.FC<{ children: React.ReactNode }> = ({ c
     };
   }, []);
 
-  // On startup, fetch and cache all if online
+  // On startup, only load essential data
   useEffect(() => {
     if (isOnline) {
-      fetchAndCacheAll();
+      // Only load categories and tables initially as they're needed for navigation
+      fetchAndCacheAll(undefined, ['offline_menuCategories', 'offline_tables']);
     }
   }, [isOnline]);
 
@@ -42,10 +45,8 @@ export const OfflineSyncProvider: React.FC<{ children: React.ReactNode }> = ({ c
     if (isOnline && !syncingRef.current) {
       syncNow();
     }
-    // eslint-disable-next-line
   }, [isOnline]);
 
-  // TODO: Replace this with the actual way you get the restaurantId in your app
   const restaurantId = localStorage.getItem('restaurantId') || '';
 
   const syncNow = useCallback(async () => {
@@ -61,8 +62,26 @@ export const OfflineSyncProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
   }, [restaurantId]);
 
+  const loadCollection = useCallback(async (collectionName: string, pageSize: number = 20) => {
+    if (!isOnline) {
+      return getCachedData(collectionName, pageSize);
+    }
+    return loadCollectionWithPagination(collectionName, pageSize);
+  }, [isOnline]);
+
+  const getCachedCollection = useCallback((collectionKey: string, pageSize: number = 20, page: number = 1) => {
+    return getCachedData(collectionKey, pageSize, page);
+  }, []);
+
   return (
-    <OfflineSyncContext.Provider value={{ isOnline, syncing, syncNow, lastSync }}>
+    <OfflineSyncContext.Provider value={{ 
+      isOnline, 
+      syncing, 
+      syncNow, 
+      lastSync,
+      loadCollection,
+      getCachedCollection
+    }}>
       {children}
     </OfflineSyncContext.Provider>
   );

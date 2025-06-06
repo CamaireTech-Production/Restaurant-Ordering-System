@@ -378,7 +378,7 @@ const MenuPage: React.FC = () => {
                       <img
                         src={restaurant.logo}
                         alt={restaurant.name}
-                        className="h-10 w-10 rounded-full object-contain drop-shadow-md"
+                        className="h-12 w-12 rounded-full object-contain drop-shadow-md"
                         style={{ background: 'transparent' }}
                       />
                     </div>

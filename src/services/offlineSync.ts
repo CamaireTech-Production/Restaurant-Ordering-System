@@ -1,21 +1,24 @@
-
-import { getFirestore, collection, getDocs, addDoc, updateDoc, doc, serverTimestamp } from 'firebase/firestore';
+import { getFirestore, collection, getDocs, addDoc, updateDoc, doc, serverTimestamp, query, limit, startAfter, DocumentData, QueryDocumentSnapshot } from 'firebase/firestore';
 
 // 1. Fetch and cache all Firestore collections to localStorage (with offline_* keys)
-export async function fetchAndCacheAll(restaurantId?: string) {
+export async function fetchAndCacheAll(restaurantId?: string, collections?: string[]) {
   const db = getFirestore();
-  const collections = [
+  const allCollections = [
     { key: 'offline_menuCategories', ref: collection(db, 'categories') },
-    { key: 'offline_menuItems', ref: collection(db, 'menuItems') }, // Dishes
+    { key: 'offline_menuItems', ref: collection(db, 'menuItems') },
     { key: 'offline_tables', ref: collection(db, 'tables') },
     { key: 'offline_orders', ref: collection(db, 'orders') },
   ];
-  for (const { key, ref } of collections) {
+
+  // Filter collections if specific ones are requested
+  const collectionsToLoad = collections 
+    ? allCollections.filter(c => collections.includes(c.key))
+    : allCollections;
+
+  for (const { key, ref } of collectionsToLoad) {
     let q = ref;
     if (restaurantId) {
-      // Only cache for this restaurant
-      // @ts-ignore
-      q = collection(db, ref.path).withConverter(undefined);
+      q = collection(db, ref.path);
     }
     const snap = await getDocs(q);
     const items = snap.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
@@ -23,6 +26,42 @@ export async function fetchAndCacheAll(restaurantId?: string) {
   }
 }
 
+// New function to load specific collection with pagination
+export async function loadCollectionWithPagination(
+  collectionName: string,
+  pageSize: number = 20,
+  lastDoc?: QueryDocumentSnapshot<DocumentData>
+) {
+  const db = getFirestore();
+  const ref = collection(db, collectionName);
+  let q = query(ref, limit(pageSize));
+  
+  if (lastDoc) {
+    q = query(ref, limit(pageSize), startAfter(lastDoc));
+  }
+
+  const snap = await getDocs(q);
+  const items = snap.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
+  
+  return {
+    items,
+    lastDoc: snap.docs[snap.docs.length - 1],
+    hasMore: snap.docs.length === pageSize
+  };
+}
+
+// New function to get cached data with pagination
+export function getCachedData(collectionKey: string, pageSize: number = 20, page: number = 1) {
+  const cachedData = JSON.parse(localStorage.getItem(collectionKey) || '[]');
+  const start = (page - 1) * pageSize;
+  const end = start + pageSize;
+  
+  return {
+    items: cachedData.slice(start, end),
+    total: cachedData.length,
+    hasMore: end < cachedData.length
+  };
+}
 
 // 2. Replay queued actions from localStorage (merge pendingOrders and pendingActions)
 export async function replayQueuedActions(restaurantId: string) {
