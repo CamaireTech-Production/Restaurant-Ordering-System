@@ -6,12 +6,11 @@ import LoadingSpinner from '../components/ui/LoadingSpinner';
 import { Dish as MenuItem, Category, Restaurant } from '../types';
 import { ChefHat, Search, X } from 'lucide-react';
 import DishDetailModal from './customer/DishDetailModal';
-import designSystem from '../designSystem';
 import { useOfflineSync } from '../contexts/OfflineSyncContext';
 
 const PublicMenuPage: React.FC = () => {
   const { restaurantId } = useParams<{ restaurantId: string }>();
-  const { loadCollection, getCachedCollection } = useOfflineSync();
+  useOfflineSync();
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
@@ -23,8 +22,7 @@ const PublicMenuPage: React.FC = () => {
   const categoryTabsRef = useRef<HTMLDivElement | null>(null);
   const [selectedDish, setSelectedDish] = useState<MenuItem | null>(null);
   const [isModalOpen, setModalOpen] = useState(false);
-  const [page, setPage] = useState(1);
-  const pageSize = 20;
+  const [page] = useState(1);
 
   useEffect(() => {
     const fetchRestaurantData = async () => {
@@ -36,21 +34,36 @@ const PublicMenuPage: React.FC = () => {
           setRestaurant({ id: restaurantDoc.id, ...restaurantDoc.data() } as Restaurant);
         }
 
-        // Load categories and menu items with pagination
-        const categoriesResult = await loadCollection('categories');
-        const menuItemsResult = await loadCollection('menuItems');
-
-        // Filter for this restaurant and active items
-        const filteredCategories = categoriesResult.items.filter(
-          (c: any) => c.restaurantId === restaurantId && c.status === 'active'
+        // Fetch categories
+        const categoriesQuery = query(
+          collection(db, 'categories'),
+          where('restaurantId', '==', restaurantId),
+          where('status', '==', 'active'),
+          orderBy('title')
         );
-        const filteredMenuItems = menuItemsResult.items.filter(
-          (m: any) => m.restaurantId === restaurantId && m.status === 'active'
-        );
+        const categoriesSnapshot = await getDocs(categoriesQuery);
+        const categoriesData = categoriesSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as Category[];
+        setCategories(categoriesData);
 
-        setCategories(filteredCategories);
-        setMenuItems(filteredMenuItems);
+        // Fetch menu items
+        const menuItemsQuery = query(
+          collection(db, 'menuItems'),
+          where('restaurantId', '==', restaurantId),
+          where('status', '==', 'active'),
+          orderBy('title')
+        );
+        const menuItemsSnapshot = await getDocs(menuItemsQuery);
+        const menuItemsData = menuItemsSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as MenuItem[];
+        setMenuItems(menuItemsData);
+
       } catch (error) {
+        console.error('Error fetching data:', error);
         setCategories([]);
         setMenuItems([]);
       } finally {
@@ -58,7 +71,7 @@ const PublicMenuPage: React.FC = () => {
       }
     };
     fetchRestaurantData();
-  }, [restaurantId, loadCollection]);
+  }, [restaurantId]);
 
   // --- Scroll Spy Effect ---
   useEffect(() => {
