@@ -30,7 +30,12 @@ import {
   EyeOff, 
   Search, 
   X,
-  Layers
+  Layers,
+  ArrowUp,
+  ArrowDown,
+  ArrowUpDown,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import { Category } from '../../types';
@@ -43,11 +48,16 @@ const CategoryManagement: React.FC = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [sortField, setSortField] = useState<'title' | 'order'>('order');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   
   // Form state
   const [formData, setFormData] = useState({
     title: '',
-    status: 'active' as 'active' | 'inactive'
+    status: 'active' as 'active' | 'inactive',
+    order: 0
   });
 
   useEffect(() => {
@@ -85,7 +95,8 @@ const CategoryManagement: React.FC = () => {
   const resetForm = () => {
     setFormData({
       title: '',
-      status: 'active'
+      status: 'active',
+      order: 0
     });
     setEditingCategory(null);
   };
@@ -99,7 +110,8 @@ const CategoryManagement: React.FC = () => {
     setEditingCategory(category);
     setFormData({
       title: category.title,
-      status: category.status
+      status: category.status,
+      order: category.order || 0
     });
     setIsModalOpen(true);
   };
@@ -137,6 +149,7 @@ const CategoryManagement: React.FC = () => {
         title: formData.title.trim(),
         status: formData.status,
         restaurantId: restaurant.id,
+        order: formData.order
       };
       if (!navigator.onLine) {
         if (editingCategory) {
@@ -247,6 +260,151 @@ const CategoryManagement: React.FC = () => {
     category.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  // Add sorting function
+  const handleSort = (field: 'title' | 'order') => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  // Sort categories
+  const sortedCategories = React.useMemo(() => {
+    return [...categories].sort((a, b) => {
+      if (sortField === 'title') {
+        return sortDirection === 'asc' 
+          ? a.title.localeCompare(b.title)
+          : b.title.localeCompare(a.title);
+      } else {
+        // For order sorting, first compare by order, then by title if orders are equal
+        const orderA = a.order || 0;
+        const orderB = b.order || 0;
+        if (orderA === orderB) {
+          return sortDirection === 'asc'
+            ? a.title.localeCompare(b.title)
+            : b.title.localeCompare(a.title);
+        }
+        return sortDirection === 'asc' 
+          ? orderA - orderB
+          : orderB - orderA;
+      }
+    });
+  }, [categories, sortField, sortDirection]);
+
+  // Calculate pagination
+  const totalPages = Math.ceil(sortedCategories.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentItems = sortedCategories.slice(startIndex, endIndex);
+
+  // Pagination controls
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  // Reset to first page when changing items per page
+  const handleItemsPerPageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setItemsPerPage(Number(e.target.value));
+    setCurrentPage(1);
+  };
+
+  const renderPagination = () => {
+    const pages = [];
+    const maxVisiblePages = 5;
+    
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+    
+    if (endPage - startPage + 1 < maxVisiblePages) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+
+    // Previous button
+    pages.push(
+      <button
+        key="prev"
+        onClick={() => handlePageChange(currentPage - 1)}
+        disabled={currentPage === 1}
+        className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        <ChevronLeft size={20} />
+      </button>
+    );
+
+    // First page
+    if (startPage > 1) {
+      pages.push(
+        <button
+          key={1}
+          onClick={() => handlePageChange(1)}
+          className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
+        >
+          1
+        </button>
+      );
+      if (startPage > 2) {
+        pages.push(
+          <span key="start-ellipsis" className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+            ...
+          </span>
+        );
+      }
+    }
+
+    // Page numbers
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(
+        <button
+          key={i}
+          onClick={() => handlePageChange(i)}
+          className={`relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium ${
+            currentPage === i
+              ? 'bg-primary text-white'
+              : 'bg-white text-gray-700 hover:bg-gray-50'
+          }`}
+        >
+          {i}
+        </button>
+      );
+    }
+
+    // Last page
+    if (endPage < totalPages) {
+      if (endPage < totalPages - 1) {
+        pages.push(
+          <span key="end-ellipsis" className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+            ...
+          </span>
+        );
+      }
+      pages.push(
+        <button
+          key={totalPages}
+          onClick={() => handlePageChange(totalPages)}
+          className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
+        >
+          {totalPages}
+        </button>
+      );
+    }
+
+    // Next button
+    pages.push(
+      <button
+        key="next"
+        onClick={() => handlePageChange(currentPage + 1)}
+        disabled={currentPage === totalPages}
+        className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        <ChevronRight size={20} />
+      </button>
+    );
+
+    return pages;
+  };
+
   if (loading && categories.length === 0) {
     return (
       <DashboardLayout title="Category Management">
@@ -300,13 +458,73 @@ const CategoryManagement: React.FC = () => {
           </div>
         </div>
 
+        {/* Top Pagination */}
+        <div className="bg-white px-4 py-3 flex items-center justify-between border-b border-gray-200">
+          <div className="flex-1 flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <p className="text-sm text-gray-700">
+                Showing <span className="font-medium">{startIndex + 1}</span> to{' '}
+                <span className="font-medium">
+                  {Math.min(endIndex, sortedCategories.length)}
+                </span>{' '}
+                of <span className="font-medium">{sortedCategories.length}</span> results
+              </p>
+              <div className="flex items-center space-x-2">
+                <label htmlFor="itemsPerPage" className="text-sm text-gray-700">
+                  Items per page:
+                </label>
+                <select
+                  id="itemsPerPage"
+                  value={itemsPerPage}
+                  onChange={handleItemsPerPageChange}
+                  className="block w-20 py-1 px-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
+                >
+                  <option value="5">5</option>
+                  <option value="10">10</option>
+                  <option value="20">20</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                {renderPagination()}
+              </nav>
+            </div>
+          </div>
+        </div>
+
         {/* Categories Table */}
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Title
+                  <button
+                    onClick={() => handleSort('title')}
+                    className="flex items-center space-x-1 hover:text-gray-700"
+                  >
+                    <span>Title</span>
+                    {sortField === 'title' ? (
+                      sortDirection === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />
+                    ) : (
+                      <ArrowUpDown size={14} className="text-gray-400" />
+                    )}
+                  </button>
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <button
+                    onClick={() => handleSort('order')}
+                    className="flex items-center space-x-1 hover:text-gray-700"
+                  >
+                    <span>Order</span>
+                    {sortField === 'order' ? (
+                      sortDirection === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />
+                    ) : (
+                      <ArrowUpDown size={14} className="text-gray-400" />
+                    )}
+                  </button>
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Status
@@ -317,16 +535,16 @@ const CategoryManagement: React.FC = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredCategories.length === 0 ? (
+              {currentItems.length === 0 ? (
                 <tr>
-                  <td colSpan={3} className="px-6 py-10 text-center text-gray-500">
+                  <td colSpan={4} className="px-6 py-10 text-center text-gray-500">
                     {categories.length === 0 ? 
                       "No categories found. Add your first category!" : 
                       "No categories match your search criteria."}
                   </td>
                 </tr>
               ) : (
-                filteredCategories.map((category) => (
+                currentItems.map((category) => (
                   <tr key={category.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
@@ -337,6 +555,9 @@ const CategoryManagement: React.FC = () => {
                           <div className="text-sm font-medium text-gray-900">{category.title}</div>
                         </div>
                       </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{category.order || 0}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
@@ -379,6 +600,43 @@ const CategoryManagement: React.FC = () => {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Bottom Pagination */}
+        <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200">
+          <div className="flex-1 flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <p className="text-sm text-gray-700">
+                Showing <span className="font-medium">{startIndex + 1}</span> to{' '}
+                <span className="font-medium">
+                  {Math.min(endIndex, sortedCategories.length)}
+                </span>{' '}
+                of <span className="font-medium">{sortedCategories.length}</span> results
+              </p>
+              <div className="flex items-center space-x-2">
+                <label htmlFor="itemsPerPageBottom" className="text-sm text-gray-700">
+                  Items per page:
+                </label>
+                <select
+                  id="itemsPerPageBottom"
+                  value={itemsPerPage}
+                  onChange={handleItemsPerPageChange}
+                  className="block w-20 py-1 px-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
+                >
+                  <option value="5">5</option>
+                  <option value="10">10</option>
+                  <option value="20">20</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                {renderPagination()}
+              </nav>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -430,6 +688,22 @@ const CategoryManagement: React.FC = () => {
                             <option value="active">Active</option>
                             <option value="inactive">Inactive</option>
                           </select>
+                        </div>
+
+                        <div className="mb-4">
+                          <label htmlFor="order" className="block text-sm font-medium text-gray-700">
+                            Display Order
+                          </label>
+                          <input
+                            type="number"
+                            id="order"
+                            name="order"
+                            min="0"
+                            value={formData.order}
+                            onChange={handleInputChange}
+                            className="mt-1 block w-full py-3 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
+                          />
+                          <p className="mt-1 text-xs text-gray-500">Lower numbers will appear first in the menu</p>
                         </div>
                       </form>
                     </div>

@@ -31,7 +31,9 @@ import {
   X,
   Upload,
   Image,
-  Filter
+  Filter,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import { Dish as MenuItem, Category } from '../../types';
@@ -47,6 +49,8 @@ const MenuManagement: React.FC = () => {
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [filterCategory, setFilterCategory] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -402,6 +406,118 @@ const MenuManagement: React.FC = () => {
     return matchesCategory && matchesSearch;
   });
 
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentItems = filteredItems.slice(startIndex, endIndex);
+
+  // Pagination controls
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  // Reset to first page when changing items per page
+  const handleItemsPerPageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setItemsPerPage(Number(e.target.value));
+    setCurrentPage(1);
+  };
+
+  const renderPagination = () => {
+    const pages = [];
+    const maxVisiblePages = 5;
+    
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+    
+    if (endPage - startPage + 1 < maxVisiblePages) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+
+    // Previous button
+    pages.push(
+      <button
+        key="prev"
+        onClick={() => handlePageChange(currentPage - 1)}
+        disabled={currentPage === 1}
+        className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        <ChevronLeft size={20} />
+      </button>
+    );
+
+    // First page
+    if (startPage > 1) {
+      pages.push(
+        <button
+          key={1}
+          onClick={() => handlePageChange(1)}
+          className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
+        >
+          1
+        </button>
+      );
+      if (startPage > 2) {
+        pages.push(
+          <span key="start-ellipsis" className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+            ...
+          </span>
+        );
+      }
+    }
+
+    // Page numbers
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(
+        <button
+          key={i}
+          onClick={() => handlePageChange(i)}
+          className={`relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium ${
+            currentPage === i
+              ? 'bg-primary text-white'
+              : 'bg-white text-gray-700 hover:bg-gray-50'
+          }`}
+        >
+          {i}
+        </button>
+      );
+    }
+
+    // Last page
+    if (endPage < totalPages) {
+      if (endPage < totalPages - 1) {
+        pages.push(
+          <span key="end-ellipsis" className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+            ...
+          </span>
+        );
+      }
+      pages.push(
+        <button
+          key={totalPages}
+          onClick={() => handlePageChange(totalPages)}
+          className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
+        >
+          {totalPages}
+        </button>
+      );
+    }
+
+    // Next button
+    pages.push(
+      <button
+        key="next"
+        onClick={() => handlePageChange(currentPage + 1)}
+        disabled={currentPage === totalPages}
+        className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        <ChevronRight size={20} />
+      </button>
+    );
+
+    return pages;
+  };
+
   const getCategoryName = (categoryId: string) => {
     const category = categories.find(c => c.id === categoryId);
     return category ? category.title : 'Uncategorized';
@@ -512,6 +628,43 @@ const MenuManagement: React.FC = () => {
           )}
         </div>
 
+        {/* Top Pagination */}
+        <div className="bg-white px-4 py-3 flex items-center justify-between border-b border-gray-200">
+          <div className="flex-1 flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <p className="text-sm text-gray-700">
+                Showing <span className="font-medium">{startIndex + 1}</span> to{' '}
+                <span className="font-medium">
+                  {Math.min(endIndex, filteredItems.length)}
+                </span>{' '}
+                of <span className="font-medium">{filteredItems.length}</span> results
+              </p>
+              <div className="flex items-center space-x-2">
+                <label htmlFor="itemsPerPage" className="text-sm text-gray-700">
+                  Items per page:
+                </label>
+                <select
+                  id="itemsPerPage"
+                  value={itemsPerPage}
+                  onChange={handleItemsPerPageChange}
+                  className="block w-20 py-1 px-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
+                >
+                  <option value="5">5</option>
+                  <option value="10">10</option>
+                  <option value="20">20</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                {renderPagination()}
+              </nav>
+            </div>
+          </div>
+        </div>
+
         {/* Dishes Table */}
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
@@ -545,16 +698,16 @@ const MenuManagement: React.FC = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredItems.length === 0 ? (
+              {currentItems.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-10 text-center text-gray-500">
                     {menuItems.length === 0 ? 
-                    "No dishes found. Add your first dish!" : 
-                    "No dishes match your search criteria."}
+                      "No dishes found. Add your first dish!" : 
+                      "No dishes match your search criteria."}
                   </td>
                 </tr>
               ) : (
-                filteredItems.map((item) => (
+                currentItems.map((item) => (
                   <tr key={item.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <input
@@ -630,6 +783,43 @@ const MenuManagement: React.FC = () => {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Bottom Pagination */}
+        <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200">
+          <div className="flex-1 flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <p className="text-sm text-gray-700">
+                Showing <span className="font-medium">{startIndex + 1}</span> to{' '}
+                <span className="font-medium">
+                  {Math.min(endIndex, filteredItems.length)}
+                </span>{' '}
+                of <span className="font-medium">{filteredItems.length}</span> results
+              </p>
+              <div className="flex items-center space-x-2">
+                <label htmlFor="itemsPerPageBottom" className="text-sm text-gray-700">
+                  Items per page:
+                </label>
+                <select
+                  id="itemsPerPageBottom"
+                  value={itemsPerPage}
+                  onChange={handleItemsPerPageChange}
+                  className="block w-20 py-1 px-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
+                >
+                  <option value="5">5</option>
+                  <option value="10">10</option>
+                  <option value="20">20</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                {renderPagination()}
+              </nav>
+            </div>
+          </div>
         </div>
       </div>
 

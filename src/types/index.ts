@@ -1,4 +1,3 @@
-
 // PendingAction type for offline admin actions
 export type PendingAction =
   | { type: 'createMenuItem'; payload: any; timestamp?: number }
@@ -44,6 +43,7 @@ export interface Category {
   title: string;
   status: 'active' | 'inactive';
   restaurantId: string;
+  order: number;
   createdAt: any;
   updatedAt?: any;
 }

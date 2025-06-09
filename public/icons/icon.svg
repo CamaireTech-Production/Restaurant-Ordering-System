@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background Circle -->
+  <circle cx="256" cy="256" r="256" fill="#FF6B6B"/>
+  
+  <!-- Chef Hat -->
+  <path d="M256 120C256 120 200 160 200 200C200 240 256 280 256 280C256 280 312 240 312 200C312 160 256 120 256 120Z" fill="white" stroke="black" stroke-width="8"/>
+  <path d="M200 200C200 200 180 240 180 280C180 320 200 360 200 360H312C312 360 332 320 332 280C332 240 312 200 312 200" fill="white" stroke="black" stroke-width="8"/>
+  
+  <!-- Brand Name -->
+  <text x="256" y="420" font-family="Arial" font-size="48" font-weight="bold" fill="white" text-anchor="middle">Camaire</text>
+</svg> 

@@ -80,7 +80,7 @@ export async function replayQueuedActions(restaurantId: string) {
       if (entry._queue === 'pendingOrders') {
         // Always create order
         await addDoc(collection(db, 'orders'), { ...entry.payload, createdAt: entry.timestamp });
-      } else if (entry._queue === 'pendingActions') {
+      } else {
         // Admin actions: type can be create/update/delete for menu/category/table/order
         switch (entry.type) {
           case 'createMenuItem': // Dish
@@ -121,13 +121,20 @@ export async function replayQueuedActions(restaurantId: string) {
       status = 'error';
       error = err?.message || String(err);
     }
-    syncLogs.push({ entry, status, timestamp: Date.now(), error });
+    syncLogs.push({ 
+      entry, 
+      status, 
+      timestamp: Date.now(), 
+      error: error || null,  // Ensure error is never undefined
+      syncedAt: serverTimestamp()
+    });
   }
   // Write sync logs to Firestore
   if (syncLogs.length) {
-    const logsRef = collection(db, `syncLogs/${restaurantId}/batches`);
+    const batchId = `batch_${Date.now()}`;
+    const logsRef = collection(db, 'syncLogs', batchId, 'logs');
     for (const log of syncLogs) {
-      await addDoc(logsRef, { ...log, syncedAt: serverTimestamp() });
+      await addDoc(logsRef, log);  // Remove the spread operator since we already included syncedAt
     }
   }
   // Clear queues on success

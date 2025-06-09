@@ -39,21 +39,33 @@ const PublicMenuPage: React.FC = () => {
           collection(db, 'categories'),
           where('restaurantId', '==', restaurantId),
           where('status', '==', 'active'),
-          orderBy('title')
+          orderBy('order')
         );
         const categoriesSnapshot = await getDocs(categoriesQuery);
         const categoriesData = categoriesSnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
         })) as Category[];
-        setCategories(categoriesData);
+        
+        // Sort categories by order numerically
+        const sortedCategories = categoriesData.sort((a, b) => {
+          const orderA = Number(a.order) || 0;
+          const orderB = Number(b.order) || 0;
+          return orderA - orderB;
+        });
+        
+        // console.log('Categories with order:', sortedCategories.map(cat => ({
+        //   title: cat.title,
+        //   order: cat.order
+        // })));
+        
+        setCategories(sortedCategories);
 
         // Fetch menu items
         const menuItemsQuery = query(
           collection(db, 'menuItems'),
           where('restaurantId', '==', restaurantId),
-          where('status', '==', 'active'),
-          orderBy('title')
+          where('status', '==', 'active')
         );
         const menuItemsSnapshot = await getDocs(menuItemsQuery);
         const menuItemsData = menuItemsSnapshot.docs.map(doc => ({
