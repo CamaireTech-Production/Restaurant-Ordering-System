@@ -4,6 +4,7 @@ import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './contexts/AuthContext';
 import { OfflineSyncProvider } from './contexts/OfflineSyncContext';
 import designSystem from './designSystem';
+import { AdminAuthProvider } from './contexts/AdminAuthContext';
 
 // Pages
 import Login from './pages/auth/Login';
@@ -16,6 +17,9 @@ import TableManagement from './pages/tables/TableManagement';
 import OrdersPage from './pages/orders/OrdersPage';
 import MenuPage from './pages/customer/MenuPage';
 import { Suspense } from 'react';
+import AdminLogin from './pages/admin/AdminLogin';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import CreateInitialAdmin from './pages/admin/CreateInitialAdmin';
 
 const CustomerOrdersPage = React.lazy(() => import('./pages/customer/OrdersPage'));
 
@@ -23,88 +27,101 @@ const CustomerOrdersPage = React.lazy(() => import('./pages/customer/OrdersPage'
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import TableSelection from './components/tables/TableSelection';
 import PublicMenuPage from './pages/PublicMenuPage';
+import AdminProtectedRoute from './components/auth/AdminProtectedRoute';
 
 function App() {
   return (
     <Router>
       <AuthProvider>
         <OfflineSyncProvider>
-          <Routes>
-            <Route path="/public-menu/:restaurantId" element={<PublicMenuPage />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/newResturant" element={<Register />} />
-            <Route 
-              path="/profile-setup" 
-              element={
-                <ProtectedRoute>
-                  <ProfileSetup />
-                </ProtectedRoute>
-              } 
+          <AdminAuthProvider>
+            <Routes>
+              <Route path="/public-menu/:restaurantId" element={<PublicMenuPage />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/newResturant" element={<Register />} />
+              <Route 
+                path="/profile-setup" 
+                element={
+                  <ProtectedRoute>
+                    <ProfileSetup />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/dashboard" 
+                element={
+                  <ProtectedRoute>
+                    <Dashboard />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/menu-management" 
+                element={
+                  <ProtectedRoute>
+                    <MenuManagement />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/category-management" 
+                element={
+                  <ProtectedRoute>
+                    <CategoryManagement />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/table-management" 
+                element={
+                  <ProtectedRoute>
+                    <TableManagement />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/orders" 
+                element={
+                  <ProtectedRoute>
+                    <OrdersPage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route
+                path="/customer/orders/:tableNumber"
+                element={
+                  <Suspense fallback={<div>Loading...</div>}>
+                    <CustomerOrdersPage />
+                  </Suspense>
+                }
+              />
+              <Route path="/table-selection" element={<TableSelection />} />
+              <Route path="/menu/:restaurantId" element={<MenuPage />} />
+              <Route path="/admin/create-initial" element={<CreateInitialAdmin />} />
+              <Route path="/admin/login" element={<AdminLogin />} />
+              <Route
+                path="/admin/dashboard"
+                element={
+                  <AdminProtectedRoute>
+                    <AdminDashboard />
+                  </AdminProtectedRoute>
+                }
+              />
+              {/* Default routes */}
+              <Route path="/" element={<Navigate to="/login" replace />} />
+              <Route path="*" element={<Navigate to="/login" replace />} />
+            </Routes>
+            <Toaster
+              position="top-right"
+              toastOptions={{
+                duration: 3000,
+                style: {
+                  background: designSystem.colors.background,
+                  color: designSystem.colors.text,
+                },
+              }}
             />
-            <Route 
-              path="/dashboard" 
-              element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/menu-management" 
-              element={
-                <ProtectedRoute>
-                  <MenuManagement />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/category-management" 
-              element={
-                <ProtectedRoute>
-                  <CategoryManagement />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/table-management" 
-              element={
-                <ProtectedRoute>
-                  <TableManagement />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/orders" 
-              element={
-                <ProtectedRoute>
-                  <OrdersPage />
-                </ProtectedRoute>
-              } 
-            />
-            <Route
-              path="/customer/orders/:tableNumber"
-              element={
-                <Suspense fallback={<div>Loading...</div>}>
-                  <CustomerOrdersPage />
-                </Suspense>
-              }
-            />
-            <Route path="/table-selection" element={<TableSelection />} />
-            <Route path="/menu/:restaurantId" element={<MenuPage />} />
-            {/* Default routes */}
-            <Route path="/" element={<Navigate to="/login" replace />} />
-            <Route path="*" element={<Navigate to="/login" replace />} />
-          </Routes>
-          <Toaster
-            position="top-right"
-            toastOptions={{
-              duration: 3000,
-              style: {
-                background: designSystem.colors.background,
-                color: designSystem.colors.text,
-              },
-            }}
-          />
+          </AdminAuthProvider>
         </OfflineSyncProvider>
       </AuthProvider>
     </Router>
