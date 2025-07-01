@@ -20,6 +20,7 @@ import { Suspense } from 'react';
 import AdminLogin from './pages/admin/AdminLogin';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import CreateInitialAdmin from './pages/admin/CreateInitialAdmin';
+import PublicOrderPage from './pages/PublicOrderPage';
 
 const CustomerOrdersPage = React.lazy(() => import('./pages/customer/OrdersPage'));
 
@@ -37,6 +38,7 @@ function App() {
           <AdminAuthProvider>
             <Routes>
               <Route path="/public-menu/:restaurantId" element={<PublicMenuPage />} />
+              <Route path="/public-order/:restaurantId" element={<PublicOrderPage />} />
               <Route path="/login" element={<Login />} />
               <Route path="/newResturant" element={<Register />} />
               <Route 

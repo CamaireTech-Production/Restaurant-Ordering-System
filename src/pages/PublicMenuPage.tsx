@@ -22,7 +22,7 @@ const PublicMenuPage: React.FC = () => {
   const categoryTabsRef = useRef<HTMLDivElement | null>(null);
   const [selectedDish, setSelectedDish] = useState<MenuItem | null>(null);
   const [isModalOpen, setModalOpen] = useState(false);
-  const [page] = useState(1);
+  const [] = useState(1);
 
   useEffect(() => {
     const fetchRestaurantData = async () => {
