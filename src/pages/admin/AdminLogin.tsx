@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAdminAuth } from '../../contexts/AdminAuthContext';
+import LoadingSpinner from '../../components/ui/LoadingSpinner';
 
 const AdminLogin: React.FC = () => {
   const { login, loading, currentAdmin } = useAdminAuth();
@@ -39,7 +40,8 @@ const AdminLogin: React.FC = () => {
           <label className="block mb-1">Password</label>
           <input type="password" value={password} onChange={e => setPassword(e.target.value)} required className="w-full border px-3 py-2 rounded" />
         </div>
-        <button type="submit" disabled={loading} className="w-full bg-primary text-white py-2 rounded font-semibold hover:bg-primary-dark transition">
+        <button type="submit" disabled={loading} className="w-full bg-primary text-white py-2 rounded font-semibold hover:bg-primary-dark transition flex items-center justify-center gap-2">
+          {loading && <LoadingSpinner size={18} color="#ffffff" />}
           {loading ? 'Logging in...' : 'Login'}
         </button>
       </form>
