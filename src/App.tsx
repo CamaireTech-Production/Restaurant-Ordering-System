@@ -11,24 +11,24 @@ import { AdminAuthProvider } from './contexts/AdminAuthContext';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import ProfileSetup from './pages/auth/ProfileSetup';
-import Dashboard from './pages/dashboard/Dashboard';
-import MenuManagement from './pages/menu/MenuManagement';
-import CategoryManagement from './pages/menu/CategoryManagement';
-import TableManagement from './pages/tables/TableManagement';
-import OrdersPage from './pages/orders/OrdersPage';
-import MenuPage from './pages/customer/MenuPage';
+import Dashboard from './pages/restaurant/dashboard/Dashboard';
+import MenuManagement from './pages/restaurant/menu/MenuManagement';
+import CategoryManagement from './pages/restaurant/menu/CategoryManagement';
+import TableManagement from './pages/restaurant/tables/TableManagement';
+import OrdersPage from './pages/restaurant/orders/OrdersPage';
+import MenuPage from './pages/client/customer/MenuPage';
 import { Suspense } from 'react';
 import AdminLogin from './pages/admin/AdminLogin';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import CreateInitialAdmin from './pages/admin/CreateInitialAdmin';
-import PublicOrderPage from './pages/PublicOrderPage';
+import PublicOrderPage from './pages/client/public/PublicOrderPage';
 
-const CustomerOrdersPage = React.lazy(() => import('./pages/customer/OrdersPage'));
+const CustomerOrdersPage = React.lazy(() => import('./pages/client/customer/OrdersPage'));
 
 // Components
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import TableSelection from './components/tables/TableSelection';
-import PublicMenuPage from './pages/PublicMenuPage';
+import PublicMenuPage from './pages/client/public/PublicMenuPage';
 import AdminProtectedRoute from './components/auth/AdminProtectedRoute';
 
 function App() {

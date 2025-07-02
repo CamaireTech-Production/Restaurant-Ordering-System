@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { db } from '../../firebase/config';
+import { db } from '../../../firebase/config';
 import { 
   collection, 
   query, 
@@ -26,11 +26,11 @@ import {
   X,
   Menu as MenuIcon
 } from 'lucide-react';
-import LoadingSpinner from '../../components/ui/LoadingSpinner';
-import { Restaurant, Dish as MenuItem, Category, OrderItem } from '../../types';
+import LoadingSpinner from '../../../components/ui/LoadingSpinner';
+import { Restaurant, Dish as MenuItem, Category, OrderItem } from '../../../types';
 import DishDetailModal from './DishDetailModal';
 import { Eye } from 'lucide-react';
-import designSystem from '../../designSystem';
+import designSystem from '../../../designSystem';
 
 const MenuPage: React.FC = () => {
   const { restaurantId } = useParams<{ restaurantId: string }>();

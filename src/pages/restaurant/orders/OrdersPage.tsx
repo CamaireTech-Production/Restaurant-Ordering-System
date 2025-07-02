@@ -5,9 +5,9 @@ function queuePendingAction(action: { type: string; payload: any }) {
   localStorage.setItem('pendingActions', JSON.stringify(arr));
 }
 import React, { useState, useEffect, useRef } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
-import DashboardLayout from '../../components/layout/DashboardLayout';
-import { db } from '../../firebase/config';
+import { useAuth } from '../../../contexts/AuthContext';
+import DashboardLayout from '../../../components/layout/DashboardLayout';
+import { db } from '../../../firebase/config';
 import { 
   collection, 
   query, 
@@ -28,9 +28,9 @@ import {
   Filter,
   Table
 } from 'lucide-react';
-import LoadingSpinner from '../../components/ui/LoadingSpinner';
-import { Order } from '../../types';
-import designSystem from '../../designSystem';
+import LoadingSpinner from '../../../components/ui/LoadingSpinner';
+import { Order } from '../../../types';
+import designSystem from '../../../designSystem';
 
 const OrdersPage: React.FC = () => {
   const { restaurant } = useAuth();

@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import { Copy } from 'lucide-react';
 // import QRCode from 'qrcode.react'; // Uncomment if you add qrcode.react to dependencies
-import { useAuth } from '../../contexts/AuthContext';
-import DashboardLayout from '../../components/layout/DashboardLayout';
-import { db } from '../../firebase/config';
+import { useAuth } from '../../../contexts/AuthContext';
+import DashboardLayout from '../../../components/layout/DashboardLayout';
+import { db } from '../../../firebase/config';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { TrendingUp, UtensilsCrossed, Layers, Table, ClipboardList } from 'lucide-react';
-import LoadingSpinner from '../../components/ui/LoadingSpinner';
+import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 
 
 const Dashboard: React.FC = () => {

@@ -1,14 +1,14 @@
 // Helper to queue admin actions offline
-import type { PendingAction } from '../../types';
+import type { PendingAction } from '../../../types';
 function queuePendingAction(action: PendingAction) {
   const arr = JSON.parse(localStorage.getItem('pendingActions') || '[]');
   arr.push({ ...action, timestamp: Date.now() });
   localStorage.setItem('pendingActions', JSON.stringify(arr));
 }
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
-import DashboardLayout from '../../components/layout/DashboardLayout';
-import { db } from '../../firebase/config';
+import { useAuth } from '../../../contexts/AuthContext';
+import DashboardLayout from '../../../components/layout/DashboardLayout';
+import { db } from '../../../firebase/config';
 import { 
   collection, 
   query, 
@@ -37,8 +37,8 @@ import {
   ChevronLeft,
   ChevronRight
 } from 'lucide-react';
-import LoadingSpinner from '../../components/ui/LoadingSpinner';
-import { Category } from '../../types';
+import LoadingSpinner from '../../../components/ui/LoadingSpinner';
+import { Category } from '../../../types';
 
 const CategoryManagement: React.FC = () => {
   const { restaurant } = useAuth();

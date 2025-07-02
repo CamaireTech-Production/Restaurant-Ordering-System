@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { subscribeToTableOrders, updateOrderCustomerStatus } from '../../services/orderService';
-import { Order } from '../../types';
+import { subscribeToTableOrders, updateOrderCustomerStatus } from '../../../services/orderService';
+import { Order } from '../../../types';
 import { ChefHat, Clock, CheckCircle2, XCircle } from 'lucide-react';
 
 const statusMap: Record<string, { label: string; icon: React.ReactNode; color: string }> = {

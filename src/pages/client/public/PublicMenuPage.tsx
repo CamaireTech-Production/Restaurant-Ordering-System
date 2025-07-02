@@ -1,12 +1,12 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { db } from '../firebase/config';
+import { db } from '../../../firebase/config';
 import { collection, query, where, getDocs, doc, getDoc, orderBy } from 'firebase/firestore';
-import LoadingSpinner from '../components/ui/LoadingSpinner';
-import { Dish as MenuItem, Category, Restaurant } from '../types';
+import LoadingSpinner from '../../../components/ui/LoadingSpinner';
+import { Dish as MenuItem, Category, Restaurant } from '../../../types';
 import { ChefHat, Search, X } from 'lucide-react';
-import DishDetailModal from './customer/DishDetailModal';
-import { useOfflineSync } from '../contexts/OfflineSyncContext';
+import DishDetailModal from '../customer/DishDetailModal';
+import { useOfflineSync } from '../../../contexts/OfflineSyncContext';
 
 const PublicMenuPage: React.FC = () => {
   const { restaurantId } = useParams<{ restaurantId: string }>();

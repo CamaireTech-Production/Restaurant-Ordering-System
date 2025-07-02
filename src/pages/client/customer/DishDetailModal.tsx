@@ -1,5 +1,5 @@
-import Modal from '../../components/ui/Modal';
-import { Dish as MenuItem } from '../../types/index';
+import Modal from '../../../components/ui/Modal';
+import { Dish as MenuItem } from '../../../types/index';
 
 interface DishDetailModalProps {
   isOpen: boolean;
