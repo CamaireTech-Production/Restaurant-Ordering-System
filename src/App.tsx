@@ -27,6 +27,8 @@ import AdminUsers from './pages/admin/AdminUsers';
 import AdminMenus from './pages/admin/AdminMenus';
 import AdminOrders from './pages/admin/AdminOrders';
 import AdminActivityLog from './pages/admin/AdminActivityLog';
+import DemoLogin from './pages/demo/DemoLogin';
+import DemoSignup from './pages/demo/DemoSignup';
 
 const CustomerOrdersPage = React.lazy(() => import('./pages/client/customer/OrdersPage'));
 
@@ -157,6 +159,8 @@ function App() {
                   </AdminProtectedRoute>
                 }
               />
+              <Route path="/demo-login" element={<DemoLogin />} />
+              <Route path="/demo-signup" element={<DemoSignup />} />
               {/* Default routes */}
               <Route path="/" element={<Navigate to="/login" replace />} />
               <Route path="*" element={<Navigate to="/login" replace />} />
