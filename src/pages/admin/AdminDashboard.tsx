@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import AdminDashboardLayout from '../../components/layout/AdminDashboardLayout';
-import { getFirestore, collection, query, where, getDocs, orderBy, limit, collectionGroup } from 'firebase/firestore';
+import { getFirestore, collection, query, where, getDocs, orderBy, limit, collectionGroup, query as firestoreQuery } from 'firebase/firestore';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 
@@ -47,7 +47,8 @@ const AdminDashboard: React.FC = () => {
     deletedItems: 0,
   });
   const [chartData, setChartData] = useState<any[]>([]);
-  const [activities, setActivities] = useState<any[]>([]);
+  const [syncLogs, setSyncLogs] = useState<any[]>([]);
+  const [activityLogs, setActivityLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   const periodStart = useMemo(() => getPeriodStart(period), [period]);
@@ -133,9 +134,13 @@ const AdminDashboard: React.FC = () => {
           .map(key => ({ date: key, count: map[key] }));
         setChartData(chartArr);
 
-        // Fetch last 5 logs from syncLogs/*/logs subcollections via collectionGroup
-        const actSnap = await getDocs(query(collectionGroup(db, 'logs'), orderBy('timestamp', 'desc'), limit(5)));
-        setActivities(actSnap.docs.map(d => d.data()));
+        // Fetch last 5 sync logs from syncLogs/*/logs subcollections
+        const syncSnap = await getDocs(firestoreQuery(collectionGroup(db, 'logs'), orderBy('timestamp', 'desc'), limit(5)));
+        setSyncLogs(syncSnap.docs.map(d => d.data()));
+
+        // Fetch last 5 activity logs from activityLogs collection (scaffolded, may be empty)
+        const activitySnap = await getDocs(firestoreQuery(collection(db, 'activityLogs'), orderBy('timestamp', 'desc'), limit(5)));
+        setActivityLogs(activitySnap.docs.map(d => d.data()));
       } catch (err) {
         console.error(err);
       } finally {
@@ -198,11 +203,42 @@ const AdminDashboard: React.FC = () => {
               )}
             </div>
 
-            {/* Recent Activities */}
+            {/* Sync Logs Table */}
             <div className="bg-white shadow rounded p-6 mt-6">
-              <h2 className="text-xl font-semibold mb-4">Recent Activities</h2>
-              {activities.length === 0 ? (
-                <p className="text-gray-500">No activities recorded.</p>
+              <h2 className="text-xl font-semibold mb-4">Recent Sync Logs</h2>
+              {syncLogs.length === 0 ? (
+                <p className="text-gray-500">No sync logs recorded.</p>
+              ) : (
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-left border-b">
+                      <th className="py-2">Action Type</th>
+                      <th className="py-2">Status</th>
+                      <th className="py-2">Entity</th>
+                      <th className="py-2">Error</th>
+                      <th className="py-2">Date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {syncLogs.map((log, idx) => (
+                      <tr key={idx} className="border-b last:border-none">
+                        <td className="py-2">{log.entry?.type || '—'}</td>
+                        <td className="py-2">{log.status || '—'}</td>
+                        <td className="py-2">{log.entry?.payload?.name || log.entry?.payload?.id || '—'}</td>
+                        <td className="py-2">{log.error || '—'}</td>
+                        <td className="py-2">{new Date(log.timestamp || Date.now()).toLocaleString()}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+
+            {/* Activity Logs Table (placeholder) */}
+            <div className="bg-white shadow rounded p-6 mt-6">
+              <h2 className="text-xl font-semibold mb-4">Recent Activity Logs</h2>
+              {activityLogs.length === 0 ? (
+                <p className="text-gray-500">No activity logs yet. This will show all user/admin actions as the app is updated to track them.</p>
               ) : (
                 <table className="w-full text-sm">
                   <thead>
@@ -214,12 +250,12 @@ const AdminDashboard: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {activities.map((act, idx) => (
+                    {activityLogs.map((act, idx) => (
                       <tr key={idx} className="border-b last:border-none">
-                        <td className="py-2">{act.userEmail || act.userId}</td>
-                        <td className="py-2">{act.action}</td>
-                        <td className="py-2">{act.entityType}</td>
-                        <td className="py-2">{new Date(act.timestamp?.toDate ? act.timestamp.toDate() : act.timestamp).toLocaleString()}</td>
+                        <td className="py-2">{act.userEmail || act.userId || '—'}</td>
+                        <td className="py-2">{act.action || '—'}</td>
+                        <td className="py-2">{act.entityType || '—'}</td>
+                        <td className="py-2">{new Date(act.timestamp?.toDate ? act.timestamp.toDate() : act.timestamp || Date.now()).toLocaleString()}</td>
                       </tr>
                     ))}
                   </tbody>
