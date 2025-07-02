@@ -18,7 +18,7 @@ const PublicOrderPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeCategory] = useState<string>('all');
+  const [activeCategory, setActiveCategory] = useState<string>('all');
   const sectionRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   const categoryTabsRef = useRef<HTMLDivElement | null>(null);
   const [selectedDish, setSelectedDish] = useState<MenuItem | null>(null);
@@ -30,6 +30,7 @@ const PublicOrderPage: React.FC = () => {
   const [checkoutLocation, setCheckoutLocation] = useState('');
   const [placingOrder, setPlacingOrder] = useState(false);
   const [cartAnim, setCartAnim] = useState(false);
+  let lastManualClick = 0;
 
   useEffect(() => {
     const fetchRestaurantData = async () => {
@@ -119,7 +120,8 @@ const PublicOrderPage: React.FC = () => {
         `\nTotal: ${totalCartAmount.toLocaleString()} FCFA\n\nCustomer phone: ${checkoutPhone}\nCustomer location: ${checkoutLocation}`;
       const phone = restaurant.phone ? restaurant.phone.replace(/[^\d]/g, '') : '237000000000';
       const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
-      window.open(waUrl, '_blank');
+      // Use direct navigation for better mobile compatibility (especially iOS)
+      window.location.href = waUrl;
       clearCart();
       setShowCart(false);
       setShowCheckout(false);
@@ -133,7 +135,85 @@ const PublicOrderPage: React.FC = () => {
     }
   };
 
-  // --- Scroll Spy Effect (optional, can be added like in PublicMenuPage) ---
+  // --- Robust Scroll Spy Effect ---
+  useEffect(() => {
+    if (!categories.length) return;
+    let ticking = false;
+    const handleScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          // Debounce: ignore scroll spy for 400ms after a manual tab click
+          if (Date.now() - lastManualClick < 400) {
+            ticking = false;
+            return;
+          }
+          const scrollY = window.scrollY + 120;
+          let found = 'all';
+          for (const cat of categories) {
+            const ref = sectionRefs.current[cat.id];
+            if (ref) {
+              const { top } = ref.getBoundingClientRect();
+              if (top + window.scrollY - 120 <= scrollY) {
+                found = cat.id;
+              }
+            }
+          }
+          setActiveCategory(found);
+          // Only scroll tab into view if not mostly visible
+          const tab = document.getElementById(`category-tab-${found}`);
+          if (tab && tab.scrollIntoView) {
+            const tabRect = tab.getBoundingClientRect();
+            const container = tab.parentElement;
+            if (container) {
+              const containerRect = container.getBoundingClientRect();
+              if (tabRect.left < containerRect.left || tabRect.right > containerRect.right) {
+                tab.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+              }
+            }
+          }
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [categories]);
+
+  // --- Robust Scroll to Section ---
+  const handleCategoryClick = (catId: string) => {
+    if (catId === activeCategory) return; // Don't scroll if already active
+    setSelectedCategory(catId);
+    setActiveCategory(catId);
+    lastManualClick = Date.now();
+    if (catId === 'all') {
+      // Scroll to the top of the menu section, not just the tabs
+      const main = document.querySelector('main');
+      if (main) {
+        window.scrollTo({ top: main.getBoundingClientRect().top + window.scrollY - 64, behavior: 'smooth' });
+      } else {
+        window.scrollTo({ top: categoryTabsRef.current?.offsetTop! + 1 - 64, behavior: 'smooth' });
+      }
+      return;
+    }
+    const ref = sectionRefs.current[catId];
+    if (ref) {
+      const y = ref.getBoundingClientRect().top + window.scrollY - 64;
+      window.scrollTo({ top: y, behavior: 'smooth' });
+    }
+    // Only scroll tab into view if not mostly visible
+    const tab = document.getElementById(`category-tab-${catId}`);
+    if (tab && tab.scrollIntoView) {
+      const tabRect = tab.getBoundingClientRect();
+      const container = tab.parentElement;
+      if (container) {
+        const containerRect = container.getBoundingClientRect();
+        if (tabRect.left < containerRect.left || tabRect.right > containerRect.right) {
+          tab.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+        }
+      }
+    }
+  };
 
   // --- Group dishes by category for section rendering ---
   const dishesByCategory = React.useMemo(() => {
@@ -216,7 +296,7 @@ const PublicOrderPage: React.FC = () => {
           <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6">
             <div className="flex space-x-2 overflow-x-auto no-scrollbar py-2">
               <button
-                onClick={() => setSelectedCategory('all')}
+                onClick={() => handleCategoryClick('all')}
                 className={`flex-shrink-0 px-5 py-2 rounded-full font-bold text-base sm:text-lg transition ${
                   activeCategory === 'all'
                     ? 'bg-primary text-white shadow'
@@ -229,7 +309,7 @@ const PublicOrderPage: React.FC = () => {
                 <button
                   key={cat.id}
                   id={`category-tab-${cat.id}`}
-                  onClick={() => setSelectedCategory(cat.id)}
+                  onClick={() => handleCategoryClick(cat.id)}
                   className={`flex-shrink-0 px-5 py-2 rounded-full font-bold text-base sm:text-lg transition ${
                     activeCategory === cat.id
                       ? 'bg-primary text-white shadow'
@@ -272,7 +352,7 @@ const PublicOrderPage: React.FC = () => {
 
       {/* Menu Sections */}
       <main className="flex-1 max-w-7xl mx-auto w-full px-2 sm:px-4 lg:px-6 pt-2 pb-20">
-        {selectedCategory === 'all' && (
+        {selectedCategory === 'all' ? (
           <div>
             {filteredCategories.map((cat, idx) => (
               <div
@@ -368,8 +448,99 @@ const PublicOrderPage: React.FC = () => {
               </div>
             )}
           </div>
+        ) : (
+          <div>
+            {/* Single Category Section */}
+            <div className="mb-10 pt-6">
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4">
+                {categories.find(c => c.id === selectedCategory)?.title || 'Dishes'}
+              </h2>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5">
+                {dishesByCategory[selectedCategory]?.length ? (
+                  dishesByCategory[selectedCategory]
+                    .filter(item => {
+                      const matchesSearch = searchQuery
+                        ? item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          (item.description && item.description.toLowerCase().includes(searchQuery.toLowerCase()))
+                        : true;
+                      return matchesSearch;
+                    })
+                    .map(item => {
+                      const inCart = cart.find(ci => ci.menuItemId === item.id);
+                      return (
+                        <div
+                          key={item.id}
+                          className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow flex flex-col h-full cursor-pointer group min-h-0 flex-1"
+                          style={{ minHeight: '220px', maxHeight: '370px' }}
+                          onClick={() => {
+                            setSelectedDish(item);
+                            setModalOpen(true);
+                          }}
+                        >
+                          {item.image ? (
+                            <div className="h-32 sm:h-48 w-full overflow-hidden">
+                              <img
+                                src={item.image}
+                                alt={item.title}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          ) : (
+                            <div className="h-32 sm:h-48 w-full bg-gray-100 flex items-center justify-center">
+                              <img
+                                src="/icons/placeholder.png"
+                                alt="No dish"
+                                className="h-16 w-16 opacity-60"
+                              />
+                            </div>
+                          )}
+                          <div className="p-3 flex-1 flex flex-col w-full">
+                            <div>
+                              <h3 className="text-base sm:text-lg font-medium text-gray-900 truncate">
+                                {item.title}
+                              </h3>
+                              {item.description && (
+                                <p className="mt-1 text-xs sm:text-sm text-gray-500 line-clamp-2">
+                                  {item.description}
+                                </p>
+                              )}
+                            </div>
+                            <div className="text-base sm:text-lg font-semibold text-primary mt-2">
+                              {item.price.toLocaleString()} FCFA
+                            </div>
+                            <div className="mt-auto w-full flex items-center gap-2">
+                              {!inCart ? (
+                                <button
+                                  onClick={e => {
+                                    e.stopPropagation();
+                                    addToCart(item);
+                                  }}
+                                  className="inline-flex justify-center items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-xs sm:text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+                                >
+                                  <PlusCircle size={14} className="mr-2" />
+                                  Add to Cart
+                                </button>
+                              ) : (
+                                <div className="flex items-center gap-1">
+                                  <button onClick={e => { e.stopPropagation(); decrementItem(inCart.id); }} className="text-gray-500 hover:text-gray-700"><MinusCircle size={18} /></button>
+                                  <span className="mx-1 text-gray-700 font-semibold">{inCart.quantity}</span>
+                                  <button onClick={e => { e.stopPropagation(); incrementItem(inCart.id); }} className="text-gray-500 hover:text-gray-700"><PlusCircle size={18} /></button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })
+                ) : (
+                  <div className="col-span-full text-center py-8">
+                    <p className="text-gray-500">No items found matching your search</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         )}
-        {/* Single Category Section (optional) */}
       </main>
 
       {/* Floating Cart Button */}
