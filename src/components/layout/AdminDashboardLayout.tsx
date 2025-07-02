@@ -7,6 +7,8 @@ const navItems = [
   { name: 'Overview', path: '/admin/dashboard' },
   { name: 'Restaurants', path: '/admin/restaurants' },
   { name: 'Users', path: '/admin/users' },
+  { name: 'Menus', path: '/admin/menus' },
+  { name: 'Orders', path: '/admin/orders' },
   { name: 'Activity Log', path: '/admin/activity-log' },
 ];
 
@@ -64,8 +66,14 @@ const AdminDashboardLayout: React.FC<{ children: React.ReactNode }> = ({ childre
   );
 
   return (
-    <div className="min-h-screen flex bg-gray-100">
-      {/* Mobile hamburger */}
+    <div className="min-h-screen flex flex-col md:flex-row bg-gray-100">
+      {/* Sidebar for desktop and mobile */}
+      <div className="hidden md:block">
+        <div className="h-full min-h-screen w-64 bg-primary text-white">
+          {sidebar}
+        </div>
+      </div>
+      {/* Mobile sidebar toggle */}
       <button
         className="fixed top-4 left-4 z-40 md:hidden bg-white p-2 rounded-md shadow-md text-gray-700"
         onClick={() => setSidebarOpen(true)}
@@ -73,10 +81,6 @@ const AdminDashboardLayout: React.FC<{ children: React.ReactNode }> = ({ childre
       >
         <MenuIcon size={24} />
       </button>
-      {/* Sidebar for desktop */}
-      <aside className="hidden md:flex h-screen flex-col w-64 bg-primary text-white fixed md:static z-30">
-        {sidebar}
-      </aside>
       {/* Sidebar drawer for mobile */}
       {sidebarOpen && (
         <div className="fixed inset-0 z-50 flex">
@@ -96,7 +100,9 @@ const AdminDashboardLayout: React.FC<{ children: React.ReactNode }> = ({ childre
         </div>
       )}
       {/* Main content */}
-      <main className="flex-1 p-4 md:p-8 md:ml-64 w-full min-h-screen">{children}</main>
+      <div className="flex-1">
+        <main className="p-4 md:p-8">{children}</main>
+      </div>
     </div>
   );
 };

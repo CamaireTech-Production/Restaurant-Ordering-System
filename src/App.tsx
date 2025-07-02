@@ -22,6 +22,11 @@ import AdminLogin from './pages/admin/AdminLogin';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import CreateInitialAdmin from './pages/admin/CreateInitialAdmin';
 import PublicOrderPage from './pages/client/public/PublicOrderPage';
+import AdminRestaurants from './pages/admin/AdminRestaurants';
+import AdminUsers from './pages/admin/AdminUsers';
+import AdminMenus from './pages/admin/AdminMenus';
+import AdminOrders from './pages/admin/AdminOrders';
+import AdminActivityLog from './pages/admin/AdminActivityLog';
 
 const CustomerOrdersPage = React.lazy(() => import('./pages/client/customer/OrdersPage'));
 
@@ -109,6 +114,46 @@ function App() {
                 element={
                   <AdminProtectedRoute>
                     <AdminDashboard />
+                  </AdminProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/restaurants"
+                element={
+                  <AdminProtectedRoute>
+                    <AdminRestaurants />
+                  </AdminProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/users"
+                element={
+                  <AdminProtectedRoute>
+                    <AdminUsers />
+                  </AdminProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/menus"
+                element={
+                  <AdminProtectedRoute>
+                    <AdminMenus />
+                  </AdminProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/orders"
+                element={
+                  <AdminProtectedRoute>
+                    <AdminOrders />
+                  </AdminProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/activity-log"
+                element={
+                  <AdminProtectedRoute>
+                    <AdminActivityLog />
                   </AdminProtectedRoute>
                 }
               />
