@@ -5,7 +5,7 @@ export interface ActivityLog {
   userEmail?: string;
   action: string;
   entityType?: string;
-  entityId?: string;
+  entityId?: string | null;
   details?: any;
   timestamp?: any;
 }

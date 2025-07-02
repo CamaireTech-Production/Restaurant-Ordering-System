@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { getAuth, signInWithEmailAndPassword, signOut as firebaseSignOut, User as FirebaseUser } from 'firebase/auth';
 import { getFirestore, doc, getDoc } from 'firebase/firestore';
+import { logActivity } from '../services/activityLogService';
 
 // Mock admin users (replace with Firestore logic later)
 const mockAdmins = [
@@ -64,6 +65,12 @@ export const AdminAuthProvider: React.FC<{ children: ReactNode }> = ({ children 
       };
       setCurrentAdmin(adminUser);
       localStorage.setItem('adminUser', JSON.stringify(adminUser));
+      await logActivity({
+        userId: cred.user.uid,
+        userEmail: userData.email,
+        action: 'admin_login',
+        entityType: 'admin',
+      });
     } catch (err: any) {
       setCurrentAdmin(null);
       localStorage.removeItem('adminUser');
@@ -75,9 +82,18 @@ export const AdminAuthProvider: React.FC<{ children: ReactNode }> = ({ children 
 
   const logout = async () => {
     const auth = getAuth();
+    const admin = currentAdmin;
     await firebaseSignOut(auth);
     setCurrentAdmin(null);
     localStorage.removeItem('adminUser');
+    if (admin) {
+      await logActivity({
+        userId: admin.id,
+        userEmail: admin.email,
+        action: 'admin_logout',
+        entityType: 'admin',
+      });
+    }
   };
 
   return (

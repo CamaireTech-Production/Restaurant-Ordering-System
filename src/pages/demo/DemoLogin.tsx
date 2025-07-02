@@ -1,27 +1,30 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
-import { Mail, Lock, ChefHat, AlertCircle } from 'lucide-react';
-// import demo auth context (to be implemented)
-// import { useDemoAuth } from '../../contexts/DemoAuthContext';
+import { Mail, Lock, ChefHat, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { useDemoAuth } from '../../contexts/DemoAuthContext';
 
 const DemoLogin: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [loginMode, setLoginMode] = useState<'email' | 'phone'>('email');
+  const [phone, setPhone] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
-  // const { signIn, signInWithGoogle, signInWithPhone } = useDemoAuth();
-  const navigate = useNavigate();
+  const { signIn, signInWithGoogle, signInWithPhoneAndPassword } = useDemoAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
     try {
-      // await signIn(email, password);
-      toast.success('Demo login successful!');
-      navigate('/dashboard');
+      if (loginMode === 'email') {
+        await signIn(email, password);
+      } else {
+        await signInWithPhoneAndPassword(phone, password);
+      }
     } catch (error: any) {
       setError('Failed to log in to demo account');
       toast.error('Failed to log in to demo account');
@@ -34,9 +37,7 @@ const DemoLogin: React.FC = () => {
     setError('');
     setIsLoading(true);
     try {
-      // await signInWithGoogle();
-      toast.success('Demo login successful!');
-      navigate('/dashboard');
+      await signInWithGoogle();
     } catch (error: any) {
       setError('Failed to sign in with Google');
       toast.error('Failed to sign in with Google');
@@ -70,27 +71,55 @@ const DemoLogin: React.FC = () => {
             </div>
           )}
           <form className="space-y-6" onSubmit={handleSubmit}>
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email address
-              </label>
-              <div className="mt-1 relative rounded-md shadow-sm">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail size={18} className="text-gray-400" />
-                </div>
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="pl-10 block w-full py-3 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
-                  placeholder="demo@example.com"
-                />
-              </div>
+            <div className="flex justify-center gap-4 mb-2">
+              <button type="button" onClick={() => setLoginMode('email')} className={`px-3 py-1 rounded ${loginMode === 'email' ? 'bg-primary text-white' : 'bg-gray-200'}`}>Email</button>
+              <button type="button" onClick={() => setLoginMode('phone')} className={`px-3 py-1 rounded ${loginMode === 'phone' ? 'bg-primary text-white' : 'bg-gray-200'}`}>Phone</button>
             </div>
+            {loginMode === 'email' ? (
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                  Email address
+                </label>
+                <div className="mt-1 relative rounded-md shadow-sm">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Mail size={18} className="text-gray-400" />
+                  </div>
+                  <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    required={loginMode === 'email'}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="pl-10 block w-full py-3 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
+                    placeholder="demo@example.com"
+                  />
+                </div>
+              </div>
+            ) : (
+              <div>
+                <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+                  Phone number
+                </label>
+                <div className="mt-1 relative rounded-md shadow-sm">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Mail size={18} className="text-gray-400" />
+                  </div>
+                  <input
+                    id="phone"
+                    name="phone"
+                    type="tel"
+                    autoComplete="tel"
+                    required={loginMode === 'phone'}
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className="pl-10 block w-full py-3 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
+                    placeholder="e.g. +237612345678"
+                  />
+                </div>
+              </div>
+            )}
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                 Password
@@ -102,14 +131,22 @@ const DemoLogin: React.FC = () => {
                 <input
                   id="password"
                   name="password"
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   autoComplete="current-password"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="pl-10 block w-full py-3 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
+                  className="pl-10 pr-10 block w-full py-3 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
                   placeholder="••••••••"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400"
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
               </div>
             </div>
             <div>
@@ -146,6 +183,14 @@ const DemoLogin: React.FC = () => {
                 Google
               </button>
             </div>
+          </div>
+          <div className="mt-6 text-center">
+            <p className="text-sm">
+              Don't have a demo account?{' '}
+              <Link to="/demo-signup" className="font-medium text-primary hover:text-primary-dark">
+                Create one here
+              </Link>
+            </p>
           </div>
         </div>
       </div>

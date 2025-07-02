@@ -6,6 +6,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { OfflineSyncProvider } from './contexts/OfflineSyncContext';
 import designSystem from './designSystem';
 import { AdminAuthProvider } from './contexts/AdminAuthContext';
+import { DemoAuthProvider } from './contexts/DemoAuthContext';
 
 // Pages
 import Login from './pages/auth/Login';
@@ -29,6 +30,7 @@ import AdminOrders from './pages/admin/AdminOrders';
 import AdminActivityLog from './pages/admin/AdminActivityLog';
 import DemoLogin from './pages/demo/DemoLogin';
 import DemoSignup from './pages/demo/DemoSignup';
+import DemoCompleteSetup from './pages/demo/DemoCompleteSetup';
 
 const CustomerOrdersPage = React.lazy(() => import('./pages/client/customer/OrdersPage'));
 
@@ -159,8 +161,21 @@ function App() {
                   </AdminProtectedRoute>
                 }
               />
-              <Route path="/demo-login" element={<DemoLogin />} />
-              <Route path="/demo-signup" element={<DemoSignup />} />
+              <Route path="/demo-login" element={
+                <DemoAuthProvider>
+                  <DemoLogin />
+                </DemoAuthProvider>
+              } />
+              <Route path="/demo-signup" element={
+                <DemoAuthProvider>
+                  <DemoSignup />
+                </DemoAuthProvider>
+              } />
+              <Route path="/demo-complete-setup" element={
+                <DemoAuthProvider>
+                  <DemoCompleteSetup />
+                </DemoAuthProvider>
+              } />
               {/* Default routes */}
               <Route path="/" element={<Navigate to="/login" replace />} />
               <Route path="*" element={<Navigate to="/login" replace />} />

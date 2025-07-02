@@ -11,6 +11,7 @@ import {
 import { auth, db } from '../firebase/config';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
+import { logActivity } from '../services/activityLogService';
 
 // Define types
 type Restaurant = {
@@ -79,7 +80,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const signIn = async (email: string, password: string) => {
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const cred = await signInWithEmailAndPassword(auth, email, password);
+      await logActivity({
+        userId: cred.user.uid,
+        userEmail: email,
+        action: 'login',
+        entityType: 'restaurant',
+      });
       navigate('/dashboard');
     } catch (error) {
       throw error;
@@ -89,11 +96,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const signUp = async (email: string, password: string, extraData?: Partial<Restaurant>) => {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      // Create restaurant document with extraData (e.g., colorPalette)
       await setDoc(doc(db, 'restaurants', userCredential.user.uid), {
         email,
         createdAt: serverTimestamp(),
         ...(extraData || {})
+      });
+      await logActivity({
+        userId: userCredential.user.uid,
+        userEmail: email,
+        action: 'signup',
+        entityType: 'restaurant',
       });
       navigate('/profile-setup');
     } catch (error) {
@@ -105,19 +117,27 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       const provider = new GoogleAuthProvider();
       const userCredential = await signInWithPopup(auth, provider);
-      
-      // Check if the restaurant document exists
       const restaurantDoc = await getDoc(doc(db, 'restaurants', userCredential.user.uid));
-      
       if (!restaurantDoc.exists()) {
-        // Create new restaurant document
         await setDoc(doc(db, 'restaurants', userCredential.user.uid), {
           email: userCredential.user.email,
           name: userCredential.user.displayName || '',
           createdAt: serverTimestamp()
         });
+        await logActivity({
+          userId: userCredential.user.uid,
+          userEmail: userCredential.user.email || '',
+          action: 'signup_google',
+          entityType: 'restaurant',
+        });
         navigate('/profile-setup');
       } else {
+        await logActivity({
+          userId: userCredential.user.uid,
+          userEmail: userCredential.user.email || '',
+          action: 'login_google',
+          entityType: 'restaurant',
+        });
         navigate('/dashboard');
       }
     } catch (error) {
@@ -127,7 +147,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const signOut = async () => {
     try {
+      const user = auth.currentUser;
       await firebaseSignOut(auth);
+      if (user) {
+        await logActivity({
+          userId: user.uid,
+          userEmail: user.email || '',
+          action: 'logout',
+          entityType: 'restaurant',
+        });
+      }
       navigate('/login');
     } catch (error) {
       throw error;
