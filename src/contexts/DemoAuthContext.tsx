@@ -89,14 +89,30 @@ export const DemoAuthProvider: React.FC<{ children: ReactNode }> = ({ children }
 
   const signIn = async (email: string, password: string) => {
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      console.log('[DemoAuth] signIn start', { email });
+      const cred = await signInWithEmailAndPassword(auth, email, password);
+      // Check for demo account
+      const demoDoc = await getDoc(doc(db, 'demoAccounts', cred.user.uid));
+      if (!demoDoc.exists()) {
+        console.error('[DemoAuth] No demo account found for user');
+        throw new Error('No demo account found for this user');
+      }
+      const demoData = demoDoc.data();
+      if (demoData.expired) {
+        console.error('[DemoAuth] Demo account expired');
+        throw new Error('Demo account expired');
+      }
       await logActivity({
+        userId: cred.user.uid,
         userEmail: email,
         action: 'demo_login',
         entityType: 'demoAccount',
+        entityId: cred.user.uid,
       });
+      console.log('[DemoAuth] signIn success, navigating to dashboard');
       navigate('/dashboard');
     } catch (error) {
+      console.error('[DemoAuth] signIn error', error);
       throw error;
     }
   };
@@ -227,13 +243,34 @@ export const DemoAuthProvider: React.FC<{ children: ReactNode }> = ({ children }
 
   const signInWithGoogle = async () => {
     try {
+      console.log('[DemoAuth] signInWithGoogle start');
       const provider = new GoogleAuthProvider();
       const userCredential = await signInWithPopup(auth, provider);
       const email = userCredential.user.email;
       if (!email) throw new Error('No email found from Google account');
-      // Only authenticate and return user; do NOT create Firestore document here
+      // Check for demo account
+      const demoDoc = await getDoc(doc(db, 'demoAccounts', userCredential.user.uid));
+      if (!demoDoc.exists()) {
+        console.error('[DemoAuth] No demo account found for user after Google sign-in');
+        throw new Error('No demo account found for this user');
+      }
+      const demoData = demoDoc.data();
+      if (demoData.expired) {
+        console.error('[DemoAuth] Demo account expired');
+        throw new Error('Demo account expired');
+      }
+      await logActivity({
+        userId: userCredential.user.uid,
+        userEmail: email,
+        action: 'demo_login_google',
+        entityType: 'demoAccount',
+        entityId: userCredential.user.uid,
+      });
+      console.log('[DemoAuth] signInWithGoogle success, navigating to dashboard');
+      navigate('/dashboard');
       return userCredential.user;
     } catch (error) {
+      console.error('[DemoAuth] signInWithGoogle error', error);
       throw error;
     }
   };
@@ -244,6 +281,7 @@ export const DemoAuthProvider: React.FC<{ children: ReactNode }> = ({ children }
       const confirmationResult = await signInWithPhoneNumber(auth, phone, appVerifier);
       // The confirmationResult.confirm(code) should be called in the UI after user enters the code
       await logActivity({
+        userId: currentUser?.uid,
         userEmail: phone,
         action: 'demo_login_phone',
         entityType: 'demoAccount',
@@ -256,6 +294,7 @@ export const DemoAuthProvider: React.FC<{ children: ReactNode }> = ({ children }
 
   const signInWithPhoneAndPassword = async (phone: string, password: string) => {
     try {
+      console.log('[DemoAuth] signInWithPhoneAndPassword start', { phone });
       // Look up demo account by phone number
       const q = await import('firebase/firestore').then(firestore => firestore.query);
       const where = await import('firebase/firestore').then(firestore => firestore.where);
@@ -265,18 +304,27 @@ export const DemoAuthProvider: React.FC<{ children: ReactNode }> = ({ children }
       const phoneQuery = q(dbRef, where('phone', '==', phone));
       const snapshot = await getDocs(phoneQuery);
       if (snapshot.empty) {
+        console.error('[DemoAuth] No demo account found with this phone number');
         throw new Error('No demo account found with this phone number');
       }
       const docData = snapshot.docs[0].data();
       const email = docData.email;
-      await signInWithEmailAndPassword(auth, email, password);
+      const cred = await signInWithEmailAndPassword(auth, email, password);
+      if (docData.expired) {
+        console.error('[DemoAuth] Demo account expired');
+        throw new Error('Demo account expired');
+      }
       await logActivity({
+        userId: cred.user.uid,
         userEmail: email,
         action: 'demo_login_phone_password',
         entityType: 'demoAccount',
+        entityId: cred.user.uid,
       });
+      console.log('[DemoAuth] signInWithPhoneAndPassword success, navigating to dashboard');
       navigate('/dashboard');
     } catch (error) {
+      console.error('[DemoAuth] signInWithPhoneAndPassword error', error);
       throw error;
     }
   };
