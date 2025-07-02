@@ -1,4 +1,5 @@
 import React from 'react';
+import ColorPaletteEffect from './components/ui/ColorPaletteEffect';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './contexts/AuthContext';
@@ -36,6 +37,7 @@ function App() {
       <AuthProvider>
         <OfflineSyncProvider>
           <AdminAuthProvider>
+            <ColorPaletteEffect />
             <Routes>
               <Route path="/public-menu/:restaurantId" element={<PublicMenuPage />} />
               <Route path="/public-order/:restaurantId" element={<PublicOrderPage />} />
@@ -45,7 +47,8 @@ function App() {
                 path="/profile-setup" 
                 element={
                   <ProtectedRoute>
-                    <ProfileSetup />
+                    {/* Show sidebar if not coming from onboarding (i.e., if not redirected from register) */}
+                    <ProfileSetup key="profile-setup" />
                   </ProtectedRoute>
                 } 
               />

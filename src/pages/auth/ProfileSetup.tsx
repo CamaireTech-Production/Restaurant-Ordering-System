@@ -1,11 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import DashboardLayout from '../../components/layout/DashboardLayout';
+import { useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../../contexts/AuthContext';
 import { Store, MapPin, FileText, Upload, X, ChefHat } from 'lucide-react';
+import ColorPicker from '../../components/ui/ColorPicker';
+import { generateColorPalette } from '../../utils/generateColorPalette';
+import { applyColorPaletteToCSSVariables } from '../../utils/applyColorPaletteToCSS';
+import designSystem from '../../designSystem';
 
 const ProfileSetup: React.FC = () => {
-  const { currentUser, restaurant, updateRestaurantProfile } = useAuth();
+  const location = useLocation();
+  const { restaurant, updateRestaurantProfile } = useAuth();
   const navigate = useNavigate();
   
   const [name, setName] = useState(restaurant?.name || '');
@@ -18,6 +25,23 @@ const ProfileSetup: React.FC = () => {
   const [logoBase64, setLogoBase64] = useState<string | null>(restaurant?.logo || null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  // Color palette state
+  // Always default to black and white for new users
+  const [primaryColor, setPrimaryColor] = useState(restaurant?.colorPalette?.primary || '#000000');
+  const [secondaryColor, setSecondaryColor] = useState(restaurant?.colorPalette?.secondary || '#FFFFFF');
+
+  // Keep local state in sync if restaurant changes (e.g., after fetch)
+  useEffect(() => {
+    setPrimaryColor(restaurant?.colorPalette?.primary || designSystem.colors.primary);
+    setSecondaryColor(restaurant?.colorPalette?.secondary || designSystem.colors.secondary);
+  }, [restaurant]);
+
+  // Apply palette live when colors change
+  useEffect(() => {
+    // Only apply palette if not on login/register page
+    const palette = generateColorPalette(primaryColor, secondaryColor);
+    applyColorPaletteToCSSVariables(palette);
+  }, [primaryColor, secondaryColor]);
 
   useEffect(() => {
     if (restaurant) {
@@ -59,29 +83,31 @@ const ProfileSetup: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    
     if (!name.trim()) {
       setError('Restaurant name is required');
       toast.error('Restaurant name is required');
       return;
     }
-    
     setIsLoading(true);
-
     try {
       // Use base64 logo if available, otherwise keep existing
       let logoData = logoBase64 || restaurant?.logo || '';
-
       await updateRestaurantProfile({
         name,
         logo: logoData,
         address,
         description,
         phone,
+        colorPalette: {
+          primary: primaryColor,
+          secondary: secondaryColor,
+        } as any, // allow extra property for Firestore
       });
-
       toast.success('Profile updated successfully!');
-      navigate('/dashboard');
+      if (!showSidebar) {
+        navigate('/dashboard');
+      }
+      // If showSidebar, do not redirect
     } catch (error: any) {
       console.error('Error updating profile:', error);
       setError('Failed to update profile');
@@ -91,7 +117,10 @@ const ProfileSetup: React.FC = () => {
     }
   };
 
-  return (
+  // Determine if we are in dashboard/settings (show sidebar) or onboarding (hide sidebar)
+  const showSidebar = location.state && location.state.fromSettings === true;
+
+  const content = (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto">
         <div className="text-center mb-8">
@@ -102,14 +131,14 @@ const ProfileSetup: React.FC = () => {
           <p className="mt-2 text-gray-600">
             Provide information about your restaurant to get started
           </p>
-          {currentUser && (
+          {/* {currentUser && (
             <Link
               to="/dashboard"
               className="inline-flex items-center mt-4 px-4 py-2 border border-primary rounded-md shadow-sm text-sm font-medium text-primary bg-white hover:bg-primary hover:text-white transition-colors"
             >
               Back to Dashboard
             </Link>
-          )}
+          )} */}
         </div>
 
         <div className="bg-white shadow overflow-hidden sm:rounded-lg">
@@ -121,10 +150,9 @@ const ProfileSetup: React.FC = () => {
             )}
 
             <div className="mb-8">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Restaurant Logo
-              </label>
-              <div className="flex items-center">
+              <label className="block text-sm font-medium text-gray-700 mb-3">Restaurant Logo & Colors</label>
+              <div className="flex items-center gap-10 flex-wrap">
+                {/* Logo upload */}
                 {logoPreview ? (
                   <div className="relative">
                     <img
@@ -155,6 +183,15 @@ const ProfileSetup: React.FC = () => {
                   accept="image/*"
                   onChange={handleLogoChange}
                   className="hidden"
+                />
+                {/* Color pickers after logo */}
+                <ColorPicker
+                  initialPrimary={primaryColor}
+                  initialSecondary={secondaryColor}
+                  onChange={(p, s) => {
+                    setPrimaryColor(p);
+                    setSecondaryColor(s);
+                  }}
                 />
               </div>
             </div>
@@ -253,7 +290,7 @@ const ProfileSetup: React.FC = () => {
                 disabled={isLoading}
                 className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                {isLoading ? 'Saving...' : 'Save and Continue'}
+                {isLoading ? 'Saving...' : showSidebar ? 'Save changes' : 'Save and Continue'}
               </button>
             </div>
           </form>
@@ -261,6 +298,10 @@ const ProfileSetup: React.FC = () => {
       </div>
     </div>
   );
+
+  return showSidebar ? (
+    <DashboardLayout title={"Profile Settings"}>{content}</DashboardLayout>
+  ) : content;
 };
 
 export default ProfileSetup;

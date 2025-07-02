@@ -67,6 +67,7 @@ const Sidebar: React.FC = () => {
       name: 'Settings',
       path: '/profile-setup',
       icon: <Settings size={20} />,
+      isSettings: true,
     },
   ];
 
@@ -123,20 +124,38 @@ const Sidebar: React.FC = () => {
             <ul className="space-y-1">
               {navItems.map((item) => (
                 <li key={item.path}>
-                  <NavLink
-                    to={item.path}
-                    onClick={closeSidebar}
-                    className={({ isActive }) =>
-                      `flex items-center px-4 py-3 rounded-md transition-colors font-semibold text-base ${
-                        isActive
+                  {item.isSettings ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigate('/profile-setup', { state: { fromSettings: true } });
+                        closeSidebar();
+                      }}
+                      className={
+                        `flex items-center w-full px-4 py-3 rounded-md transition-colors font-semibold text-base text-left ` +
+                        (window.location.pathname === '/profile-setup'
                           ? 'bg-accent text-black shadow-md border-l-4 border-white'
-                          : 'text-primary hover:bg-accent/20 hover:text-accent'
-                      }`
-                    }
-                  >
-                    <span className="mr-3">{item.icon}</span>
-                    {item.name}
-                  </NavLink>
+                          : 'text-primary hover:bg-accent/20 hover:text-accent')
+                      }
+                    >
+                      <span className="mr-3">{item.icon}</span>
+                      {item.name}
+                    </button>
+                  ) : (
+                    <NavLink
+                      to={item.path}
+                      onClick={closeSidebar}
+                      className={({ isActive }) =>
+                        `flex items-center px-4 py-3 rounded-md transition-colors font-semibold text-base ` +
+                        (isActive
+                          ? 'bg-accent text-black shadow-md border-l-4 border-white'
+                          : 'text-primary hover:bg-accent/20 hover:text-accent')
+                      }
+                    >
+                      <span className="mr-3">{item.icon}</span>
+                      {item.name}
+                    </NavLink>
+                  )}
                 </li>
               ))}
             </ul>

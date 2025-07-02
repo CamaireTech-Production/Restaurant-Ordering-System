@@ -22,6 +22,10 @@ type Restaurant = {
   email: string;
   phone?: string;
   createdAt: any;
+  colorPalette?: {
+    primary: string;
+    secondary: string;
+  };
 };
 
 interface AuthContextType {
@@ -29,7 +33,7 @@ interface AuthContextType {
   restaurant: Restaurant | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string, extraData?: Partial<Restaurant>) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
   updateRestaurantProfile: (restaurantData: Partial<Restaurant>) => Promise<void>;
@@ -82,13 +86,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const signUp = async (email: string, password: string) => {
+  const signUp = async (email: string, password: string, extraData?: Partial<Restaurant>) => {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      // Create restaurant document
+      // Create restaurant document with extraData (e.g., colorPalette)
       await setDoc(doc(db, 'restaurants', userCredential.user.uid), {
         email,
-        createdAt: serverTimestamp()
+        createdAt: serverTimestamp(),
+        ...(extraData || {})
       });
       navigate('/profile-setup');
     } catch (error) {
