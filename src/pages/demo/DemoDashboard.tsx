@@ -60,10 +60,10 @@ const DemoDashboard: React.FC = () => {
   return (
     <DashboardLayout title={
         <div className="flex flex-col sm:flex-row items-center justify-between w-full">
-        <span className="text-base sm:text-lg md:text-xl">
-          Dashboard
-        </span>
-      </div>
+            <span className="text-base sm:text-lg md:text-xl">
+            Dashboard
+            </span>
+        </div>
     }>
       <DashboardContent
         restaurant={demoRestaurant}

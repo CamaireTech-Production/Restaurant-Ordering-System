@@ -1,0 +1,159 @@
+import React, { useState, useEffect } from 'react';
+import { useDemoAuth, useIsDemoUser } from '../../contexts/DemoAuthContext';
+import DashboardLayout from '../../components/layout/DashboardLayout';
+import CategoryManagementContent from '../../shared/CategoryManagementContent';
+import { db } from '../../firebase/config';
+import { collection, getDocs, addDoc, updateDoc, doc, serverTimestamp } from 'firebase/firestore';
+import { logActivity } from '../../services/activityLogService';
+import LoadingSpinner from '../../components/ui/LoadingSpinner';
+import { toast } from 'react-hot-toast';
+
+const DemoCategoryManagement: React.FC = () => {
+  const { demoAccount, loading } = useDemoAuth();
+  const isDemoUser = useIsDemoUser();
+  const [categories, setCategories] = useState<any[]>([]);
+  const [catLoading, setCatLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      if (!demoAccount?.id) return;
+      try {
+        const categoriesSnapshot = await getDocs(collection(db, 'demoAccounts', demoAccount.id, 'categories'));
+        const categoriesData = categoriesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setCategories(categoriesData);
+      } catch (error) {
+        toast.error('Failed to load categories');
+      } finally {
+        setCatLoading(false);
+      }
+    };
+    fetchCategories();
+  }, [demoAccount]);
+
+  // CRUD handlers for demo categories
+  const handleAdd = async (data: any) => {
+    if (!demoAccount?.id) return;
+    try {
+      const docRef = await addDoc(collection(db, 'demoAccounts', demoAccount.id, 'categories'), {
+        ...data,
+        createdAt: serverTimestamp(),
+      });
+      setCategories(prev => [...prev, { ...data, id: docRef.id, createdAt: new Date() }]);
+      toast.success('Category added!');
+      await logActivity({
+        userId: demoAccount.id,
+        userEmail: demoAccount.email,
+        action: 'demo_add_category',
+        entityType: 'category',
+        entityId: docRef.id,
+        details: data,
+      });
+    } catch (error) {
+      toast.error('Failed to add category');
+    }
+  };
+
+  const handleEdit = async (category: any, data: any) => {
+    if (!demoAccount?.id) return;
+    try {
+      await updateDoc(doc(db, 'demoAccounts', demoAccount.id, 'categories', category.id), {
+        ...data,
+        updatedAt: serverTimestamp(),
+      });
+      setCategories(prev => prev.map(c => c.id === category.id ? { ...c, ...data, updatedAt: new Date() } : c));
+      toast.success('Category updated!');
+      await logActivity({
+        userId: demoAccount.id,
+        userEmail: demoAccount.email,
+        action: 'demo_edit_category',
+        entityType: 'category',
+        entityId: category.id,
+        details: data,
+      });
+    } catch (error) {
+      toast.error('Failed to update category');
+    }
+  };
+
+  const handleDelete = async (categoryId: string) => {
+    if (!demoAccount?.id) return;
+    try {
+      await updateDoc(doc(db, 'demoAccounts', demoAccount.id, 'categories', categoryId), {
+        deleted: true,
+        updatedAt: serverTimestamp(),
+      });
+      setCategories(prev => prev.filter(c => c.id !== categoryId));
+      toast.success('Category deleted!');
+      await logActivity({
+        userId: demoAccount.id,
+        userEmail: demoAccount.email,
+        action: 'demo_delete_category',
+        entityType: 'category',
+        entityId: categoryId,
+      });
+    } catch (error) {
+      toast.error('Failed to delete category');
+    }
+  };
+
+  const handleToggleStatus = async (category: any) => {
+    if (!demoAccount?.id) return;
+    try {
+      const newStatus = category.status === 'active' ? 'inactive' : 'active';
+      await updateDoc(doc(db, 'demoAccounts', demoAccount.id, 'categories', category.id), {
+        status: newStatus,
+        updatedAt: serverTimestamp(),
+      });
+      setCategories(prev => prev.map(c => c.id === category.id ? { ...c, status: newStatus, updatedAt: new Date() } : c));
+      toast.success(`Category ${newStatus === 'active' ? 'activated' : 'deactivated'}!`);
+      await logActivity({
+        userId: demoAccount.id,
+        userEmail: demoAccount.email,
+        action: 'demo_toggle_category_status',
+        entityType: 'category',
+        entityId: category.id,
+        details: { status: newStatus },
+      });
+    } catch (error) {
+      toast.error('Failed to update status');
+    }
+  };
+
+  if (loading || catLoading) {
+    return (
+      <DashboardLayout title={
+        <div className="flex flex-col sm:flex-row items-center justify-between w-full">
+            <span className="text-base sm:text-lg md:text-xl">
+            Category Management
+            </span>
+        </div>
+      }>
+        <div className="flex justify-center items-center h-64">
+          <LoadingSpinner size={60} />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  return (
+    <DashboardLayout title={
+      <div className="flex flex-col sm:flex-row items-center justify-between w-full">
+          <span className="text-base sm:text-lg md:text-xl">
+          Category Management
+          </span>
+      </div>
+    }>
+      <CategoryManagementContent
+        categories={categories}
+        loading={catLoading}
+        onAdd={handleAdd}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+        onToggleStatus={handleToggleStatus}
+        isDemoUser={isDemoUser}
+      />
+    </DashboardLayout>
+  );
+};
+
+export default DemoCategoryManagement;

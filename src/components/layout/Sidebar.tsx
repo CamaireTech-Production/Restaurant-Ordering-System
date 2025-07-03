@@ -56,7 +56,7 @@ const Sidebar: React.FC = () => {
     },
     {
       name: 'Categories',
-      path: '/category-management',
+      path: isDemoUser ? '/demo-category-management' : '/category-management',
       icon: <Layers size={20} />,
     },
     ...(!isDemoUser ? [{
