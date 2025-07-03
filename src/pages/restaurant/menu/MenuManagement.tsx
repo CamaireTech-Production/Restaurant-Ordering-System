@@ -16,7 +16,6 @@ import {
   doc, 
   addDoc, 
   updateDoc, 
-  deleteDoc, 
   serverTimestamp,
   orderBy
 } from 'firebase/firestore';

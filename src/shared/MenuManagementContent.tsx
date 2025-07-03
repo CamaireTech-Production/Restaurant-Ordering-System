@@ -64,6 +64,7 @@ const MenuManagementContent: React.FC<MenuManagementContentProps> = ({
   const [formData, setFormData] = useState(initialFormState);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<MenuItem | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Filter and search
   const filteredItems = menuItems.filter(item => {
@@ -165,11 +166,13 @@ const MenuManagementContent: React.FC<MenuManagementContentProps> = ({
       status: formData.status,
       image: formData.imageBase64 || formData.imageURL || '',
     };
+    setIsSubmitting(true);
     if (editingItem) {
       await onEdit(editingItem, data);
     } else {
       await onAdd(data);
     }
+    setIsSubmitting(false);
     closeModal();
   };
 
@@ -648,9 +651,10 @@ const MenuManagementContent: React.FC<MenuManagementContentProps> = ({
             </button>
             <button
               type="submit"
-              className="inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-primary text-base font-medium text-white hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary sm:w-auto sm:text-sm"
+              disabled={isSubmitting}
+              className="inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-primary text-base font-medium text-white hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary sm:w-auto sm:text-sm disabled:opacity-50"
             >
-              {editingItem ? 'Save Changes' : 'Add Dish'}
+              {isSubmitting ? <LoadingSpinner size={20} /> : (editingItem ? 'Save Changes' : 'Add Dish')}
             </button>
           </div>
         </form>
