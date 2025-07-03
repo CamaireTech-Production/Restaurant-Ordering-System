@@ -51,7 +51,7 @@ const Sidebar: React.FC = () => {
     },
     {
       name: 'Dishes',
-      path: '/menu-management',
+      path: isDemoUser ? '/demo-menu-management' : '/menu-management',
       icon: <UtensilsCrossed size={20} />,
     },
     {
