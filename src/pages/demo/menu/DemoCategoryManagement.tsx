@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useDemoAuth, useIsDemoUser } from '../../contexts/DemoAuthContext';
-import DashboardLayout from '../../components/layout/DashboardLayout';
-import CategoryManagementContent from '../../shared/CategoryManagementContent';
-import { db } from '../../firebase/config';
+import { useDemoAuth, useIsDemoUser } from '../../../contexts/DemoAuthContext.js';
+import DashboardLayout from '../../../components/layout/DashboardLayout.js';
+import CategoryManagementContent from '../../../shared/CategoryManagementContent.js';
+import { db } from '../../../firebase/config.js';
 import { collection, getDocs, addDoc, updateDoc, doc, serverTimestamp } from 'firebase/firestore';
-import { logActivity } from '../../services/activityLogService';
-import LoadingSpinner from '../../components/ui/LoadingSpinner';
+import { logActivity } from '../../../services/activityLogService.js';
+import LoadingSpinner from '../../../components/ui/LoadingSpinner.js';
 import { toast } from 'react-hot-toast';
 
 const DemoCategoryManagement: React.FC = () => {
