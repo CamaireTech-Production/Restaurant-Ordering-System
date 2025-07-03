@@ -34,6 +34,7 @@ import DemoCompleteSetup from './pages/demo/DemoCompleteSetup';
 import DemoDashboard from './pages/demo/DemoDashboard';
 import DemoCategoryManagement from './pages/demo/menu/DemoCategoryManagement';
 import DemoMenuManagement from './pages/demo/menu/DemoMenuManagement';
+import DemoOrderManagement from './pages/demo/DemoOrderManagement';
 
 const CustomerOrdersPage = React.lazy(() => import('./pages/client/customer/OrdersPage'));
 
@@ -204,6 +205,11 @@ function App() {
               <Route path="/demo-menu-management" element={
                 <DemoAuthProvider>
                   <DemoMenuManagement />
+                </DemoAuthProvider>
+              } />
+              <Route path="/demo-order-management" element={
+                <DemoAuthProvider>
+                  <DemoOrderManagement />
                 </DemoAuthProvider>
               } />
               {/* Default routes */}

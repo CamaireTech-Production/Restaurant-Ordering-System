@@ -142,8 +142,8 @@ const MenuManagement: React.FC = () => {
     try {
       await updateDoc(doc(db, 'menuItems', itemId), {
         deleted: true,
-        updatedAt: serverTimestamp(),
-      });
+          updatedAt: serverTimestamp(),
+        });
       setMenuItems(prev => prev.filter(i => i.id !== itemId));
       toast.success('Dish deleted!');
       await logActivity({

@@ -66,7 +66,7 @@ const Sidebar: React.FC = () => {
     }] : []),
     {
       name: 'Orders',
-      path: '/orders',
+      path: isDemoUser ? '/demo-order-management' : '/orders',
       icon: <ClipboardList size={20} />,
     },
     ...(!isDemoUser ? [{
