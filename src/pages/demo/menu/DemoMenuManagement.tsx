@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useDemoAuth, useIsDemoUser } from '../../contexts/DemoAuthContext';
-import DashboardLayout from '../../components/layout/DashboardLayout';
-import MenuManagementContent from '../../shared/MenuManagementContent';
-import { db } from '../../firebase/config';
+import { useDemoAuth, useIsDemoUser } from '../../../contexts/DemoAuthContext';
+import DashboardLayout from '../../../components/layout/DashboardLayout';
+import MenuManagementContent from '../../../shared/MenuManagementContent';
+import { db } from '../../../firebase/config';
 import { collection, getDocs, addDoc, updateDoc, doc, serverTimestamp } from 'firebase/firestore';
-import LoadingSpinner from '../../components/ui/LoadingSpinner';
+import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 import { toast } from 'react-hot-toast';
-import { logActivity } from '../../services/activityLogService';
+import { logActivity } from '../../../services/activityLogService';
 
 const DemoMenuManagement: React.FC = () => {
   const { demoAccount, loading } = useDemoAuth();

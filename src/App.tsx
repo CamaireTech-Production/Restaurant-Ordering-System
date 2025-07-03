@@ -33,7 +33,7 @@ import DemoSignup from './pages/demo/DemoSignup';
 import DemoCompleteSetup from './pages/demo/DemoCompleteSetup';
 import DemoDashboard from './pages/demo/DemoDashboard';
 import DemoCategoryManagement from './pages/demo/menu/DemoCategoryManagement';
-import DemoMenuManagement from './pages/demo/DemoMenuManagement';
+import DemoMenuManagement from './pages/demo/menu/DemoMenuManagement';
 
 const CustomerOrdersPage = React.lazy(() => import('./pages/client/customer/OrdersPage'));
 
