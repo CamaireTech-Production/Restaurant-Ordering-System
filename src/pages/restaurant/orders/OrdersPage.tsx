@@ -32,9 +32,10 @@ import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 import { Order } from '../../../types';
 import designSystem from '../../../designSystem';
 import OrderManagementContent from '../../../shared/OrderManagementContent';
+import { logActivity } from '../../../services/activityLogService';
 
 const OrdersPage: React.FC = () => {
-  const { restaurant } = useAuth();
+  const { restaurant, currentUser } = useAuth();
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
@@ -129,9 +130,18 @@ const OrdersPage: React.FC = () => {
         setUpdatingOrderId(null);
         return;
       }
+      const order = orders.find(o => o.id === orderId);
       await updateDoc(doc(db, 'orders', orderId), {
         status: newStatus,
         updatedAt: serverTimestamp(),
+      });
+      await logActivity({
+        userId: currentUser?.uid ?? undefined,
+        userEmail: currentUser?.email ?? undefined,
+        action: 'order_status_change',
+        entityType: 'order',
+        entityId: orderId,
+        details: { oldStatus: order?.status, newStatus },
       });
       toast.success(`Order status updated to ${newStatus}`);
     } catch (error) {
@@ -156,6 +166,13 @@ const OrdersPage: React.FC = () => {
       await updateDoc(doc(db, 'orders', orderId), {
         deleted: true,
         updatedAt: serverTimestamp(),
+      });
+      await logActivity({
+        userId: currentUser?.uid ?? undefined,
+        userEmail: currentUser?.email ?? undefined,
+        action: 'order_deleted',
+        entityType: 'order',
+        entityId: orderId,
       });
       toast.success('Order deleted');
     } catch (error) {

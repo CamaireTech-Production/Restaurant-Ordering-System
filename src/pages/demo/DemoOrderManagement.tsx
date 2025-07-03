@@ -5,6 +5,7 @@ import { useDemoAuth } from '../../contexts/DemoAuthContext';
 import OrderManagementContent from '../../shared/OrderManagementContent';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import { toast } from 'react-hot-toast';
+import { logActivity } from '../../services/activityLogService';
 
 const DemoOrderManagement: React.FC = () => {
   const { demoAccount } = useDemoAuth();
@@ -37,9 +38,18 @@ const DemoOrderManagement: React.FC = () => {
     if (!demoAccount?.id) return;
     setUpdatingOrderId(orderId);
     try {
+      const order = orders.find(o => o.id === orderId);
       await updateDoc(doc(db, 'demoAccounts', demoAccount.id, 'orders', orderId), {
         status: newStatus,
         updatedAt: serverTimestamp(),
+      });
+      await logActivity({
+        userId: demoAccount.id,
+        userEmail: demoAccount.email,
+        action: 'order_status_change',
+        entityType: 'order',
+        entityId: orderId,
+        details: { oldStatus: order?.status, newStatus },
       });
       toast.success(`Order status updated to ${newStatus}`);
     } catch (error) {
@@ -57,6 +67,13 @@ const DemoOrderManagement: React.FC = () => {
       await updateDoc(doc(db, 'demoAccounts', demoAccount.id, 'orders', orderId), {
         deleted: true,
         updatedAt: serverTimestamp(),
+      });
+      await logActivity({
+        userId: demoAccount.id,
+        userEmail: demoAccount.email,
+        action: 'order_deleted',
+        entityType: 'order',
+        entityId: orderId,
       });
       toast.success('Order deleted');
     } catch (error) {
