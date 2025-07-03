@@ -16,6 +16,7 @@ interface MenuItem {
   categoryId: string;
   status: 'active' | 'inactive';
   image?: string;
+  deleted: boolean;
   [key: string]: any;
 }
 
@@ -66,8 +67,11 @@ const MenuManagementContent: React.FC<MenuManagementContentProps> = ({
   const [itemToDelete, setItemToDelete] = useState<MenuItem | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Filter out deleted menu items for admin view
+  const visibleMenuItems = menuItems.filter(item => item.deleted !== true);
+
   // Filter and search
-  const filteredItems = menuItems.filter(item => {
+  const filteredItems = visibleMenuItems.filter(item => {
     const matchesCategory = filterCategory ? item.categoryId === filterCategory : true;
     const matchesSearch = searchQuery 
       ? item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||

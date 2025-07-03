@@ -35,6 +35,7 @@ import DemoDashboard from './pages/demo/DemoDashboard';
 import DemoCategoryManagement from './pages/demo/menu/DemoCategoryManagement';
 import DemoMenuManagement from './pages/demo/menu/DemoMenuManagement';
 import DemoOrderManagement from './pages/demo/DemoOrderManagement';
+import DemoPublicMenuPage from './pages/demo/DemoPublicMenuPage';
 
 const CustomerOrdersPage = React.lazy(() => import('./pages/client/customer/OrdersPage'));
 
@@ -212,6 +213,7 @@ function App() {
                   <DemoOrderManagement />
                 </DemoAuthProvider>
               } />
+              <Route path="/demo-public-menu/:demoId" element={<DemoPublicMenuPage />} />
               {/* Default routes */}
               <Route path="/" element={<Navigate to="/login" replace />} />
               <Route path="*" element={<Navigate to="/login" replace />} />

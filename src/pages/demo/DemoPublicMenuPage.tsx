@@ -1,31 +1,29 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { db } from '../../../firebase/config';
-import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
-import PublicMenuContent from '../../../shared/public/PublicMenuContent';
-import { useOfflineSync } from '../../../contexts/OfflineSyncContext';
+import { db } from '../../firebase/config';
+import { collection, query, where, getDocs, doc, getDoc, orderBy } from 'firebase/firestore';
+import PublicMenuContent from '../../shared/public/PublicMenuContent';
 
-const PublicMenuPage: React.FC = () => {
-  const { restaurantId } = useParams<{ restaurantId: string }>();
-  useOfflineSync();
+const DemoPublicMenuPage: React.FC = () => {
+  const { demoId } = useParams<{ demoId: string }>();
   const [restaurant, setRestaurant] = useState<any>(null);
   const [categories, setCategories] = useState<any[]>([]);
   const [menuItems, setMenuItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchRestaurantData = async () => {
-      if (!restaurantId) return;
+    const fetchDemoData = async () => {
+      if (!demoId) return;
+      setLoading(true);
       try {
-        // Fetch restaurant details
-        const restaurantDoc = await getDoc(doc(db, 'restaurants', restaurantId));
-        if (restaurantDoc.exists()) {
-          setRestaurant({ id: restaurantDoc.id, ...restaurantDoc.data() });
+        // Fetch demo account as restaurant
+        const demoDoc = await getDoc(doc(db, 'demoAccounts', demoId));
+        if (demoDoc.exists()) {
+          setRestaurant({ id: demoDoc.id, ...demoDoc.data() });
         }
         // Fetch categories
         const categoriesQuery = query(
-          collection(db, 'categories'),
-          where('restaurantId', '==', restaurantId),
+          collection(db, 'demoAccounts', demoId, 'categories'),
           where('status', '==', 'active')
         );
         const categoriesSnapshot = await getDocs(categoriesQuery);
@@ -38,10 +36,10 @@ const PublicMenuPage: React.FC = () => {
         const filteredCategories = categoriesData.filter(
           cat => cat.status === 'active' && (cat.deleted === undefined || cat.deleted === false)
         );
+        setCategories(filteredCategories.sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0)));
         // Fetch menu items
         const menuItemsQuery = query(
-          collection(db, 'menuItems'),
-          where('restaurantId', '==', restaurantId),
+          collection(db, 'demoAccounts', demoId, 'menuItems'),
           where('status', '==', 'active')
         );
         const menuItemsSnapshot = await getDocs(menuItemsQuery);
@@ -55,7 +53,7 @@ const PublicMenuPage: React.FC = () => {
             image: data.image || '',
             categoryId: data.categoryId || '',
             status: data.status || 'active',
-            restaurantId: data.restaurantId || restaurantId,
+            restaurantId: data.restaurantId || demoId,
             createdAt: data.createdAt || null,
             updatedAt: data.updatedAt || null,
             deleted: data.deleted
@@ -65,9 +63,8 @@ const PublicMenuPage: React.FC = () => {
         const filteredMenuItems = menuItemsData.filter(
           item => item.status === 'active' && (item.deleted === undefined || item.deleted === false)
         );
-        console.log('Filtered categories:', filteredCategories);
-        console.log('Filtered menuItems:', filteredMenuItems);
-        setCategories(filteredCategories.sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0)));
+        console.log('Filtered demo categories:', filteredCategories);
+        console.log('Filtered demo menuItems:', filteredMenuItems);
         setMenuItems(filteredMenuItems);
       } catch (error) {
         setCategories([]);
@@ -76,8 +73,8 @@ const PublicMenuPage: React.FC = () => {
         setLoading(false);
       }
     };
-    fetchRestaurantData();
-  }, [restaurantId]);
+    fetchDemoData();
+  }, [demoId]);
 
   return (
     <PublicMenuContent
@@ -89,9 +86,4 @@ const PublicMenuPage: React.FC = () => {
   );
 };
 
-export default PublicMenuPage;
-// Manual Test Notes:
-// 1. Visit /public-menu/:restaurantId in browser (with a valid restaurantId).
-// 2. Should see all active dishes grouped by category, no cart or table logic.
-// 3. No add-to-cart or order buttons, just read-only menu.
-// 4. Works offline if localStorage caches exist.
+export default DemoPublicMenuPage; 

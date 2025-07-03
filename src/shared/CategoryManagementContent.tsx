@@ -40,8 +40,10 @@ const CategoryManagementContent: React.FC<CategoryManagementContentProps> = ({
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [categoryToDelete, setCategoryToDelete] = useState<any | null>(null);
+  // Filter out deleted categories for admin view
+  const visibleCategories = categories.filter(category => category.deleted !== true);
   // Search, sort, and pagination logic
-  const filteredCategories = categories.filter(category =>
+  const filteredCategories = visibleCategories.filter(category =>
     category.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -300,7 +302,7 @@ const CategoryManagementContent: React.FC<CategoryManagementContentProps> = ({
             ) : currentItems.length === 0 ? (
               <tr>
                 <td colSpan={4} className="px-6 py-10 text-center text-gray-500">
-                  {categories.length === 0 ? 'No categories found. Add your first category!' : 'No categories match your search criteria.'}
+                  {visibleCategories.length === 0 ? 'No categories found. Add your first category!' : 'No categories match your search criteria.'}
                 </td>
               </tr>
             ) : (
