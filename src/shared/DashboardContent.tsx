@@ -125,6 +125,42 @@ const DashboardContent: React.FC<DashboardContentProps> = ({ restaurant, stats, 
           </div>
         </div>
       )}
+      {/* Demo Public Order Link Section */}
+      {isDemoUser && restaurant?.id && (
+        <div className="my-6 p-4 bg-white rounded shadow flex flex-col sm:flex-row items-center gap-4">
+          <div className="flex-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Demo Public Order Link</label>
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                className="w-full px-2 py-1 border rounded bg-gray-100 text-gray-700 text-xs sm:text-sm"
+                value={`${window.location.origin}/demo-public-order/${restaurant.id}`}
+                readOnly
+                id="demo-public-order-link"
+              />
+              <button
+                className="inline-flex items-center px-2 py-1 bg-primary text-white rounded hover:bg-primary-dark text-xs sm:text-sm"
+                onClick={() => {
+                  navigator.clipboard.writeText(`${window.location.origin}/demo-public-order/${restaurant.id}`);
+                  alert('Link copied!');
+                }}
+                type="button"
+              >
+                <Copy size={16} className="mr-1" /> Copy
+              </button>
+              <button
+                className="inline-flex items-center px-2 py-1 bg-secondary text-white rounded hover:bg-secondary-dark text-xs sm:text-sm"
+                onClick={() => {
+                  window.open(`${window.location.origin}/demo-public-order/${restaurant.id}`, '_blank');
+                }}
+                type="button"
+              >
+                Open
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="mb-8">
         <h2 className="text-lg font-medium text-gray-700">
           Welcome back, {restaurant?.name || 'Restaurant'}!

@@ -79,4 +79,5 @@ export interface Order {
   totalAmount: number;
   createdAt: any;
   updatedAt?: any;
+  deleted?: boolean;
 }

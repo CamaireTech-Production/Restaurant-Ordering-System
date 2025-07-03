@@ -72,9 +72,16 @@ const OrderManagementContent: React.FC<OrderManagementContentProps> = ({
   const [orderToDelete, setOrderToDelete] = useState<Order | null>(null);
 
   // Filter orders based on status
-  const filteredOrders = statusFilter === 'all'
+  let filteredOrders = statusFilter === 'all'
     ? orders
     : orders.filter(order => order.status === statusFilter);
+
+  // Sort orders by createdAt descending (newest first)
+  filteredOrders = filteredOrders.slice().sort((a, b) => {
+    const aTime = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : new Date(a.createdAt).getTime();
+    const bTime = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : new Date(b.createdAt).getTime();
+    return bTime - aTime;
+  });
 
   return (
     <div className="bg-white shadow rounded-lg overflow-hidden">
