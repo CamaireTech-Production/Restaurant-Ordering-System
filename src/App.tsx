@@ -31,6 +31,7 @@ import AdminActivityLog from './pages/admin/AdminActivityLog';
 import DemoLogin from './pages/demo/DemoLogin';
 import DemoSignup from './pages/demo/DemoSignup';
 import DemoCompleteSetup from './pages/demo/DemoCompleteSetup';
+import DemoDashboard from './pages/demo/DemoDashboard';
 
 const CustomerOrdersPage = React.lazy(() => import('./pages/client/customer/OrdersPage'));
 
@@ -55,50 +56,62 @@ function App() {
               <Route 
                 path="/profile-setup" 
                 element={
-                  <ProtectedRoute>
-                    {/* Show sidebar if not coming from onboarding (i.e., if not redirected from register) */}
-                    <ProfileSetup key="profile-setup" />
-                  </ProtectedRoute>
+                  <DemoAuthProvider>
+                    <ProtectedRoute>
+                      {/* Show sidebar if not coming from onboarding (i.e., if not redirected from register) */}
+                      <ProfileSetup key="profile-setup" />
+                    </ProtectedRoute>
+                  </DemoAuthProvider>
                 } 
               />
               <Route 
                 path="/dashboard" 
                 element={
-                  <ProtectedRoute>
-                    <Dashboard />
-                  </ProtectedRoute>
+                  <DemoAuthProvider>
+                    <ProtectedRoute>
+                      <Dashboard />
+                    </ProtectedRoute>
+                  </DemoAuthProvider>
                 } 
               />
               <Route 
                 path="/menu-management" 
                 element={
-                  <ProtectedRoute>
-                    <MenuManagement />
-                  </ProtectedRoute>
+                  <DemoAuthProvider>
+                    <ProtectedRoute>
+                      <MenuManagement />
+                    </ProtectedRoute>
+                  </DemoAuthProvider>
                 } 
               />
               <Route 
                 path="/category-management" 
                 element={
-                  <ProtectedRoute>
-                    <CategoryManagement />
-                  </ProtectedRoute>
+                  <DemoAuthProvider>
+                    <ProtectedRoute>
+                      <CategoryManagement />
+                    </ProtectedRoute>
+                  </DemoAuthProvider>
                 } 
               />
               <Route 
                 path="/table-management" 
                 element={
-                  <ProtectedRoute>
-                    <TableManagement />
-                  </ProtectedRoute>
+                  <DemoAuthProvider>
+                    <ProtectedRoute>
+                      <TableManagement />
+                    </ProtectedRoute>
+                  </DemoAuthProvider>
                 } 
               />
               <Route 
                 path="/orders" 
                 element={
-                  <ProtectedRoute>
-                    <OrdersPage />
-                  </ProtectedRoute>
+                  <DemoAuthProvider>
+                    <ProtectedRoute>
+                      <OrdersPage />
+                    </ProtectedRoute>
+                  </DemoAuthProvider>
                 } 
               />
               <Route
@@ -174,6 +187,11 @@ function App() {
               <Route path="/demo-complete-setup" element={
                 <DemoAuthProvider>
                   <DemoCompleteSetup />
+                </DemoAuthProvider>
+              } />
+              <Route path="/demo-dashboard" element={
+                <DemoAuthProvider>
+                  <DemoDashboard />
                 </DemoAuthProvider>
               } />
               {/* Default routes */}

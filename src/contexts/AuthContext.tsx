@@ -79,8 +79,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, []);
 
   const signIn = async (email: string, password: string) => {
+    console.log('[AuthContext] signIn start', { email });
     try {
       const cred = await signInWithEmailAndPassword(auth, email, password);
+      console.log('[AuthContext] signIn success', { uid: cred.user.uid });
       await logActivity({
         userId: cred.user.uid,
         userEmail: email,
@@ -89,6 +91,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       });
       navigate('/dashboard');
     } catch (error) {
+      console.error('[AuthContext] signIn error', error);
       throw error;
     }
   };

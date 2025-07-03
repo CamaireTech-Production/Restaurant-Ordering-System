@@ -12,13 +12,14 @@ export interface ActivityLog {
 
 export async function logActivity({ userId, userEmail, action, entityType, entityId, details }: ActivityLog) {
   const db = getFirestore();
-  await addDoc(collection(db, 'activityLogs'), {
+  const log: any = {
     userId,
     userEmail,
     action,
     entityType,
-    entityId,
     details: details || null,
     timestamp: serverTimestamp(),
-  });
+  };
+  if (entityId !== undefined) log.entityId = entityId;
+  await addDoc(collection(db, 'activityLogs'), log);
 } 

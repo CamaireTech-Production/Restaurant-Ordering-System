@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { useIsDemoUser } from '../../contexts/DemoAuthContext';
 import designSystem from '../../designSystem';
 import { 
   LayoutDashboard, 
@@ -17,6 +18,7 @@ import {
 
 const Sidebar: React.FC = () => {
   const { signOut, restaurant } = useAuth();
+  const isDemoUser = useIsDemoUser();
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -53,22 +55,22 @@ const Sidebar: React.FC = () => {
       path: '/category-management',
       icon: <Layers size={20} />,
     },
-    {
+    ...(!isDemoUser ? [{
       name: 'Tables',
       path: '/table-management',
       icon: <Table size={20} />,
-    },
+    }] : []),
     {
       name: 'Orders',
       path: '/orders',
       icon: <ClipboardList size={20} />,
     },
-    {
+    ...(!isDemoUser ? [{
       name: 'Settings',
       path: '/profile-setup',
       icon: <Settings size={20} />,
       isSettings: true,
-    },
+    }] : []),
   ];
 
   return (

@@ -361,4 +361,9 @@ export const DemoAuthProvider: React.FC<{ children: ReactNode }> = ({ children }
       {!loading && children}
     </DemoAuthContext.Provider>
   );
+};
+
+export const useIsDemoUser = () => {
+  const { demoAccount, loading } = useDemoAuth();
+  return !loading && !!demoAccount;
 }; 

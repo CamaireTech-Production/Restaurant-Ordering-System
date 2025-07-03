@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { Mail, Lock, ChefHat, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { useDemoAuth } from '../../contexts/DemoAuthContext';
@@ -14,6 +14,7 @@ const DemoLogin: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
 
   const { signIn, signInWithGoogle, signInWithPhoneAndPassword } = useDemoAuth();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,6 +26,7 @@ const DemoLogin: React.FC = () => {
       } else {
         await signInWithPhoneAndPassword(phone, password);
       }
+      navigate('/demo-dashboard');
     } catch (error: any) {
       setError('Failed to log in to demo account');
       toast.error('Failed to log in to demo account');
@@ -38,6 +40,7 @@ const DemoLogin: React.FC = () => {
     setIsLoading(true);
     try {
       await signInWithGoogle();
+      navigate('/demo-dashboard');
     } catch (error: any) {
       setError('Failed to sign in with Google');
       toast.error('Failed to sign in with Google');

@@ -59,7 +59,7 @@ const DemoSignup: React.FC = () => {
       // Use the email from Google sign-in
       await signUp(googleEmail, password, phone);
       toast.success('Demo account created successfully!');
-      navigate('/dashboard');
+      navigate('/demo-dashboard');
     } catch (error: any) {
       setError('Failed to create demo account');
       toast.error('Failed to create demo account');
