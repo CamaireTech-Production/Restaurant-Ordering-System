@@ -199,6 +199,50 @@ const DashboardContent: React.FC<DashboardContentProps> = ({ restaurant, stats, 
           </div>
         </div>
       </div>
+      {/* Quick Tips Section */}
+      <div className="mt-8">
+        <div className="bg-white shadow overflow-hidden sm:rounded-lg">
+          <div className="px-4 py-5 sm:px-6 flex justify-between items-center">
+            <div>
+              <h3 className="text-lg leading-6 font-medium text-gray-900">Quick Tips</h3>
+              <p className="mt-1 max-w-2xl text-sm text-gray-500">
+                Get started with your restaurant management.
+              </p>
+            </div>
+            <svg className="h-6 w-6 text-[#8B0000]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
+          </div>
+          <div className="border-t border-gray-200">
+            <dl>
+              <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                <dt className="text-sm font-medium text-gray-500">Categories</dt>
+                <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+                  First, create categories to organize your dishes.
+                </dd>
+              </div>
+              <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                <dt className="text-sm font-medium text-gray-500">Dishes</dt>
+                <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+                  Add your dishes with descriptions, prices, and images.
+                </dd>
+              </div>
+              {!isDemoUser && (
+                <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                  <dt className="text-sm font-medium text-gray-500">Tables</dt>
+                  <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+                    Set up your restaurant tables with optional custom names.
+                  </dd>
+                </div>
+              )}
+              <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                <dt className="text-sm font-medium text-gray-500">Profile</dt>
+                <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+                  Complete your restaurant profile to enhance customer experience.
+                </dd>
+              </div>
+            </dl>
+          </div>
+        </div>
+      </div>
       {children}
     </>
   );

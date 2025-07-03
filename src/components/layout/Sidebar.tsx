@@ -25,7 +25,11 @@ const Sidebar: React.FC = () => {
   const handleSignOut = async () => {
     try {
       await signOut();
-      navigate('/login');
+      if (isDemoUser) {
+        navigate('/demo-login');
+      } else {
+        navigate('/login');
+      }
     } catch (error) {
       console.error('Error signing out:', error);
     }
@@ -42,7 +46,7 @@ const Sidebar: React.FC = () => {
   const navItems = [
     {
       name: 'Dashboard',
-      path: '/dashboard',
+      path: isDemoUser ? '/demo-dashboard' : '/dashboard',
       icon: <LayoutDashboard size={20} />,
     },
     {
@@ -111,7 +115,7 @@ const Sidebar: React.FC = () => {
               }
               
               <h1 className="text-xl font-bold text-primary drop-shadow-[0_1px_2px_rgba(0,0,0,0.3)] break-words line-clamp-2">
-                {restaurant?.name || 'Restaurant'}
+                {isDemoUser ? 'Camairetech' : (restaurant?.name || 'Restaurant')}
               </h1>
             </div>
             <button
@@ -166,7 +170,7 @@ const Sidebar: React.FC = () => {
           <div className="mt-auto">
             <button
               onClick={handleSignOut}
-              className="flex items-center w-full px-4 py-3 text-gray-300 hover:bg-accent/20 hover:text-accent rounded-md transition-colors"
+              className="flex items-center w-full px-4 py-3 bg-accent text-primary font-bold hover:bg-primary hover:text-white rounded-md transition-colors shadow-md"
             >
               <LogOut size={20} className="mr-3" />
               Sign Out

@@ -44,6 +44,9 @@ const DemoDashboard: React.FC = () => {
     fetchStats();
   }, [demoAccount]);
 
+  // Ensure the restaurant name is always 'Camairetech' for demo dashboard
+  const demoRestaurant = demoAccount ? { ...demoAccount, name: 'Camairetech' } : { name: 'Camairetech' };
+
   if (loading || statsLoading) {
     return (
       <DashboardLayout title="Demo Dashboard">
@@ -55,9 +58,15 @@ const DemoDashboard: React.FC = () => {
   }
 
   return (
-    <DashboardLayout title="Demo Dashboard">
+    <DashboardLayout title={
+        <div className="flex flex-col sm:flex-row items-center justify-between w-full">
+        <span className="text-base sm:text-lg md:text-xl">
+          Dashboard
+        </span>
+      </div>
+    }>
       <DashboardContent
-        restaurant={demoAccount}
+        restaurant={demoRestaurant}
         stats={stats}
         isDemoUser={isDemoUser}
         loading={false}

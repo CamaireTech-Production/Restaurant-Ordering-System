@@ -85,20 +85,6 @@ const Dashboard: React.FC = () => {
         <span className="text-base sm:text-lg md:text-xl">
           Dashboard
         </span>
-        {/* {restaurant && (
-          <div className="flex items-center justify-start p-2 sm:p-4">
-            <span className="text-sm sm:text-base md:text-lg font-semibold text-primary">
-              {restaurant.name}
-            </span>
-            {restaurant.logo && (
-              <img
-                src={restaurant.logo}
-                alt="logo"
-                className="w-6 h-6 sm:w-8 sm:h-8 ml-2 rounded-full object-cover border border-primary"
-              />
-            )}
-          </div>
-        )} */}
       </div>
     }>
       <DashboardContent
