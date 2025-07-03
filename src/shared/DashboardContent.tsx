@@ -1,6 +1,7 @@
 import React from 'react';
 import { Copy, UtensilsCrossed, Layers, Table, ClipboardList } from 'lucide-react';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
+import { toast } from 'react-hot-toast';
 
 interface DashboardContentProps {
   restaurant: any;
@@ -43,7 +44,7 @@ const DashboardContent: React.FC<DashboardContentProps> = ({ restaurant, stats, 
                 className="inline-flex items-center px-2 py-1 bg-primary text-white rounded hover:bg-primary-dark text-xs sm:text-sm"
                 onClick={() => {
                   navigator.clipboard.writeText(`${window.location.origin}/public-menu/${restaurant.id}`);
-                  alert('Link copied!');
+                  toast.success('Link copied!');
                 }}
                 type="button"
               >
@@ -70,7 +71,7 @@ const DashboardContent: React.FC<DashboardContentProps> = ({ restaurant, stats, 
                 className="inline-flex items-center px-2 py-1 bg-primary text-white rounded hover:bg-primary-dark text-xs sm:text-sm"
                 onClick={() => {
                   navigator.clipboard.writeText(`${window.location.origin}/public-order/${restaurant.id}`);
-                  alert('Link copied!');
+                  toast.success('Link copied!');
                 }}
                 type="button"
               >
@@ -106,7 +107,7 @@ const DashboardContent: React.FC<DashboardContentProps> = ({ restaurant, stats, 
                 className="inline-flex items-center px-2 py-1 bg-primary text-white rounded hover:bg-primary-dark text-xs sm:text-sm"
                 onClick={() => {
                   navigator.clipboard.writeText(`${window.location.origin}/demo-public-menu/${restaurant.id}`);
-                  alert('Link copied!');
+                  toast.success('Link copied!');
                 }}
                 type="button"
               >
@@ -142,7 +143,7 @@ const DashboardContent: React.FC<DashboardContentProps> = ({ restaurant, stats, 
                 className="inline-flex items-center px-2 py-1 bg-primary text-white rounded hover:bg-primary-dark text-xs sm:text-sm"
                 onClick={() => {
                   navigator.clipboard.writeText(`${window.location.origin}/demo-public-order/${restaurant.id}`);
-                  alert('Link copied!');
+                  toast.success('Link copied!');
                 }}
                 type="button"
               >
