@@ -61,8 +61,13 @@ const DemoSignup: React.FC = () => {
       toast.success('Demo account created successfully!');
       navigate('/demo-dashboard');
     } catch (error: any) {
-      setError('Failed to create demo account');
-      toast.error('Failed to create demo account');
+      if (error.message === 'DEMO_EMAIL_EXISTS') {
+        setError('A demo account with this email already exists. Please use a different email or log in.');
+        toast.error('A demo account with this email already exists. Please use a different email or log in.');
+      } else {
+        setError('Failed to create demo account');
+        toast.error('Failed to create demo account');
+      }
     } finally {
       setIsLoading(false);
     }

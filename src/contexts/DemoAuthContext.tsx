@@ -92,15 +92,30 @@ export const DemoAuthProvider: React.FC<{ children: ReactNode }> = ({ children }
       console.log('[DemoAuth] signIn start', { email });
       const cred = await signInWithEmailAndPassword(auth, email, password);
       // Check for demo account
-      const demoDoc = await getDoc(doc(db, 'demoAccounts', cred.user.uid));
+      const demoDocRef = doc(db, 'demoAccounts', cred.user.uid);
+      const demoDoc = await getDoc(demoDocRef);
       if (!demoDoc.exists()) {
         console.error('[DemoAuth] No demo account found for user');
         throw new Error('No demo account found for this user');
       }
       const demoData = demoDoc.data();
+      const now = new Date();
+      if (!demoData.expired && demoData.expiresAt && demoData.active && new Date(demoData.expiresAt) < now) {
+        // Expire the account
+        await setDoc(demoDocRef, { active: false, expired: true }, { merge: true });
+        await logActivity({
+          userId: cred.user.uid,
+          userEmail: email,
+          action: 'demo_account_expired_on_login',
+          entityType: 'demoAccount',
+          entityId: cred.user.uid,
+          details: { expiredAt: demoData.expiresAt, expiredBy: 'login' },
+        });
+        throw new Error('EXPIRED_DEMO_ACCOUNT');
+      }
       if (demoData.expired) {
         console.error('[DemoAuth] Demo account expired');
-        throw new Error('Demo account expired');
+        throw new Error('EXPIRED_DEMO_ACCOUNT');
       }
       await logActivity({
         userId: cred.user.uid,
@@ -130,44 +145,8 @@ export const DemoAuthProvider: React.FC<{ children: ReactNode }> = ({ children }
       const snapshot = await getDocs(emailQuery);
       let docId;
       if (!snapshot.empty) {
-        docId = snapshot.docs[0].id;
-        console.log('[DemoAuth] Existing demo account found, docId:', docId);
-        // Link password to Google account if not already linked
-        try {
-          console.log('[DemoAuth] Attempting signInWithEmailAndPassword for password link check');
-          await signInWithEmailAndPassword(auth, email, password);
-        } catch (err) {
-          console.log('[DemoAuth] Linking password to Google account', err);
-          const { EmailAuthProvider, linkWithCredential } = await import('firebase/auth');
-          const credential = EmailAuthProvider.credential(email, password);
-          const providers = auth.currentUser?.providerData.map(p => p.providerId);
-          if (!providers || !providers.includes('password')) {
-            await linkWithCredential(auth.currentUser!, credential);
-          } else {
-            console.log('[DemoAuth] Password provider already linked, skipping linkWithCredential');
-          }
-        }
-        console.log('[DemoAuth] Updating demo account document');
-        await setDoc(doc(db, 'demoAccounts', docId), {
-          email,
-          phone,
-          updatedAt: serverTimestamp(),
-          active: true,
-          expired: false,
-          name: 'Camairetech',
-          logo: '/public/icons/icon-192x192.png',
-          colorPalette: {
-            primary: '#1D4ED8',
-            secondary: '#F59E42',
-          },
-        }, { merge: true });
-        console.log('[DemoAuth] Logging activity for demo_signup_update');
-        await logActivity({
-          userId: docId,
-          userEmail: email,
-          action: 'demo_signup_update',
-          entityType: 'demoAccount',
-        });
+        // If a demo account with this email exists, throw error
+        throw new Error('DEMO_EMAIL_EXISTS');
       } else {
         if (auth.currentUser) {
           // User is signed in with Google, link password
@@ -181,7 +160,7 @@ export const DemoAuthProvider: React.FC<{ children: ReactNode }> = ({ children }
             console.log('[DemoAuth] Password provider already linked, skipping linkWithCredential');
           }
           const now = new Date();
-          const expiresAt = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
+          const expiresAt = new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000);
           await setDoc(doc(db, 'demoAccounts', auth.currentUser.uid), {
             email,
             phone,
@@ -209,7 +188,7 @@ export const DemoAuthProvider: React.FC<{ children: ReactNode }> = ({ children }
           console.log('[DemoAuth] No existing demo account, creating new');
           const userCredential = await createUserWithEmailAndPassword(auth, email, password);
           const now = new Date();
-          const expiresAt = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
+          const expiresAt = new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000);
           await setDoc(doc(db, 'demoAccounts', userCredential.user.uid), {
             email,
             phone,
@@ -249,15 +228,30 @@ export const DemoAuthProvider: React.FC<{ children: ReactNode }> = ({ children }
       const email = userCredential.user.email;
       if (!email) throw new Error('No email found from Google account');
       // Check for demo account
-      const demoDoc = await getDoc(doc(db, 'demoAccounts', userCredential.user.uid));
+      const demoDocRef = doc(db, 'demoAccounts', userCredential.user.uid);
+      const demoDoc = await getDoc(demoDocRef);
       if (!demoDoc.exists()) {
         console.error('[DemoAuth] No demo account found for user after Google sign-in');
         throw new Error('No demo account found for this user');
       }
       const demoData = demoDoc.data();
+      const now = new Date();
+      if (!demoData.expired && demoData.expiresAt && demoData.active && new Date(demoData.expiresAt) < now) {
+        // Expire the account
+        await setDoc(demoDocRef, { active: false, expired: true }, { merge: true });
+        await logActivity({
+          userId: userCredential.user.uid,
+          userEmail: email,
+          action: 'demo_account_expired_on_login',
+          entityType: 'demoAccount',
+          entityId: userCredential.user.uid,
+          details: { expiredAt: demoData.expiresAt, expiredBy: 'login' },
+        });
+        throw new Error('EXPIRED_DEMO_ACCOUNT');
+      }
       if (demoData.expired) {
         console.error('[DemoAuth] Demo account expired');
-        throw new Error('Demo account expired');
+        throw new Error('EXPIRED_DEMO_ACCOUNT');
       }
       await logActivity({
         userId: userCredential.user.uid,
@@ -310,9 +304,30 @@ export const DemoAuthProvider: React.FC<{ children: ReactNode }> = ({ children }
       const docData = snapshot.docs[0].data();
       const email = docData.email;
       const cred = await signInWithEmailAndPassword(auth, email, password);
-      if (docData.expired) {
+      const demoDocRef = doc(db, 'demoAccounts', cred.user.uid);
+      const demoDoc = await getDoc(demoDocRef);
+      if (!demoDoc.exists()) {
+        console.error('[DemoAuth] No demo account found for user after phone login');
+        throw new Error('No demo account found for this user');
+      }
+      const demoData = demoDoc.data();
+      const now = new Date();
+      if (demoData && !demoData.expired && demoData.expiresAt && demoData.active && new Date(demoData.expiresAt) < now) {
+        // Expire the account
+        await setDoc(demoDocRef, { active: false, expired: true }, { merge: true });
+        await logActivity({
+          userId: cred.user.uid,
+          userEmail: email,
+          action: 'demo_account_expired_on_login',
+          entityType: 'demoAccount',
+          entityId: cred.user.uid,
+          details: { expiredAt: demoData.expiresAt, expiredBy: 'login' },
+        });
+        throw new Error('EXPIRED_DEMO_ACCOUNT');
+      }
+      if (demoData && demoData.expired) {
         console.error('[DemoAuth] Demo account expired');
-        throw new Error('Demo account expired');
+        throw new Error('EXPIRED_DEMO_ACCOUNT');
       }
       await logActivity({
         userId: cred.user.uid,
