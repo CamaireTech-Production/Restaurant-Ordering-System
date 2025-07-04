@@ -222,7 +222,7 @@ const DemoMenuManagement: React.FC = () => {
   }
 
   return (
-    <DashboardLayout title="Demo Menu Management">
+    <DashboardLayout title="">
       <MenuManagementContent
         menuItems={menuItems}
         categories={categories}

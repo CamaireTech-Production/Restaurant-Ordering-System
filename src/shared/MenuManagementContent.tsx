@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { PlusCircle, Edit, Trash2, Eye, EyeOff, Search, X, Upload, Image, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
 import Modal from '../components/ui/Modal';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
+import designSystem from '../designSystem';
 
 interface Category {
   id: string;
@@ -66,6 +67,7 @@ const MenuManagementContent: React.FC<MenuManagementContentProps> = ({
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<MenuItem | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [bulkDeleteConfirmOpen, setBulkDeleteConfirmOpen] = useState(false);
 
   // Filter out deleted menu items for admin view
   const visibleMenuItems = menuItems.filter(item => item.deleted !== true);
@@ -168,7 +170,7 @@ const MenuManagementContent: React.FC<MenuManagementContentProps> = ({
       description: formData.description.trim(),
       categoryId: formData.categoryId,
       status: formData.status,
-      image: formData.imageBase64 || formData.imageURL || '',
+      image: formData.imageBase64 || formData.imageURL || '/icons/placeholder.jpg',
     };
     setIsSubmitting(true);
     if (editingItem) {
@@ -199,8 +201,12 @@ const MenuManagementContent: React.FC<MenuManagementContentProps> = ({
 
   const handleBulkAction = (action: 'delete' | 'activate' | 'deactivate') => {
     if (selectedItems.length === 0) return;
-    onBulkAction(action, selectedItems);
-    setSelectedItems([]);
+    if (action === 'delete') {
+      setBulkDeleteConfirmOpen(true);
+    } else {
+      onBulkAction(action, selectedItems);
+      setSelectedItems([]);
+    }
   };
 
   // Pagination controls
@@ -282,15 +288,16 @@ const MenuManagementContent: React.FC<MenuManagementContentProps> = ({
   };
 
   return (
-    <div className="bg-white shadow rounded-lg overflow-hidden">
-      <div className="p-4 sm:p-6 border-b border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div className="shadow rounded-lg overflow-hidden" style={{ background: designSystem.colors.white }}>
+      <div className="p-4 sm:p-6 border-b flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4" style={{ borderColor: designSystem.colors.borderLightGray }}>
         <div>
-          <h2 className="text-xl font-semibold text-gray-800">Dishes</h2>
-          <p className="text-gray-600 text-sm">Manage your restaurant dishes</p>
+          <h2 className="text-xl font-semibold" style={{ color: designSystem.colors.primary }}>Dishes</h2>
+          <p className="text-sm" style={{ color: designSystem.colors.text }}>Manage your restaurant dishes</p>
         </div>
         <button
           onClick={openAddModal}
-          className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors"
+          className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium"
+          style={{ background: designSystem.colors.primary, color: designSystem.colors.white }}
         >
           <PlusCircle size={16} className="mr-2" /> Add Dish
         </button>
@@ -361,6 +368,34 @@ const MenuManagementContent: React.FC<MenuManagementContentProps> = ({
             >
               <Trash2 size={14} className="mr-1" /> Delete
             </button>
+      {/* Bulk Delete Confirmation Modal */}
+      <Modal isOpen={bulkDeleteConfirmOpen} onClose={() => setBulkDeleteConfirmOpen(false)} title="Delete Dishes">
+        <div className="p-4">
+          <p className="text-gray-800 text-base mb-4">
+            Are you sure you want to delete <span className="font-semibold">{selectedItems.length}</span> selected dish{selectedItems.length > 1 ? 'es' : ''}? This action cannot be undone.
+          </p>
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setBulkDeleteConfirmOpen(false)}
+              className="inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary sm:w-auto sm:text-sm"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                onBulkAction('delete', selectedItems);
+                setSelectedItems([]);
+                setBulkDeleteConfirmOpen(false);
+              }}
+              className="inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:w-auto sm:text-sm"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      </Modal>
           </div>
         </div>
       )}
@@ -444,31 +479,33 @@ const MenuManagementContent: React.FC<MenuManagementContentProps> = ({
                         {item.image ? (
                           <img className="h-10 w-10 rounded-full object-cover" src={item.image} alt={item.title} />
                         ) : (
-                          <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
-                            <Image size={20} className="text-gray-500" />
+                          <div className="h-10 w-10 rounded-full flex items-center justify-center" style={{ background: designSystem.colors.statusDefaultBg }}>
+                            <Image size={20} style={{ color: designSystem.colors.secondary }} />
                           </div>
                         )}
                       </div>
                       <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900">{item.title} <span className="text-xs text-gray-500">(Plat)</span></div>
+                        <div className="text-sm font-medium" style={{ color: designSystem.colors.primary }}>{item.title} <span className="text-xs" style={{ color: designSystem.colors.text }}>{"(Plat)"}</span></div>
                         {item.description && (
-                          <div className="text-sm text-gray-500 truncate max-w-xs">{item.description}</div>
+                          <div className="text-sm truncate max-w-xs" style={{ color: designSystem.colors.text }}>{item.description}</div>
                         )}
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{getCategoryName(item.categoryId)}</div>
+                    <div className="text-sm" style={{ color: designSystem.colors.primary }}>{getCategoryName(item.categoryId)}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{item.price.toLocaleString()} FCFA</div>
+                    <div className="text-sm" style={{ color: designSystem.colors.primary }}>{item.price.toLocaleString()} FCFA</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      item.status === 'active' 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-yellow-100 text-yellow-800'
-                    }`}>
+                    <span
+                      className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
+                      style={{
+                        background: item.status === 'active' ? designSystem.colors.statusReadyBg : designSystem.colors.statusPendingBg,
+                        color: item.status === 'active' ? designSystem.colors.statusReadyText : designSystem.colors.statusPendingText
+                      }}
+                    >
                       {item.status === 'active' ? 'Active' : 'Inactive'}
                     </span>
                   </td>
@@ -476,24 +513,21 @@ const MenuManagementContent: React.FC<MenuManagementContentProps> = ({
                     <div className="flex justify-end space-x-2">
                       <button
                         onClick={() => onToggleStatus(item)}
-                        className={`text-${item.status === 'active' ? 'yellow' : 'green'}-600 hover:text-${item.status === 'active' ? 'yellow' : 'green'}-900`}
                         title={item.status === 'active' ? 'Deactivate' : 'Activate'}
                       >
-                        {item.status === 'active' ? <EyeOff size={18} /> : <Eye size={18} />}
+                        {item.status === 'active' ? <EyeOff size={18} style={{ color: designSystem.colors.secondary }} /> : <Eye size={18} style={{ color: designSystem.colors.secondary }} />}
                       </button>
                       <button
                         onClick={() => openEditModal(item)}
-                        className="text-indigo-600 hover:text-indigo-900"
                         title="Edit"
                       >
-                        <Edit size={18} />
+                        <Edit size={18} style={{ color: designSystem.colors.secondary }} />
                       </button>
                       <button
                         onClick={() => { setItemToDelete(item); setDeleteConfirmOpen(true); }}
-                        className="text-red-600 hover:text-red-900"
                         title="Delete"
                       >
-                        <Trash2 size={18} />
+                        <Trash2 size={18} style={{ color: designSystem.colors.secondary }} />
                       </button>
                     </div>
                   </td>
@@ -537,22 +571,26 @@ const MenuManagementContent: React.FC<MenuManagementContentProps> = ({
       </div>
       {/* Add/Edit Modal */}
       <Modal isOpen={isModalOpen} onClose={closeModal} title={editingItem ? 'Edit Dish' : 'Add Dish'}>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="title" className="block text-sm font-medium text-gray-700">Title*</label>
+        {/* Field requirements explanation */}
+        <div className="mb-3 text-xs text-gray-500">
+          <span className="text-red-500">*</span> Required fields. <span className="ml-2">Other fields are optional.</span>
+        </div>
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div className="mb-2">
+            <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">Title*</label>
             <input
               type="text"
               id="title"
               name="title"
               value={formData.title}
               onChange={handleInputChange}
-              className="mt-1 block w-full py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
+              className="block w-full py-3 px-3 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
               required
             />
           </div>
-          <div>
-            <label htmlFor="price" className="block text-sm font-medium text-gray-700">Price*</label>
-            <div className="mt-1 relative rounded-md shadow-sm">
+          <div className="mb-2">
+            <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-1">Price*</label>
+            <div className="relative rounded-md shadow-sm">
               <input
                 type="number"
                 id="price"
@@ -561,22 +599,22 @@ const MenuManagementContent: React.FC<MenuManagementContentProps> = ({
                 step="0.01"
                 value={formData.price}
                 onChange={handleInputChange}
-                className="pl-7 block w-full py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
+                className="block w-full py-3 px-3 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
                 required
               />
-              <div className="absolute inset-y-0 right-2 pl-3 flex items-center pointer-events-none">
+              <div className="absolute inset-y-0 right-2 pl-3 pr-6 flex items-center pointer-events-none">
                 <span className="text-gray-500 sm:text-sm">FCFA</span>
               </div>
             </div>
           </div>
-          <div>
-            <label htmlFor="categoryId" className="block text-sm font-medium text-gray-700">Category*</label>
+          <div className="mb-2">
+            <label htmlFor="categoryId" className="block text-sm font-medium text-gray-700 mb-1">Category*</label>
             <select
               id="categoryId"
               name="categoryId"
               value={formData.categoryId}
               onChange={handleInputChange}
-              className="mt-1 block w-full py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
+              className="block w-full py-3 px-3 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
               required
             >
               <option value="">Select a category</option>
@@ -585,33 +623,33 @@ const MenuManagementContent: React.FC<MenuManagementContentProps> = ({
               ))}
             </select>
           </div>
-          <div>
-            <label htmlFor="description" className="block text-sm font-medium text-gray-700">Description</label>
+          <div className="mb-2">
+            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">Description</label>
             <textarea
               id="description"
               name="description"
               rows={3}
               value={formData.description}
               onChange={handleInputChange}
-              className="mt-1 block w-full py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
+              className="block w-full py-3 px-3 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
             />
           </div>
-          <div>
-            <label htmlFor="status" className="block text-sm font-medium text-gray-700">Status</label>
+          <div className="mb-2">
+            <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">Status</label>
             <select
               id="status"
               name="status"
               value={formData.status}
               onChange={handleInputChange}
-              className="mt-1 block w-full py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
+              className="block w-full py-3 px-3 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
             >
               <option value="active">Active</option>
               <option value="inactive">Inactive</option>
             </select>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Image</label>
-            <div className="mt-1 flex items-center">
+          <div className="mb-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Image</label>
+            <div className="flex items-center">
               {formData.imageURL ? (
                 <div className="relative">
                   <img

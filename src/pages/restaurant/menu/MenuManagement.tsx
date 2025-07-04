@@ -1,10 +1,5 @@
 import React, { useState, useEffect } from 'react';
 // Helper to queue admin actions offline
-function queuePendingAction(action: { type: string; payload: { title: string; price: number; description: string; categoryId: string; status: "active" | "inactive"; image: string; restaurantId: string; } | { id: string; data: { title: string; price: number; description: string; categoryId: string; status: "active" | "inactive"; image: string; restaurantId: string; }; } | { id: string; }; }) {
-  const arr = JSON.parse(localStorage.getItem('pendingActions') || '[]');
-  arr.push({ ...action, timestamp: Date.now() });
-  localStorage.setItem('pendingActions', JSON.stringify(arr));
-}
 import { useAuth } from '../../../contexts/AuthContext';
 import DashboardLayout from '../../../components/layout/DashboardLayout';
 import { db } from '../../../firebase/config';
@@ -20,20 +15,6 @@ import {
   orderBy
 } from 'firebase/firestore';
 import { toast } from 'react-hot-toast';
-import { 
-  PlusCircle, 
-  Edit, 
-  Trash2, 
-  Eye, 
-  EyeOff, 
-  Search, 
-  X,
-  Upload,
-  Image,
-  Filter,
-  ChevronLeft,
-  ChevronRight
-} from 'lucide-react';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 import { Dish as MenuItem, Category } from '../../../types';
 import MenuManagementContent from '../../../shared/MenuManagementContent';
@@ -226,7 +207,7 @@ const MenuManagement: React.FC = () => {
 
   if (loading) {
     return (
-      <DashboardLayout title="Menu Management">
+      <DashboardLayout title="">
         <div className="flex justify-center items-center h-64">
           <LoadingSpinner size={60} />
         </div>
@@ -235,7 +216,7 @@ const MenuManagement: React.FC = () => {
   }
 
   return (
-    <DashboardLayout title="Menu Management">
+    <DashboardLayout title="">
       <MenuManagementContent
         menuItems={menuItems}
         categories={categories}

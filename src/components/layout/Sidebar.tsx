@@ -120,7 +120,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, open, onClose }) => {
               )}
             </div>
             {!collapsed && (
-              <span className="text-xl font-bold tracking-tight" style={{ color: designSystem.colors.accent }}>
+              <span className="text-xl font-bold tracking-tight" style={{ color: designSystem.colors.textInverse }}>
                 {isDemoUser ? 'Camairetech' : restaurant?.name || 'Restaurant'}
               </span>
             )}
