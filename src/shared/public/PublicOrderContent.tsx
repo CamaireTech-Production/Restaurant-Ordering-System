@@ -1,5 +1,6 @@
 import React, { useRef, useState, useEffect, useMemo } from 'react';
 import { ChefHat, Search, X, ShoppingCart, PlusCircle, MinusCircle, Trash2 } from 'lucide-react';
+
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import DishDetailModal from '../../pages/client/customer/DishDetailModal';
 import Modal from '../../components/ui/Modal';
@@ -13,9 +14,10 @@ interface PublicOrderContentProps {
   menuItems: Dish[];
   loading: boolean;
   createOrder: (order: Omit<Order, 'id' | 'createdAt' | 'updatedAt'>) => Promise<any>;
+  isDemo?: boolean;
 }
 
-const PublicOrderContent: React.FC<PublicOrderContentProps> = ({ restaurant, categories, menuItems, loading, createOrder }) => {
+const PublicOrderContent: React.FC<PublicOrderContentProps> = ({ restaurant, categories, menuItems, loading, createOrder, isDemo }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<string>('all');
@@ -209,15 +211,17 @@ const PublicOrderContent: React.FC<PublicOrderContentProps> = ({ restaurant, cat
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col sm:px-0">
       {/* Sticky Header + Category Tabs */}
-      <div className="sticky top-0 z-30 bg-primary shadow-md">
+      <div className="sticky top-0 z-30 shadow-md" style={{ background: designSystem.colors.primary }}>
         {/* Header */}
-        <header className="text-white px-2 sm:px-4 lg:px-6">
+        <header style={{ color: designSystem.colors.white }}>
           <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6">
             <div className="flex flex-col sm:flex-row justify-between items-center py-3">
               <div className="flex items-center w-full sm:w-auto mb-2 sm:mb-0">
                 <div className="flex items-center">
-                  {restaurant?.logo ? (
-                    <div className="h-12 w-12 rounded-full flex items-center justify-center bg-white shadow-lg ring-2 ring-accent mr-3">
+                  {isDemo ? (
+                    <ChefHat size={32} className="drop-shadow mr-2" color={designSystem.colors.accent} />
+                  ) : restaurant?.logo ? (
+                    <div className="h-12 w-12 rounded-full flex items-center justify-center bg-white shadow-lg ring-2" style={{ borderColor: designSystem.colors.accent, marginRight: 12 }}>
                       <img
                         src={restaurant.logo}
                         alt={restaurant.name}
@@ -226,10 +230,10 @@ const PublicOrderContent: React.FC<PublicOrderContentProps> = ({ restaurant, cat
                       />
                     </div>
                   ) : (
-                    <ChefHat size={24} className="mr-3" />
+                    <ChefHat size={32} className="drop-shadow mr-2" color={designSystem.colors.accent} />
                   )}
                   <div className="flex flex-col">
-                    <h1 className="text-xl font-bold">{restaurant?.name}</h1>
+                    <h1 className="text-xl font-bold" style={{ color: designSystem.colors.white }}>{restaurant?.name}</h1>
                   </div>
                 </div>
               </div>
@@ -239,18 +243,34 @@ const PublicOrderContent: React.FC<PublicOrderContentProps> = ({ restaurant, cat
         {/* Category Tabs */}
         <div
           ref={categoryTabsRef}
-          className="bg-white pt-2 pb-2 border-b border-gray-200 shadow-sm"
-          style={{ WebkitOverflowScrolling: 'touch' }}
+          className="pt-2 pb-2 border-b shadow-sm"
+          style={{ background: designSystem.colors.white, borderColor: designSystem.colors.borderLightGray, WebkitOverflowScrolling: 'touch' }}
         >
           <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6">
             <div className="flex space-x-2 overflow-x-auto no-scrollbar py-2">
               <button
                 onClick={() => handleCategoryClick('all')}
-                className={`flex-shrink-0 px-5 py-2 rounded-full font-bold text-base sm:text-lg transition ${
-                  activeCategory === 'all'
-                    ? 'bg-primary text-white shadow'
-                    : 'bg-gray-100 text-gray-700 hover:bg-primary/10'
-                }`}
+                className={`flex-shrink-0 px-5 py-2 rounded-full font-bold text-base sm:text-lg transition`}
+                style={{
+                  background: activeCategory === 'all' ? designSystem.colors.primary : designSystem.colors.white,
+                  color: activeCategory === 'all' ? designSystem.colors.white : designSystem.colors.primary,
+                  border: `1px solid ${designSystem.colors.primary}`,
+                }}
+                onMouseEnter={e => {
+                  if (activeCategory !== 'all') {
+                    e.currentTarget.style.background = designSystem.colors.secondary;
+                    e.currentTarget.style.color = designSystem.colors.primary;
+                    e.currentTarget.style.color = designSystem.colors.secondary;
+
+                  }
+                }}
+                onMouseLeave={e => {
+                  if (activeCategory !== 'all') {
+                    e.currentTarget.style.background = designSystem.colors.white;
+                    e.currentTarget.style.color = designSystem.colors.primary;
+                    e.currentTarget.style.color = designSystem.colors.primary;
+                  }
+                }}
               >
                 All
               </button>
@@ -259,11 +279,24 @@ const PublicOrderContent: React.FC<PublicOrderContentProps> = ({ restaurant, cat
                   key={cat.id}
                   id={`category-tab-${cat.id}`}
                   onClick={() => handleCategoryClick(cat.id)}
-                  className={`flex-shrink-0 px-5 py-2 rounded-full font-bold text-base sm:text-lg transition ${
-                    activeCategory === cat.id
-                      ? 'bg-primary text-white shadow'
-                      : 'bg-gray-100 text-gray-700 hover:bg-primary/10'
-                  }`}
+                  className={`flex-shrink-0 px-5 py-2 rounded-full font-bold text-base sm:text-lg transition`}
+                  style={{
+                    background: activeCategory === cat.id ? designSystem.colors.primary : designSystem.colors.white,
+                    color: activeCategory === cat.id ? designSystem.colors.white : designSystem.colors.primary,
+                    border: `1px solid ${designSystem.colors.primary}`,
+                  }}
+                  onMouseEnter={e => {
+                    if (activeCategory !== cat.id) {
+                      e.currentTarget.style.background = designSystem.colors.secondary;
+                      e.currentTarget.style.color = designSystem.colors.primary;
+                    }
+                  }}
+                  onMouseLeave={e => {
+                    if (activeCategory !== cat.id) {
+                      e.currentTarget.style.background = designSystem.colors.white;
+                      e.currentTarget.style.color = designSystem.colors.primary;
+                    }
+                  }}
                 >
                   {cat.title}
                 </button>

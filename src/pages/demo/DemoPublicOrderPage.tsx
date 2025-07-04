@@ -103,8 +103,9 @@ const DemoPublicOrderPage: React.FC = () => {
       menuItems={menuItems}
       loading={loading}
       createOrder={createDemoOrderWithLog}
+      isDemo={true}
     />
   );
 };
 
-export default DemoPublicOrderPage; 
+export default DemoPublicOrderPage;

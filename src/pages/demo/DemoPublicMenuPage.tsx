@@ -82,8 +82,9 @@ const DemoPublicMenuPage: React.FC = () => {
       categories={categories}
       menuItems={menuItems}
       loading={loading}
+      isDemo={true}
     />
   );
 };
 
-export default DemoPublicMenuPage; 
+export default DemoPublicMenuPage;
