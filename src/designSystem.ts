@@ -37,6 +37,12 @@ const designSystem = {
     // Toast/notification colors
     success: '#22C55E', // green-500
     error: '#EF4444',   // red-500
+
+    // Google brand colors for social login button
+    googleBlue: '#4285F4',   // Google Blue
+    googleGreen: '#34A853',  // Google Green
+    googleYellow: '#FBBC05', // Google Yellow
+    googleRed: '#EA4335',    // Google Red
   },
   fonts: {
     body: 'Inter, sans-serif',
