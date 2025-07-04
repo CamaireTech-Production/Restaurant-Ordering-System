@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { Mail, Lock, ChefHat, AlertCircle, Eye, EyeOff } from 'lucide-react';
@@ -17,6 +17,14 @@ const DemoLogin: React.FC = () => {
   const { signIn, signInWithGoogle, signInWithPhoneAndPassword } = useDemoAuth();
   const navigate = useNavigate();
 
+  useEffect(() => {
+    if (localStorage.getItem('demoExpired') === 'true') {
+      setExpired(true);
+      setError('Your demo account has expired.');
+      localStorage.removeItem('demoExpired');
+    }
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -27,11 +35,21 @@ const DemoLogin: React.FC = () => {
       } else {
         await signInWithPhoneAndPassword(phone, password);
       }
-      navigate('/demo-dashboard');
+      // Only navigate if not expired
+      const demoAccount = JSON.parse(localStorage.getItem('demoAccount') || 'null');
+      if (demoAccount && demoAccount.expired) {
+        setExpired(true);
+        setError('Your demo account has expired.');
+      } else {
+        navigate('/demo-dashboard');
+      }
     } catch (error: any) {
       if (error.message === 'EXPIRED_DEMO_ACCOUNT') {
         setExpired(true);
         setError('Your demo account has expired.');
+      } else if (error.message === 'No demo account found with this phone number') {
+        setError('No demo account found with this phone number. Please check your number or sign up.');
+        toast.error('No demo account found with this phone number.');
       } else {
         setError('Failed to log in to demo account');
         toast.error('Failed to log in to demo account');
@@ -48,8 +66,13 @@ const DemoLogin: React.FC = () => {
       await signInWithGoogle();
       navigate('/demo-dashboard');
     } catch (error: any) {
-      setError('Failed to sign in with Google');
-      toast.error('Failed to sign in with Google');
+      if (error.message === 'EXPIRED_DEMO_ACCOUNT') {
+        setExpired(true);
+        setError('Your demo account has expired.');
+      } else {
+        setError('Failed to sign in with Google');
+        toast.error('Failed to sign in with Google');
+      }
     } finally {
       setIsLoading(false);
     }

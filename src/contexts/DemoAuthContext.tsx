@@ -87,6 +87,29 @@ export const DemoAuthProvider: React.FC<{ children: ReactNode }> = ({ children }
     return unsubscribe;
   }, []);
 
+  useEffect(() => {
+    if (!currentUser) return;
+    let timer: NodeJS.Timeout;
+    const resetTimer = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => {
+        signOut();
+      }, 30 * 60 * 1000); // 30 minutes
+    };
+    window.addEventListener('mousemove', resetTimer);
+    window.addEventListener('keydown', resetTimer);
+    window.addEventListener('mousedown', resetTimer);
+    window.addEventListener('touchstart', resetTimer);
+    resetTimer();
+    return () => {
+      if (timer) clearTimeout(timer);
+      window.removeEventListener('mousemove', resetTimer);
+      window.removeEventListener('keydown', resetTimer);
+      window.removeEventListener('mousedown', resetTimer);
+      window.removeEventListener('touchstart', resetTimer);
+    };
+  }, [currentUser]);
+
   const signIn = async (email: string, password: string) => {
     try {
       console.log('[DemoAuth] signIn start', { email });

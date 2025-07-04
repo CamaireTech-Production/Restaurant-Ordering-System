@@ -162,7 +162,7 @@ const OrdersPage: React.FC = () => {
         toast.success('Order deletion queued for sync!');
         setUpdatingOrderId(null);
         return;
-      }
+    }
       await updateDoc(doc(db, 'orders', orderId), {
         deleted: true,
         updatedAt: serverTimestamp(),
@@ -180,7 +180,7 @@ const OrdersPage: React.FC = () => {
       toast.error('Failed to delete order');
     } finally {
       setUpdatingOrderId(null);
-    }
+  }
   };
 
   return (

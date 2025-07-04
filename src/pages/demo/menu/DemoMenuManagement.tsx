@@ -7,6 +7,8 @@ import { collection, getDocs, addDoc, updateDoc, doc, serverTimestamp } from 'fi
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 import { toast } from 'react-hot-toast';
 import { logActivity } from '../../../services/activityLogService';
+import { useNavigate } from 'react-router-dom';
+import { setDoc } from 'firebase/firestore';
 
 const DemoMenuManagement: React.FC = () => {
   const { demoAccount, loading } = useDemoAuth();
@@ -14,6 +16,7 @@ const DemoMenuManagement: React.FC = () => {
   const [menuItems, setMenuItems] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [menuLoading, setMenuLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -37,6 +40,43 @@ const DemoMenuManagement: React.FC = () => {
     };
     fetchData();
   }, [demoAccount]);
+
+  useEffect(() => {
+    if (!loading && demoAccount) {
+      const now = new Date();
+      let expiresAt: Date | null = null;
+      let rawExpiresAt = demoAccount.expiresAt;
+      if (rawExpiresAt) {
+        if (typeof rawExpiresAt.toDate === 'function') {
+          expiresAt = rawExpiresAt.toDate();
+        } else {
+          expiresAt = new Date(rawExpiresAt);
+        }
+        if (expiresAt && isNaN(expiresAt.getTime())) expiresAt = null;
+      }
+      if (expiresAt && expiresAt < now) {
+        if (!demoAccount.expired || demoAccount.active) {
+          setDoc(doc(db, 'demoAccounts', demoAccount.id), { expired: true, active: false }, { merge: true });
+          logActivity({
+            userId: demoAccount.id,
+            userEmail: demoAccount.email,
+            action: 'demo_account_expired_on_menu_management',
+            entityType: 'demoAccount',
+            entityId: demoAccount.id,
+            details: { expiredAt: demoAccount.expiresAt, expiredBy: 'menu_management' },
+          });
+        }
+        localStorage.setItem('demoExpired', 'true');
+        navigate('/demo-login', { replace: true });
+        return;
+      }
+      if (demoAccount.expired) {
+        localStorage.setItem('demoExpired', 'true');
+        navigate('/demo-login', { replace: true });
+        return;
+      }
+    }
+  }, [loading, demoAccount, navigate]);
 
   // CRUD handlers for demo menu items
   const handleAdd = async (data: any) => {

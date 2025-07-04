@@ -6,16 +6,56 @@ import OrderManagementContent from '../../shared/OrderManagementContent';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import { toast } from 'react-hot-toast';
 import { logActivity } from '../../services/activityLogService';
+import { useNavigate } from 'react-router-dom';
+import { setDoc } from 'firebase/firestore';
 
 const DemoOrderManagement: React.FC = () => {
-  const { demoAccount } = useDemoAuth();
+  const { demoAccount, loading } = useDemoAuth();
   const [orders, setOrders] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [ordersLoading, setOrdersLoading] = useState(true);
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!loading && demoAccount) {
+      const now = new Date();
+      let expiresAt: Date | null = null;
+      let rawExpiresAt = demoAccount.expiresAt;
+      if (rawExpiresAt) {
+        if (typeof rawExpiresAt.toDate === 'function') {
+          expiresAt = rawExpiresAt.toDate();
+        } else {
+          expiresAt = new Date(rawExpiresAt);
+        }
+        if (expiresAt && isNaN(expiresAt.getTime())) expiresAt = null;
+      }
+      if (expiresAt && expiresAt < now) {
+        if (!demoAccount.expired || demoAccount.active) {
+          setDoc(doc(db, 'demoAccounts', demoAccount.id), { expired: true, active: false }, { merge: true });
+          logActivity({
+            userId: demoAccount.id,
+            userEmail: demoAccount.email,
+            action: 'demo_account_expired_on_order_management',
+            entityType: 'demoAccount',
+            entityId: demoAccount.id,
+            details: { expiredAt: demoAccount.expiresAt, expiredBy: 'order_management' },
+          });
+        }
+        localStorage.setItem('demoExpired', 'true');
+        navigate('/demo-login', { replace: true });
+        return;
+      }
+      if (demoAccount.expired) {
+        localStorage.setItem('demoExpired', 'true');
+        navigate('/demo-login', { replace: true });
+        return;
+      }
+    }
+  }, [loading, demoAccount, navigate]);
 
   useEffect(() => {
     if (!demoAccount?.id) return;
-    setLoading(true);
+    setOrdersLoading(true);
     // Demo orders are stored in a subcollection under demoAccounts/{id}/orders
     const ordersQuery = query(
       collection(db, 'demoAccounts', demoAccount.id, 'orders'),
@@ -25,11 +65,11 @@ const DemoOrderManagement: React.FC = () => {
     const unsubscribe = onSnapshot(ordersQuery, (snapshot) => {
       const ordersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setOrders(ordersData);
-      setLoading(false);
+      setOrdersLoading(false);
     }, (error) => {
       console.error('Error fetching demo orders:', error);
       toast.error('Failed to load orders');
-      setLoading(false);
+      setOrdersLoading(false);
     });
     return () => unsubscribe();
   }, [demoAccount]);
@@ -88,7 +128,7 @@ const DemoOrderManagement: React.FC = () => {
     <DashboardLayout title="Demo Orders">
       <OrderManagementContent
         orders={orders}
-        loading={loading}
+        loading={loading || ordersLoading}
         updatingOrderId={updatingOrderId}
         onStatusChange={updateOrderStatus}
         onDelete={softDeleteOrder}

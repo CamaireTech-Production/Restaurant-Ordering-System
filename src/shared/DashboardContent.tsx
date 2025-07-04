@@ -22,11 +22,6 @@ const DashboardContent: React.FC<DashboardContentProps> = ({ restaurant, stats, 
 
   return (
     <>
-      {isDemoUser && (
-        <div className="mb-4 p-4 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 rounded">
-          <strong>Demo Mode:</strong> You are using a demo restaurant account. Some features are disabled. The restaurant name, logo, and colors are fixed. Table management and profile setup are hidden. Demo accounts expire after 3 days.
-        </div>
-      )}
       {/* Generate View Link Section */}
       {!isDemoUser && restaurant?.id && (
         <div className="my-6 p-4 bg-white rounded shadow flex flex-col sm:flex-row items-center gap-4">
