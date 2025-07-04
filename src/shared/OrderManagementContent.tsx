@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ClipboardList, Clock, CheckCircle2, ChefHat, XCircle, Filter, Table, Trash2, Eye } from 'lucide-react';
 import Modal from '../components/ui/Modal';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
+import designSystem from '../designSystem';
 
 interface OrderItem {
   title: string;
@@ -32,15 +33,15 @@ interface OrderManagementContentProps {
 const getStatusIcon = (status: string) => {
   switch (status) {
     case 'pending':
-      return <Clock size={20} className="text-yellow-500" />;
+      return <Clock size={20} style={{ color: designSystem.colors.statusPendingText }} />;
     case 'preparing':
-      return <ChefHat size={20} className="text-indigo-500" />;
+      return <ChefHat size={20} style={{ color: designSystem.colors.statusPreparingText }} />;
     case 'ready':
-      return <CheckCircle2 size={20} className="text-green-500" />;
+      return <CheckCircle2 size={20} style={{ color: designSystem.colors.statusReadyText }} />;
     case 'completed':
-      return <CheckCircle2 size={20} className="text-green-700" />;
+      return <CheckCircle2 size={20} style={{ color: designSystem.colors.statusCompletedText }} />;
     case 'cancelled':
-      return <XCircle size={20} className="text-red-500" />;
+      return <XCircle size={20} style={{ color: designSystem.colors.statusCancelledText }} />;
     default:
       return null;
   }
@@ -84,21 +85,22 @@ const OrderManagementContent: React.FC<OrderManagementContentProps> = ({
   });
 
   return (
-    <div className="bg-white shadow rounded-lg overflow-hidden">
-      <div className="p-4 sm:p-6 border-b border-gray-200">
+    <div className="shadow rounded-lg overflow-hidden" style={{ background: designSystem.colors.white }}>
+      <div className="p-4 sm:p-6 border-b" style={{ borderColor: designSystem.colors.borderLightGray }}>
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h2 className="text-xl font-semibold text-gray-800">Order Management</h2>
-            <p className="text-gray-600 text-sm">Manage and track customer orders</p>
+            <h2 className="text-xl font-semibold" style={{ color: designSystem.colors.primary }}>Order Management</h2>
+            <p className="text-sm" style={{ color: designSystem.colors.text }}>Manage and track customer orders</p>
           </div>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Filter size={18} className="text-gray-400" />
+              <Filter size={18} style={{ color: designSystem.colors.secondary }} />
             </div>
             <select
               value={statusFilter}
               onChange={e => setStatusFilter(e.target.value)}
               className="pl-10 block w-full py-3 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
+              style={{ color: designSystem.colors.text }}
             >
               <option value="all">All Orders</option>
               <option value="pending">Pending</option>
@@ -116,28 +118,28 @@ const OrderManagementContent: React.FC<OrderManagementContentProps> = ({
         </div>
       ) : filteredOrders.length === 0 ? (
         <div className="text-center py-10">
-          <ClipboardList size={48} className="mx-auto text-gray-400" />
-          <h3 className="mt-2 text-sm font-medium text-gray-900">No orders</h3>
-          <p className="mt-1 text-sm text-gray-500">
+          <ClipboardList size={48} className="mx-auto" style={{ color: designSystem.colors.secondary }} />
+          <h3 className="mt-2 text-sm font-medium" style={{ color: designSystem.colors.primary }}>No orders</h3>
+          <p className="mt-1 text-sm" style={{ color: designSystem.colors.text }}>
             {orders.length === 0 ? "No orders have been placed yet" : "No orders match the selected filter"}
           </p>
         </div>
       ) : (
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+            <thead style={{ background: designSystem.colors.statusDefaultBg }}>
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order Details</th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: designSystem.colors.text }}>Order Details</th>
                 {!isDemoUser && (
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Table</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: designSystem.colors.text }}>Table</th>
                 )}
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: designSystem.colors.text }}>Status</th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: designSystem.colors.text }}>Total</th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: designSystem.colors.text }}>Date</th>
+                <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: designSystem.colors.text }}>Actions</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody style={{ background: designSystem.colors.white }}>
               {filteredOrders.map((order) => (
                 <tr key={order.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -151,32 +153,40 @@ const OrderManagementContent: React.FC<OrderManagementContentProps> = ({
                   {!isDemoUser && (
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
-                        <Table size={16} className="mr-1 text-gray-500" />
-                        <span className="text-sm text-gray-900">
+                        <Table size={16} className="mr-1" style={{ color: designSystem.colors.secondary }} />
+                        <span className="text-sm" style={{ color: designSystem.colors.primary }}>
                           #{order.tableNumber}
                         </span>
                       </div>
                     </td>
                   )}
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                      order.status === 'preparing' ? 'bg-indigo-100 text-indigo-800' :
-                      order.status === 'ready' ? 'bg-green-100 text-green-800' :
-                      order.status === 'completed' ? 'bg-green-100 text-green-800' :
-                      'bg-red-100 text-red-800'
-                    }`}>
+                    <span
+                      className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                      style={{
+                        background: order.status === 'pending' ? designSystem.colors.statusPendingBg
+                          : order.status === 'preparing' ? designSystem.colors.statusPreparingBg
+                          : order.status === 'ready' ? designSystem.colors.statusReadyBg
+                          : order.status === 'completed' ? designSystem.colors.statusCompletedBg
+                          : designSystem.colors.statusCancelledBg,
+                        color: order.status === 'pending' ? designSystem.colors.statusPendingText
+                          : order.status === 'preparing' ? designSystem.colors.statusPreparingText
+                          : order.status === 'ready' ? designSystem.colors.statusReadyText
+                          : order.status === 'completed' ? designSystem.colors.statusCompletedText
+                          : designSystem.colors.statusCancelledText,
+                      }}
+                    >
                       <span className="mr-1.5">{getStatusIcon(order.status)}</span>
                       {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">
+                    <div className="text-sm" style={{ color: designSystem.colors.primary }}>
                       {order.totalAmount.toLocaleString()} FCFA
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">
+                    <div className="text-sm" style={{ color: designSystem.colors.primary }}>
                       {formatDate(order.createdAt)}
                     </div>
                   </td>
@@ -188,7 +198,11 @@ const OrderManagementContent: React.FC<OrderManagementContentProps> = ({
                         {order.status === 'pending' && (
                           <button
                             onClick={() => onStatusChange(order.id, 'preparing')}
-                            className="text-indigo-600 hover:text-indigo-900 px-2 py-1 text-xs rounded-md border border-indigo-600"
+                            className="px-2 py-1 text-xs rounded-md border"
+                            style={{
+                              color: designSystem.colors.statusPreparingText,
+                              borderColor: designSystem.colors.statusPreparingText,
+                            }}
                           >
                             Start Preparing
                           </button>
@@ -196,7 +210,11 @@ const OrderManagementContent: React.FC<OrderManagementContentProps> = ({
                         {order.status === 'preparing' && (
                           <button
                             onClick={() => onStatusChange(order.id, 'ready')}
-                            className="text-green-600 hover:text-green-900 px-2 py-1 text-xs rounded-md border border-green-600"
+                            className="px-2 py-1 text-xs rounded-md border"
+                            style={{
+                              color: designSystem.colors.statusReadyText,
+                              borderColor: designSystem.colors.statusReadyText,
+                            }}
                           >
                             Mark Ready
                           </button>
@@ -204,7 +222,11 @@ const OrderManagementContent: React.FC<OrderManagementContentProps> = ({
                         {order.status === 'ready' && (
                           <button
                             onClick={() => onStatusChange(order.id, 'completed')}
-                            className="text-green-700 hover:text-green-900 px-2 py-1 text-xs rounded-md border border-green-700"
+                            className="px-2 py-1 text-xs rounded-md border"
+                            style={{
+                              color: designSystem.colors.statusCompletedText,
+                              borderColor: designSystem.colors.statusCompletedText,
+                            }}
                           >
                             Complete
                           </button>
@@ -212,7 +234,11 @@ const OrderManagementContent: React.FC<OrderManagementContentProps> = ({
                         {(order.status === 'pending' || order.status === 'preparing') && (
                           <button
                             onClick={() => onStatusChange(order.id, 'cancelled')}
-                            className="text-red-600 hover:text-red-900 px-2 py-1 text-xs rounded-md border border-red-600"
+                            className="px-2 py-1 text-xs rounded-md border"
+                            style={{
+                              color: designSystem.colors.statusCancelledText,
+                              borderColor: designSystem.colors.statusCancelledText,
+                            }}
                           >
                             Cancel
                           </button>
@@ -220,14 +246,22 @@ const OrderManagementContent: React.FC<OrderManagementContentProps> = ({
                         {!isDemoUser && (
                           <button
                             onClick={() => setViewOrder(order)}
-                            className="text-blue-600 hover:text-blue-900 px-2 py-1 text-xs rounded-md border border-blue-600"
+                            className="px-2 py-1 text-xs rounded-md border"
+                            style={{
+                              color: designSystem.colors.secondary,
+                              borderColor: designSystem.colors.secondary,
+                            }}
                           >
                             View Items
                           </button>
                         )}
                         <button
                           onClick={() => { setOrderToDelete(order); setDeleteConfirmOpen(true); }}
-                          className="text-red-600 hover:text-red-900 px-2 py-1 text-xs rounded-md border border-red-600"
+                          className="px-2 py-1 text-xs rounded-md border"
+                          style={{
+                            color: designSystem.colors.statusCancelledText,
+                            borderColor: designSystem.colors.statusCancelledText,
+                          }}
                         >
                           <Trash2 size={16} />
                         </button>
@@ -245,33 +279,33 @@ const OrderManagementContent: React.FC<OrderManagementContentProps> = ({
         {viewOrder && (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+              <thead style={{ background: designSystem.colors.statusDefaultBg }}>
                 <tr>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Dish</th>
-                  <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase">Qty</th>
-                  <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Price</th>
-                  <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Subtotal</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium uppercase" style={{ color: designSystem.colors.text }}>Dish</th>
+                  <th className="px-4 py-2 text-center text-xs font-medium uppercase" style={{ color: designSystem.colors.text }}>Qty</th>
+                  <th className="px-4 py-2 text-right text-xs font-medium uppercase" style={{ color: designSystem.colors.text }}>Price</th>
+                  <th className="px-4 py-2 text-right text-xs font-medium uppercase" style={{ color: designSystem.colors.text }}>Subtotal</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody style={{ background: designSystem.colors.white }}>
                 {viewOrder.items.map((item, idx) => (
                   <tr key={idx}>
                     <td className="px-4 py-2 flex items-center gap-2">
                       {item.image && (
                         <img src={item.image} alt={item.title} className="w-8 h-8 rounded object-cover border" />
                       )}
-                      <span className="font-medium">{item.title}</span>
+                      <span className="font-medium" style={{ color: designSystem.colors.primary }}>{item.title}</span>
                     </td>
-                    <td className="px-4 py-2 text-center">{item.quantity}</td>
-                    <td className="px-4 py-2 text-right">{item.price.toLocaleString()} FCFA</td>
-                    <td className="px-4 py-2 text-right">{(item.price * item.quantity).toLocaleString()} FCFA</td>
+                    <td className="px-4 py-2 text-center" style={{ color: designSystem.colors.primary }}>{item.quantity}</td>
+                    <td className="px-4 py-2 text-right" style={{ color: designSystem.colors.primary }}>{item.price.toLocaleString()} FCFA</td>
+                    <td className="px-4 py-2 text-right" style={{ color: designSystem.colors.primary }}>{(item.price * item.quantity).toLocaleString()} FCFA</td>
                   </tr>
                 ))}
               </tbody>
               <tfoot>
                 <tr>
-                  <td colSpan={3} className="px-4 py-2 text-right font-bold">Total</td>
-                  <td className="px-4 py-2 text-right font-bold">{viewOrder.totalAmount.toLocaleString()} FCFA</td>
+                  <td colSpan={3} className="px-4 py-2 text-right font-bold" style={{ color: designSystem.colors.primary }}>Total</td>
+                  <td className="px-4 py-2 text-right font-bold" style={{ color: designSystem.colors.primary }}>{viewOrder.totalAmount.toLocaleString()} FCFA</td>
                 </tr>
               </tfoot>
             </table>

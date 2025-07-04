@@ -306,7 +306,7 @@ const MenuManagementContent: React.FC<MenuManagementContentProps> = ({
       <div className="p-4 flex flex-col sm:flex-row gap-4">
         <div className="relative flex-grow max-w-xs">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search size={18} className="text-gray-400" />
+            <Search size={18} style={{ color: designSystem.colors.iconFiltercolor }} />
           </div>
           <input
             type="text"
@@ -318,7 +318,8 @@ const MenuManagementContent: React.FC<MenuManagementContentProps> = ({
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
-              className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+              className="absolute inset-y-0 right-0 pr-3 flex items-center hover:text-gray-600"
+              style={{ color: designSystem.colors.iconFiltercolor }}
             >
               <X size={18} />
             </button>
@@ -326,7 +327,7 @@ const MenuManagementContent: React.FC<MenuManagementContentProps> = ({
         </div>
         <div className="relative w-full sm:w-64">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Filter size={18} className="text-gray-400" />
+            <Filter size={18} style={{ color: designSystem.colors.iconFiltercolor }} />
           </div>
           <select
             value={filterCategory}

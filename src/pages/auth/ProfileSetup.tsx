@@ -103,7 +103,12 @@ const ProfileSetup: React.FC = () => {
           secondary: secondaryColor,
         } as any, // allow extra property for Firestore
       });
-      toast.success('Profile updated successfully!');
+      toast.success('Profile updated successfully!', {
+        style: {
+          background: designSystem.colors.success,
+          color: designSystem.colors.textInverse,
+        },
+      });
       if (!showSidebar) {
         navigate('/dashboard');
       }
@@ -111,7 +116,12 @@ const ProfileSetup: React.FC = () => {
     } catch (error: any) {
       console.error('Error updating profile:', error);
       setError('Failed to update profile');
-      toast.error('Failed to update profile');
+      toast.error('Failed to update profile', {
+        style: {
+          background: designSystem.colors.error,
+          color: designSystem.colors.textInverse,
+        },
+      });
     } finally {
       setIsLoading(false);
     }

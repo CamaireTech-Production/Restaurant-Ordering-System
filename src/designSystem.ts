@@ -26,6 +26,17 @@ const designSystem = {
     statusCancelledText: '#991B1B',  // red-800
     statusDefaultBg: '#F3F4F6',      // gray-100
     statusDefaultText: '#4B5563',    // gray-600
+
+    iconFiltercolor: '#9CA3AF',
+
+    // Modal and input colors for consistent UI polish
+    modalOverlay: 'rgba(30, 41, 59, 0.65)', // dark overlay for modals
+    inputBorder: '#E5E5E5', // matches borderLightGray
+    inputBg: '#FFFFFF', // white input background
+
+    // Toast/notification colors
+    success: '#22C55E', // green-500
+    error: '#EF4444',   // red-500
   },
   fonts: {
     body: 'Inter, sans-serif',

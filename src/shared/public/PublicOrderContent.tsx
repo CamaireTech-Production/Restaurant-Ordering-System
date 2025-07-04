@@ -4,6 +4,7 @@ import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import DishDetailModal from '../../pages/client/customer/DishDetailModal';
 import Modal from '../../components/ui/Modal';
 import toast from 'react-hot-toast';
+import designSystem from '../../designSystem';
 import { Dish, Category, Restaurant, OrderItem, Order } from '../../types';
 
 interface PublicOrderContentProps {
@@ -81,7 +82,12 @@ const PublicOrderContent: React.FC<PublicOrderContentProps> = ({ restaurant, cat
       setShowCheckout(false);
       setCheckoutPhone('');
       setCheckoutLocation('');
-      toast.success('Order placed! The restaurant has been notified.');
+      toast.success('Order placed! The restaurant has been notified.', {
+        style: {
+          background: designSystem.colors.success,
+          color: designSystem.colors.textInverse,
+        },
+      });
     } catch (e) {
       // handle error
     } finally {
@@ -566,4 +572,4 @@ const PublicOrderContent: React.FC<PublicOrderContentProps> = ({ restaurant, cat
   );
 };
 
-export default PublicOrderContent; 
+export default PublicOrderContent;

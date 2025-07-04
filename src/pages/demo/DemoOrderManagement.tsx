@@ -125,7 +125,7 @@ const DemoOrderManagement: React.FC = () => {
   };
 
   return (
-    <DashboardLayout title="Demo Orders">
+    <DashboardLayout title="">
       <OrderManagementContent
         orders={orders}
         loading={loading || ordersLoading}

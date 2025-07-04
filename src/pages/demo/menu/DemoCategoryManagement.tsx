@@ -161,13 +161,7 @@ const DemoCategoryManagement: React.FC = () => {
 
   if (loading || catLoading) {
     return (
-      <DashboardLayout title={
-        <div className="flex flex-col sm:flex-row items-center justify-between w-full">
-            <span className="text-base sm:text-lg md:text-xl">
-            Category Management
-            </span>
-        </div>
-      }>
+      <DashboardLayout title="">
         <div className="flex justify-center items-center h-64">
           <LoadingSpinner size={60} />
         </div>
@@ -176,13 +170,7 @@ const DemoCategoryManagement: React.FC = () => {
   }
 
   return (
-    <DashboardLayout title={
-      <div className="flex flex-col sm:flex-row items-center justify-between w-full">
-          <span className="text-base sm:text-lg md:text-xl">
-          Category Management
-          </span>
-      </div>
-    }>
+    <DashboardLayout title="">
       <CategoryManagementContent
         categories={categories}
         loading={catLoading}

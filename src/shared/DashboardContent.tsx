@@ -1,4 +1,3 @@
-
 import React, { useMemo } from 'react';
 import { Copy, UtensilsCrossed, Layers, Table, ClipboardList, Star, ShoppingCart, BarChart2, User } from 'lucide-react';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
@@ -103,7 +102,12 @@ const DashboardContent: React.FC<DashboardContentProps> = ({ restaurant, orders,
               style={{ background: designSystem.colors.secondary }}
               onClick={() => {
                 navigator.clipboard.writeText(`${window.location.origin}/public-menu/${restaurant.id}`);
-                toast.success('Menu link copied!');
+                toast.success('Menu link copied!', {
+                  style: {
+                    background: designSystem.colors.success,
+                    color: designSystem.colors.textInverse,
+                  },
+                });
               }}
               title="Copy link"
             >
@@ -138,7 +142,12 @@ const DashboardContent: React.FC<DashboardContentProps> = ({ restaurant, orders,
               style={{ background: designSystem.colors.secondary }}
               onClick={() => {
                 navigator.clipboard.writeText(`${window.location.origin}/public-order/${restaurant.id}`);
-                toast.success('Order page link copied!');
+                toast.success('Order page link copied!', {
+                  style: {
+                    background: designSystem.colors.success,
+                    color: designSystem.colors.textInverse,
+                  },
+                });
               }}
               title="Copy link"
             >
@@ -304,4 +313,4 @@ function timeAgo(date: Date) {
   return `${days}d ago`;
 }
 
-export default DashboardContent; 
+export default DashboardContent;

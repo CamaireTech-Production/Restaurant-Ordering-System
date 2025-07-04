@@ -19,17 +19,6 @@ import {
   serverTimestamp 
 } from 'firebase/firestore';
 import { toast } from 'react-hot-toast';
-import { 
-  ClipboardList, 
-  Clock,
-  CheckCircle2,
-  ChefHat,
-  XCircle,
-  Filter,
-  Table
-} from 'lucide-react';
-import LoadingSpinner from '../../../components/ui/LoadingSpinner';
-import { Order } from '../../../types';
 import designSystem from '../../../designSystem';
 import OrderManagementContent from '../../../shared/OrderManagementContent';
 import { logActivity } from '../../../services/activityLogService';
@@ -89,7 +78,7 @@ const OrdersPage: React.FC = () => {
             toast.success(`New order received for Table #${order.tableNumber}`, {
               style: {
                 background: designSystem.colors.success,
-                color: designSystem.colors.text,
+                color: designSystem.colors.textInverse,
               },
             });
           }
@@ -112,7 +101,12 @@ const OrdersPage: React.FC = () => {
       setLoading(false);
     }, (error) => {
       console.error('Error fetching orders:', error);
-      toast.error('Failed to load orders');
+      toast.error('Failed to load orders', {
+        style: {
+          background: designSystem.colors.error,
+          color: designSystem.colors.textInverse,
+        },
+      });
       setLoading(false);
     });
 
@@ -126,7 +120,12 @@ const OrdersPage: React.FC = () => {
       if (!navigator.onLine) {
         queuePendingAction({ type: 'updateOrderStatus', payload: { id: orderId, status: newStatus } });
         setOrders(prevOrders => prevOrders.map(order => order.id === orderId ? { ...order, status: newStatus, updatedAt: new Date() } : order));
-        toast.success('Order status update queued for sync!');
+        toast.success('Order status update queued for sync!', {
+          style: {
+            background: designSystem.colors.success,
+            color: designSystem.colors.textInverse,
+          },
+        });
         setUpdatingOrderId(null);
         return;
       }
@@ -143,10 +142,20 @@ const OrdersPage: React.FC = () => {
         entityId: orderId,
         details: { oldStatus: order?.status, newStatus },
       });
-      toast.success(`Order status updated to ${newStatus}`);
+      toast.success(`Order status updated to ${newStatus}`, {
+        style: {
+          background: designSystem.colors.success,
+          color: designSystem.colors.textInverse,
+        },
+      });
     } catch (error) {
       console.error('Error updating order status:', error);
-      toast.error('Failed to update order status');
+      toast.error('Failed to update order status', {
+        style: {
+          background: designSystem.colors.error,
+          color: designSystem.colors.textInverse,
+        },
+      });
     } finally {
       setUpdatingOrderId(null);
     }
@@ -159,7 +168,12 @@ const OrdersPage: React.FC = () => {
       if (!navigator.onLine) {
         queuePendingAction({ type: 'deleteOrder', payload: { id: orderId } });
         setOrders(prevOrders => prevOrders.map(order => order.id === orderId ? { ...order, deleted: true, updatedAt: new Date() } : order));
-        toast.success('Order deletion queued for sync!');
+        toast.success('Order deletion queued for sync!', {
+          style: {
+            background: designSystem.colors.success,
+            color: designSystem.colors.textInverse,
+          },
+        });
         setUpdatingOrderId(null);
         return;
     }
@@ -174,17 +188,27 @@ const OrdersPage: React.FC = () => {
         entityType: 'order',
         entityId: orderId,
       });
-      toast.success('Order deleted');
+      toast.success('Order deleted', {
+        style: {
+          background: designSystem.colors.success,
+          color: designSystem.colors.textInverse,
+        },
+      });
     } catch (error) {
       console.error('Error deleting order:', error);
-      toast.error('Failed to delete order');
+      toast.error('Failed to delete order', {
+        style: {
+          background: designSystem.colors.error,
+          color: designSystem.colors.textInverse,
+        },
+      });
     } finally {
       setUpdatingOrderId(null);
   }
   };
 
   return (
-    <DashboardLayout title="Orders">
+    <DashboardLayout title="">
       <OrderManagementContent
         orders={orders}
         loading={loading}

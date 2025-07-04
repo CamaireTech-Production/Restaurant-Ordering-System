@@ -214,13 +214,7 @@ const CategoryManagement: React.FC = () => {
 
   if (loading && categories.length === 0) {
     return (
-      <DashboardLayout title={
-        <div className="flex flex-col sm:flex-row items-center justify-between w-full">
-          <span className="text-base sm:text-lg md:text-xl">
-          Category Management
-          </span>
-      </div>
-      }>
+      <DashboardLayout title="">
         <div className="flex justify-center items-center h-64">
           <LoadingSpinner size={60} />
         </div>
@@ -233,13 +227,7 @@ const CategoryManagement: React.FC = () => {
   const handleToggleStatus = toggleCategoryStatus;
 
   return (
-    <DashboardLayout title={
-      <div className="flex flex-col sm:flex-row items-center justify-between w-full">
-          <span className="text-base sm:text-lg md:text-xl">
-          Category Management
-          </span>
-      </div>
-    }>
+    <DashboardLayout title="">
       <CategoryManagementContent
         categories={categories}
         loading={loading}

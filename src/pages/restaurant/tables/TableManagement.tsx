@@ -77,7 +77,12 @@ const TableManagement: React.FC = () => {
         }
       } catch (error) {
         console.error('Error fetching tables:', error);
-        toast.error('Failed to load tables');
+        toast.error('Failed to load tables', {
+          style: {
+            background: designSystem.colors.error,
+            color: designSystem.colors.text,
+          },
+        });
       } finally {
         setLoading(false);
       }
@@ -140,12 +145,22 @@ const TableManagement: React.FC = () => {
     e.preventDefault();
     
     if (!restaurant?.id) {
-      toast.error('Restaurant information missing');
+      toast.error('Restaurant information missing', {
+        style: {
+          background: designSystem.colors.error,
+          color: designSystem.colors.text,
+        },
+      });
       return;
     }
     
     if (formData.number <= 0) {
-      toast.error('Table number must be greater than 0');
+      toast.error('Table number must be greater than 0', {
+        style: {
+          background: designSystem.colors.error,
+          color: designSystem.colors.text,
+        },
+      });
       return;
     }
     
@@ -174,7 +189,12 @@ const TableManagement: React.FC = () => {
             queuePendingAction({ type: 'createTable', payload: { ...tableData } });
             setTables(prevTables => [...prevTables, tableData]);
           }
-          toast.success(`${tableCount} tables queued for sync!`);
+          toast.success(`${tableCount} tables queued for sync!`, {
+            style: {
+              background: designSystem.colors.success,
+              color: designSystem.colors.text,
+            },
+          });
         } else if (editingTable) {
           const tableData: Omit<Table, 'id' | 'createdAt' | 'updatedAt'> = {
             number: formData.number,
@@ -184,7 +204,12 @@ const TableManagement: React.FC = () => {
           };
           queuePendingAction({ type: 'updateTable', payload: { id: editingTable.id, data: tableData } });
           setTables(prevTables => prevTables.map(table => table.id === editingTable.id ? { ...table, ...tableData, updatedAt: new Date() } : table));
-          toast.success('Table update queued for sync!');
+          toast.success('Table update queued for sync!', {
+            style: {
+              background: designSystem.colors.success,
+              color: designSystem.colors.text,
+            },
+          });
         } else {
           const tableData: Table = {
             number: formData.number,
@@ -197,7 +222,12 @@ const TableManagement: React.FC = () => {
           };
           queuePendingAction({ type: 'createTable', payload: tableData });
           setTables(prevTables => [...prevTables, tableData]);
-          toast.success('Table creation queued for sync!');
+          toast.success('Table creation queued for sync!', {
+            style: {
+              background: designSystem.colors.success,
+              color: designSystem.colors.text,
+            },
+          });
         }
         closeModal();
         setLoading(false);
@@ -223,7 +253,12 @@ const TableManagement: React.FC = () => {
           });
         }
         setTables(prevTables => [...prevTables, ...newTables]);
-        toast.success(`${tableCount} tables added successfully!`);
+        toast.success(`${tableCount} tables added successfully!`, {
+          style: {
+            background: designSystem.colors.success,
+            color: designSystem.colors.text,
+          },
+        });
       } else if (editingTable) {
         // Update existing table
         const tableData = {
@@ -243,7 +278,12 @@ const TableManagement: React.FC = () => {
               : table
           )
         );
-        toast.success('Table updated successfully!');
+        toast.success('Table updated successfully!', {
+          style: {
+            background: designSystem.colors.success,
+            color: designSystem.colors.text,
+          },
+        });
       } else {
         // Add single table
         const tableData = {
@@ -262,12 +302,22 @@ const TableManagement: React.FC = () => {
           createdAt: new Date(),
         } as Table;
         setTables(prevTables => [...prevTables, newTable]);
-        toast.success('Table added successfully!');
+        toast.success('Table added successfully!', {
+          style: {
+            background: designSystem.colors.success,
+            color: designSystem.colors.text,
+          },
+        });
       }
       closeModal();
     } catch (error) {
       console.error('Error saving table:', error);
-      toast.error('Failed to save table');
+      toast.error('Failed to save table', {
+        style: {
+          background: designSystem.colors.error,
+          color: designSystem.colors.text,
+        },
+      });
     } finally {
       setLoading(false);
     }
@@ -281,16 +331,31 @@ const TableManagement: React.FC = () => {
       if (!navigator.onLine) {
         queuePendingAction({ type: 'deleteTable', payload: { id: tableId } });
         setTables(prevTables => prevTables.filter(table => table.id !== tableId));
-        toast.success('Table delete queued for sync!');
+        toast.success('Table delete queued for sync!', {
+          style: {
+            background: designSystem.colors.success,
+            color: designSystem.colors.text,
+          },
+        });
         setIsDeleting(false);
         return;
       }
       await deleteDoc(doc(db, 'tables', tableId));
       setTables(prevTables => prevTables.filter(table => table.id !== tableId));
-      toast.success('Table deleted successfully!');
+      toast.success('Table deleted successfully!', {
+        style: {
+          background: designSystem.colors.success,
+          color: designSystem.colors.text,
+        },
+      });
     } catch (error) {
       console.error('Error deleting table:', error);
-      toast.error('Failed to delete table');
+      toast.error('Failed to delete table', {
+        style: {
+          background: designSystem.colors.error,
+          color: designSystem.colors.text,
+        },
+      });
     } finally {
       setIsDeleting(false);
     }
@@ -314,48 +379,67 @@ const TableManagement: React.FC = () => {
 
   return (
     <DashboardLayout title="Table Management">
-      <div className="bg-white shadow rounded-lg overflow-hidden">
-        <div className="p-4 sm:p-6 border-b border-gray-200">
+      <div className="shadow rounded-lg overflow-hidden" style={{ background: designSystem.colors.white }}>
+        <div className="p-4 sm:p-6 border-b" style={{ borderColor: designSystem.colors.borderLightGray }}>
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-              <h2 className="text-xl font-semibold text-primary">Tables</h2>
-              <p className="text-secondary text-sm">Manage your restaurant tables</p>
+              <h2 className="text-xl font-semibold" style={{ color: designSystem.colors.primary }}>Tables</h2>
+              <p className="text-sm" style={{ color: designSystem.colors.text }}>Manage your restaurant tables</p>
             </div>
             <div className="flex flex-col sm:flex-row gap-2">
               <button
                 onClick={openBulkAddModal}
-                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-accent hover:bg-primary focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent transition-colors"
+                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium transition-colors"
+                style={{ background: designSystem.colors.secondary, color: designSystem.colors.primary }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.background = designSystem.colors.primary;
+                  e.currentTarget.style.color = designSystem.colors.secondary;
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = designSystem.colors.secondary;
+                  e.currentTarget.style.color = designSystem.colors.primary;
+                }}
               >
-                <PlusCircle size={16} className="mr-2" />
+                <PlusCircle size={16} className="mr-2" style={{ color: designSystem.colors.primary }} />
                 Bulk Add Tables
               </button>
               <button
                 onClick={openAddModal}
-                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-accent focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors"
+                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium transition-colors"
+                style={{ background: designSystem.colors.primary, color: designSystem.colors.white }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.background = designSystem.colors.secondary;
+                  e.currentTarget.style.color = designSystem.colors.primary;
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = designSystem.colors.primary;
+                  e.currentTarget.style.color = designSystem.colors.white;
+                }}
               >
-                <PlusCircle size={16} className="mr-2" />
+                <PlusCircle size={16} className="mr-2" style={{ color: designSystem.colors.white }} />
                 Add Table
               </button>
             </div>
           </div>
-          
           <div className="mt-4">
             {/* Search */}
             <div className="relative max-w-xs">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Search size={18} className="text-accent" />
+                <Search size={18} style={{ color: designSystem.colors.iconFiltercolor }} />
               </div>
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search tables..."
-                className="pl-10 block w-full py-3 border border-accent rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
+                className="pl-10 block w-full py-3 border rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
+                style={{ borderColor: designSystem.colors.iconFiltercolor, color: designSystem.colors.text }}
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery('')}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-accent hover:text-rose"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  style={{ color: designSystem.colors.secondary }}
                 >
                   <X size={18} />
                 </button>
@@ -368,9 +452,9 @@ const TableManagement: React.FC = () => {
         <div className="p-4 sm:p-6">
           {filteredTables.length === 0 ? (
             <div className="text-center py-10">
-              <TableIcon size={48} className="mx-auto text-accent" />
-              <h3 className="mt-2 text-sm font-medium text-primary">No tables</h3>
-              <p className="mt-1 text-sm text-secondary">
+              <TableIcon size={48} className="mx-auto" style={{ color: designSystem.colors.secondary }} />
+              <h3 className="mt-2 text-sm font-medium" style={{ color: designSystem.colors.primary }}>No tables</h3>
+              <p className="mt-1 text-sm" style={{ color: designSystem.colors.secondary }}>
                 {tables.length === 0 ? 
                   "Get started by creating a new table" : 
                   "No tables match your search criteria"}
@@ -379,9 +463,10 @@ const TableManagement: React.FC = () => {
                 <div className="mt-6">
                   <button
                     onClick={openAddModal}
-                    className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-accent focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+                    className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium"
+                    style={{ background: designSystem.colors.primary, color: designSystem.colors.white }}
                   >
-                    <PlusCircle size={16} className="mr-2" />
+                    <PlusCircle size={16} className="mr-2" style={{ color: designSystem.colors.secondary }} />
                     Add Table
                   </button>
                 </div>
@@ -389,52 +474,66 @@ const TableManagement: React.FC = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {filteredTables.map((table) => (
-                <div 
-                  key={table.id} 
-                  className="relative bg-secondary border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow"
-                >
-                  <div className={`absolute top-0 left-0 w-2 h-full ${
-                    table.status === 'available' ? 'bg-success' :
-                    table.status === 'reserved' ? 'bg-accent' :
-                    'bg-rose'
-                  }`} />
-                  <div className="p-4 pl-6">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="text-lg font-semibold text-primary">
-                          {table.name || `Table ${table.number}`}
-                        </h3>
-                        <p className="text-sm text-secondary">
-                          Table #{table.number}
-                        </p>
-                        <span className={`mt-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          table.status === 'available' ? 'bg-success/10 text-success' :
-                          table.status === 'reserved' ? 'bg-accent/10 text-accent' :
-                          'bg-rose/10 text-rose'
-                        }`}>
-                          {table.status.charAt(0).toUpperCase() + table.status.slice(1)}
-                        </span>
-                      </div>
-                      <div className="flex space-x-1">
-                        <button
-                          onClick={() => openEditModal(table)}
-                          className="text-accent hover:text-accent-dark p-1"
-                        >
-                          <Edit size={18} />
-                        </button>
-                        <button
-                          onClick={() => deleteTable(table.id)}
-                          disabled={isDeleting}
-                          className="text-rose hover:text-rose-dark p-1 disabled:opacity-50"
-                        >
-                          <Trash2 size={18} />
-                        </button>
+              {filteredTables.map((table) => {
+                let statusBg, statusText, statusBar;
+                if (table.status === 'available') {
+                  statusBg = designSystem.colors.statusReadyBg;
+                  statusText = designSystem.colors.statusReadyText;
+                  statusBar = designSystem.colors.statusReadyText;
+                } else if (table.status === 'reserved') {
+                  statusBg = designSystem.colors.statusPendingBg;
+                  statusText = designSystem.colors.statusPendingText;
+                  statusBar = designSystem.colors.statusPendingText;
+                } else {
+                  statusBg = designSystem.colors.statusCancelledBg;
+                  statusText = designSystem.colors.statusCancelledText;
+                  statusBar = designSystem.colors.statusCancelledText;
+                }
+                return (
+                  <div 
+                    key={table.id} 
+                    className="relative border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+                    style={{ background: designSystem.colors.white, borderColor: designSystem.colors.borderLightGray }}
+                  >
+                    <div style={{ position: 'absolute', top: 0, left: 0, width: 8, height: '100%', background: statusBar }} />
+                    <div className="p-4 pl-6">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h3 className="text-lg font-semibold" style={{ color: designSystem.colors.primary }}>
+                            {table.name || `Table ${table.number}`}
+                          </h3>
+                          <p className="text-sm" style={{ color: designSystem.colors.primary }}>
+                            Table #{table.number}
+                          </p>
+                          <span
+                            className="mt-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                            style={{ background: statusBg, color: statusText }}
+                          >
+                            {table.status.charAt(0).toUpperCase() + table.status.slice(1)}
+                          </span>
+                        </div>
+                        <div className="flex space-x-1">
+                          <button
+                            onClick={() => openEditModal(table)}
+                            style={{ color: designSystem.colors.secondary }}
+                            className="p-1"
+                          >
+                            <Edit size={18} />
+                          </button>
+                          <button
+                            onClick={() => deleteTable(table.id)}
+                            disabled={isDeleting}
+                            style={{ color: designSystem.colors.secondary }}
+                            className="p-1 disabled:opacity-50"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
@@ -445,7 +544,11 @@ const TableManagement: React.FC = () => {
         <div className="fixed inset-0 z-50 overflow-y-auto">
           <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
             <div className="fixed inset-0 transition-opacity" aria-hidden="true">
-              <div className="absolute inset-0 bg-accent opacity-75"></div>
+              {/* Modal overlay uses design system color and correct opacity */}
+              <div
+                className="absolute inset-0"
+                style={{ background: designSystem.colors.modalOverlay, opacity: 1 }}
+              ></div>
             </div>
 
             <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
@@ -472,11 +575,19 @@ const TableManagement: React.FC = () => {
                                 min="1"
                                 value={formData.number}
                                 onChange={handleInputChange}
-                                className="mt-1 block w-full py-3 border border-accent rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
+                                className="mt-1 block w-full rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
+                                style={{
+                                  borderColor: designSystem.colors.inputBorder,
+                                  background: designSystem.colors.inputBg,
+                                  color: designSystem.colors.text,
+                                  paddingTop: '0.75rem',
+                                  paddingBottom: '0.75rem',
+                                  paddingLeft: '1rem',
+                                  paddingRight: '1rem',
+                                }}
                                 required
                               />
                             </div>
-                            
                             <div className="mb-4">
                               <label htmlFor="tableCount" className="block text-sm font-medium text-primary">
                                 Number of Tables to Add*
@@ -487,13 +598,21 @@ const TableManagement: React.FC = () => {
                                 min="1"
                                 value={tableCount}
                                 onChange={handleTableCountChange}
-                                className="mt-1 block w-full py-3 border border-accent rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
+                                className="mt-1 block w-full rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
+                                style={{
+                                  borderColor: designSystem.colors.inputBorder,
+                                  background: designSystem.colors.inputBg,
+                                  color: designSystem.colors.text,
+                                  paddingTop: '0.75rem',
+                                  paddingBottom: '0.75rem',
+                                  paddingLeft: '1rem',
+                                  paddingRight: '1rem',
+                                }}
                                 required
                               />
                             </div>
-                            
                             <div className="p-4 bg-background rounded-md">
-                              <h4 className="text-sm font-medium text-primary mb-2">Preview:</h4>
+                              <h4 className="text-sm font-medium text-secondary mb-2">Preview:</h4>
                               <div className="text-sm text-secondary">
                                 {Array.from({ length: Math.min(tableCount, 5) }, (_, i) => (
                                   <div key={i} className="mb-1">
@@ -521,11 +640,19 @@ const TableManagement: React.FC = () => {
                                 min="1"
                                 value={formData.number}
                                 onChange={handleInputChange}
-                                className="mt-1 block w-full py-3 border border-accent rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
+                                className="mt-1 block w-full rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
+                                style={{
+                                  borderColor: designSystem.colors.inputBorder,
+                                  background: designSystem.colors.inputBg,
+                                  color: designSystem.colors.text,
+                                  paddingTop: '0.75rem',
+                                  paddingBottom: '0.75rem',
+                                  paddingLeft: '1rem',
+                                  paddingRight: '1rem',
+                                }}
                                 required
                               />
                             </div>
-                            
                             <div className="mb-4">
                               <label htmlFor="name" className="block text-sm font-medium text-primary">
                                 Table Name (Optional)
@@ -537,10 +664,18 @@ const TableManagement: React.FC = () => {
                                 value={formData.name}
                                 onChange={handleInputChange}
                                 placeholder={`Table ${formData.number}`}
-                                className="mt-1 block w-full border border-accent rounded-md shadow-sm focus:ring-accent focus:border-accent sm:text-sm"
+                                className="mt-1 block w-full rounded-md shadow-sm focus:ring-accent focus:border-accent sm:text-sm"
+                                style={{
+                                  borderColor: designSystem.colors.inputBorder,
+                                  background: designSystem.colors.inputBg,
+                                  color: designSystem.colors.text,
+                                  paddingTop: '0.75rem',
+                                  paddingBottom: '0.75rem',
+                                  paddingLeft: '1rem',
+                                  paddingRight: '1rem',
+                                }}
                               />
                             </div>
-                            
                             <div className="mb-4">
                               <label htmlFor="status" className="block text-sm font-medium text-primary">
                                 Status
@@ -550,7 +685,16 @@ const TableManagement: React.FC = () => {
                                 name="status"
                                 value={formData.status}
                                 onChange={handleInputChange}
-                                className="mt-1 block w-full py-3 border border-accent rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
+                                className="mt-1 block w-full rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
+                                style={{
+                                  borderColor: designSystem.colors.iconFiltercolor,
+                                  // background: designSystem.colors.inputBg,
+                                  color: designSystem.colors.text,
+                                  paddingTop: '0.75rem',
+                                  paddingBottom: '0.75rem',
+                                  paddingLeft: '1rem',
+                                  paddingRight: '1rem',
+                                }}
                               >
                                 <option value="available">Available</option>
                                 <option value="reserved">Reserved</option>

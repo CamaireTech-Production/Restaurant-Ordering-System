@@ -9,6 +9,7 @@ import { toast } from 'react-hot-toast';
 import { logActivity } from '../../../services/activityLogService';
 import { useNavigate } from 'react-router-dom';
 import { setDoc } from 'firebase/firestore';
+import designSystem from '../../../designSystem';
 
 const DemoMenuManagement: React.FC = () => {
   const { demoAccount, loading } = useDemoAuth();
@@ -33,7 +34,12 @@ const DemoMenuManagement: React.FC = () => {
           .filter((item: any) => !item.deleted);
         setMenuItems(menuData);
       } catch (error) {
-        toast.error('Failed to load menu or categories');
+        toast.error('Failed to load menu or categories', {
+          style: {
+            background: designSystem.colors.error,
+            color: designSystem.colors.text,
+          },
+        });
       } finally {
         setMenuLoading(false);
       }
@@ -88,7 +94,12 @@ const DemoMenuManagement: React.FC = () => {
         deleted: false,
       });
       setMenuItems(prev => [...prev, { ...data, id: docRef.id, createdAt: new Date(), deleted: false }]);
-      toast.success('Dish added!');
+      toast.success('Dish added!', {
+        style: {
+          background: designSystem.colors.success,
+          color: designSystem.colors.text,
+        },
+      });
       await logActivity({
         userId: demoAccount.id,
         userEmail: demoAccount.email,
@@ -98,7 +109,12 @@ const DemoMenuManagement: React.FC = () => {
         details: data,
       });
     } catch (error) {
-      toast.error('Failed to add dish');
+      toast.error('Failed to add dish', {
+        style: {
+          background: designSystem.colors.error,
+          color: designSystem.colors.text,
+        },
+      });
     }
   };
 
@@ -110,7 +126,12 @@ const DemoMenuManagement: React.FC = () => {
         updatedAt: serverTimestamp(),
       });
       setMenuItems(prev => prev.map(i => i.id === item.id ? { ...i, ...data, updatedAt: new Date() } : i));
-      toast.success('Dish updated!');
+      toast.success('Dish updated!', {
+        style: {
+          background: designSystem.colors.success,
+          color: designSystem.colors.text,
+        },
+      });
       await logActivity({
         userId: demoAccount.id,
         userEmail: demoAccount.email,
@@ -120,7 +141,12 @@ const DemoMenuManagement: React.FC = () => {
         details: data,
       });
     } catch (error) {
-      toast.error('Failed to update dish');
+      toast.error('Failed to update dish', {
+        style: {
+          background: designSystem.colors.error,
+          color: designSystem.colors.text,
+        },
+      });
     }
   };
 
@@ -132,7 +158,12 @@ const DemoMenuManagement: React.FC = () => {
         updatedAt: serverTimestamp(),
       });
       setMenuItems(prev => prev.filter(i => i.id !== itemId));
-      toast.success('Dish deleted!');
+      toast.success('Dish deleted!', {
+        style: {
+          background: designSystem.colors.success,
+          color: designSystem.colors.text,
+        },
+      });
       await logActivity({
         userId: demoAccount.id,
         userEmail: demoAccount.email,
@@ -141,7 +172,12 @@ const DemoMenuManagement: React.FC = () => {
         entityId: itemId,
       });
     } catch (error) {
-      toast.error('Failed to delete dish');
+      toast.error('Failed to delete dish', {
+        style: {
+          background: designSystem.colors.error,
+          color: designSystem.colors.text,
+        },
+      });
     }
   };
 
@@ -154,7 +190,12 @@ const DemoMenuManagement: React.FC = () => {
         updatedAt: serverTimestamp(),
       });
       setMenuItems(prev => prev.map(i => i.id === item.id ? { ...i, status: newStatus, updatedAt: new Date() } : i));
-      toast.success(`Dish ${newStatus === 'active' ? 'activated' : 'deactivated'}!`);
+      toast.success(`Dish ${newStatus === 'active' ? 'activated' : 'deactivated'}!`, {
+        style: {
+          background: designSystem.colors.success,
+          color: designSystem.colors.text,
+        },
+      });
       await logActivity({
         userId: demoAccount.id,
         userEmail: demoAccount.email,
@@ -164,7 +205,12 @@ const DemoMenuManagement: React.FC = () => {
         details: { status: newStatus },
       });
     } catch (error) {
-      toast.error('Failed to update status');
+      toast.error('Failed to update status', {
+        style: {
+          background: designSystem.colors.error,
+          color: designSystem.colors.text,
+        },
+      });
     }
   };
 
@@ -186,7 +232,12 @@ const DemoMenuManagement: React.FC = () => {
           });
         }
         setMenuItems(prev => prev.filter(i => !itemIds.includes(i.id)));
-        toast.success(`${itemIds.length} dishes deleted!`);
+        toast.success(`${itemIds.length} dishes deleted!`, {
+          style: {
+            background: designSystem.colors.success,
+            color: designSystem.colors.text,
+          },
+        });
       } else {
         const newStatus = action === 'activate' ? 'active' : 'inactive';
         for (const itemId of itemIds) {
@@ -204,10 +255,20 @@ const DemoMenuManagement: React.FC = () => {
           });
         }
         setMenuItems(prev => prev.map(i => itemIds.includes(i.id) ? { ...i, status: newStatus, updatedAt: new Date() } : i));
-        toast.success(`${itemIds.length} dishes ${action === 'activate' ? 'activated' : 'deactivated'}!`);
+        toast.success(`${itemIds.length} dishes ${action === 'activate' ? 'activated' : 'deactivated'}!`, {
+          style: {
+            background: designSystem.colors.success,
+            color: designSystem.colors.text,
+          },
+        });
       }
     } catch (error) {
-      toast.error('Failed to perform bulk action');
+      toast.error('Failed to perform bulk action', {
+        style: {
+          background: designSystem.colors.error,
+          color: designSystem.colors.text,
+        },
+      });
     }
   };
 
@@ -238,4 +299,4 @@ const DemoMenuManagement: React.FC = () => {
   );
 };
 
-export default DemoMenuManagement; 
+export default DemoMenuManagement;

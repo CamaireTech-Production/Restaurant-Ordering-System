@@ -6,6 +6,7 @@ import { useDemoAuth } from '../../contexts/DemoAuthContext';
 import { auth, db } from '../../firebase/config';
 import { doc, updateDoc, getDoc } from 'firebase/firestore';
 import { EmailAuthProvider, linkWithCredential } from 'firebase/auth';
+import designSystem from '../../designSystem';
 
 const DemoCompleteSetup: React.FC = () => {
   const { currentUser, demoAccount } = useDemoAuth();
@@ -49,11 +50,21 @@ const DemoCompleteSetup: React.FC = () => {
       // Update phone in Firestore
       const demoDocRef = doc(db, 'demoAccounts', currentUser.uid);
       await updateDoc(demoDocRef, { phone });
-      toast.success('Setup complete!');
+      toast.success('Setup complete!', {
+        style: {
+          background: designSystem.colors.success,
+          color: designSystem.colors.textInverse,
+        },
+      });
       navigate('/dashboard');
     } catch (err: any) {
       setError('Failed to complete setup. ' + (err.message || ''));
-      toast.error('Failed to complete setup.');
+      toast.error('Failed to complete setup.', {
+        style: {
+          background: designSystem.colors.error,
+          color: designSystem.colors.textInverse,
+        },
+      });
     } finally {
       setIsLoading(false);
     }
@@ -184,4 +195,4 @@ const DemoCompleteSetup: React.FC = () => {
   );
 };
 
-export default DemoCompleteSetup; 
+export default DemoCompleteSetup;

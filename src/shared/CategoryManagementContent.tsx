@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { PlusCircle, Edit, Trash2, Eye, EyeOff, Search, X, Layers, ArrowUp, ArrowDown, ArrowUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import Modal from '../components/ui/Modal';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
+import designSystem from '../designSystem';
 
 // This file will contain the shared UI for category management, similar to DashboardContent.
 // It will receive props for categories, CRUD handlers, loading, and user type (demo or restaurant).
@@ -188,24 +189,25 @@ const CategoryManagementContent: React.FC<CategoryManagementContentProps> = ({
   };
 
   return (
-    <div className="bg-white shadow rounded-lg overflow-hidden">
-      <div className="p-4 sm:p-6 border-b border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div className="shadow rounded-lg overflow-hidden" style={{ background: designSystem.colors.white }}>
+      <div className="p-4 sm:p-6 border-b flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4" style={{ borderColor: designSystem.colors.borderLightGray }}>
         <div>
-          <h2 className="text-xl font-semibold text-gray-800">Categories</h2>
-          <p className="text-gray-600 text-sm">Manage your menu categories</p>
+          <h2 className="text-xl font-semibold" style={{ color: designSystem.colors.primary }}>Categories</h2>
+          <p className="text-sm" style={{ color: designSystem.colors.text }}>Manage your menu categories</p>
         </div>
         <button
           onClick={openAddModal}
-          className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors"
+          className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium"
+          style={{ background: designSystem.colors.primary, color: designSystem.colors.white }}
         >
-          <PlusCircle size={16} className="mr-2" /> Add Category
+          <PlusCircle size={16} className="mr-2" style={{ color: designSystem.colors.white }} /> Add Category
         </button>
       </div>
       {/* Search */}
       <div className="p-4">
         <div className="relative max-w-xs mb-4">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search size={18} className="text-gray-400" />
+            <Search size={18} style={{ color: designSystem.colors.iconFiltercolor }} />
           </div>
           <input
             type="text"
@@ -213,11 +215,13 @@ const CategoryManagementContent: React.FC<CategoryManagementContentProps> = ({
             onChange={e => setSearchQuery(e.target.value)}
             placeholder="Search categories..."
             className="pl-10 block w-full py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
+            style={{ color: designSystem.colors.text }}
           />
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
-              className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+              className="absolute inset-y-0 right-0 pr-3 flex items-center"
+              style={{ color: designSystem.colors.secondary }}
             >
               <X size={18} />
             </button>
@@ -260,69 +264,77 @@ const CategoryManagementContent: React.FC<CategoryManagementContentProps> = ({
 
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+          <thead style={{ background: designSystem.colors.statusDefaultBg }}>
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: designSystem.colors.text }}>
                 <button
                   onClick={() => handleSort('title')}
-                  className="flex items-center space-x-1 hover:text-gray-700"
+                  className="flex items-center space-x-1"
+                  style={{ color: designSystem.colors.primary }}
                 >
                   <span>Title</span>
                   {sortField === 'title' ? (
-                    sortDirection === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />
+                    sortDirection === 'asc' ? <ArrowUp size={14} style={{ color: designSystem.colors.primary }} /> : <ArrowDown size={14} style={{ color: designSystem.colors.primary }} />
                   ) : (
-                    <ArrowUpDown size={14} className="text-gray-400" />
+                    <ArrowUpDown size={14} style={{ color: designSystem.colors.primary }} />
                   )}
                 </button>
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: designSystem.colors.text }}>
                 <button
                   onClick={() => handleSort('order')}
-                  className="flex items-center space-x-1 hover:text-gray-700"
+                  className="flex items-center space-x-1"
+                  style={{ color: designSystem.colors.primary }}
                 >
                   <span>Order</span>
                   {sortField === 'order' ? (
-                    sortDirection === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />
+                    sortDirection === 'asc' ? <ArrowUp size={14} style={{ color: designSystem.colors.primary }} /> : <ArrowDown size={14} style={{ color: designSystem.colors.primary }} />
                   ) : (
-                    <ArrowUpDown size={14} className="text-gray-400" />
+                    <ArrowUpDown size={14} style={{ color: designSystem.colors.primary }} />
                   )}
                 </button>
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: designSystem.colors.text }}>Status</th>
+              <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: designSystem.colors.text }}>Actions</th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody style={{ background: designSystem.colors.white }}>
             {loading ? (
               <tr>
-                <td colSpan={4} className="px-6 py-10 text-center text-gray-500">
+                <td colSpan={4} className="px-6 py-10 text-center" style={{ color: designSystem.colors.text }}>
                   <LoadingSpinner size={40} />
                 </td>
               </tr>
             ) : currentItems.length === 0 ? (
               <tr>
-                <td colSpan={4} className="px-6 py-10 text-center text-gray-500">
+                <td colSpan={4} className="px-6 py-10 text-center" style={{ color: designSystem.colors.text }}>
                   {visibleCategories.length === 0 ? 'No categories found. Add your first category!' : 'No categories match your search criteria.'}
                 </td>
               </tr>
             ) : (
               currentItems.map((category) => (
-                <tr key={category.id} className="hover:bg-gray-50">
+                <tr key={category.id} style={{ background: designSystem.colors.white }} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
-                      <div className="flex-shrink-0 h-10 w-10 flex items-center justify-center bg-gray-100 rounded-full">
-                        <Layers size={20} className="text-primary" />
+                      <div className="flex-shrink-0 h-10 w-10 flex items-center justify-center rounded-full" style={{ background: designSystem.colors.statusDefaultBg }}>
+                        <Layers size={20} style={{ color: designSystem.colors.secondary }} />
                       </div>
                       <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900">{category.title}</div>
+                        <div className="text-sm font-medium" style={{ color: designSystem.colors.primary }}>{category.title}</div>
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{category.order || 0}</div>
+                    <div className="text-sm" style={{ color: designSystem.colors.primary }}>{category.order || 0}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${category.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                    <span
+                      className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
+                      style={{
+                        background: category.status === 'active' ? designSystem.colors.statusReadyBg : designSystem.colors.statusPendingBg,
+                        color: category.status === 'active' ? designSystem.colors.statusReadyText : designSystem.colors.statusPendingText,
+                      }}
+                    >
                       {category.status === 'active' ? 'Active' : 'Inactive'}
                     </span>
                   </td>
@@ -330,22 +342,22 @@ const CategoryManagementContent: React.FC<CategoryManagementContentProps> = ({
                     <div className="flex justify-end space-x-2">
                       <button
                         onClick={() => onToggleStatus(category)}
-                        className={`text-${category.status === 'active' ? 'yellow' : 'green'}-600 hover:text-${category.status === 'active' ? 'yellow' : 'green'}-900`}
                         title={category.status === 'active' ? 'Deactivate' : 'Activate'}
+                        style={{ color: designSystem.colors.secondary }}
                       >
                         {category.status === 'active' ? <EyeOff size={18} /> : <Eye size={18} />}
                       </button>
                       <button
                         onClick={() => openEditModal(category)}
-                        className="text-indigo-600 hover:text-indigo-900"
                         title="Edit"
+                        style={{ color: designSystem.colors.secondary }}
                       >
                         <Edit size={18} />
                       </button>
                       <button
                         onClick={() => { setCategoryToDelete(category); setDeleteConfirmOpen(true); }}
-                        className="text-red-600 hover:text-red-900"
                         title="Delete"
+                        style={{ color: designSystem.colors.secondary }}
                       >
                         <Trash2 size={18} />
                       </button>

@@ -16,13 +16,14 @@ import {
 } from 'firebase/firestore';
 import { toast } from 'react-hot-toast';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
-import { Dish as MenuItem, Category } from '../../../types';
+import { Category } from '../../../types';
 import MenuManagementContent from '../../../shared/MenuManagementContent';
 import { logActivity } from '../../../services/activityLogService';
+import designSystem from '../../../designSystem';
 
 const MenuManagement: React.FC = () => {
   const { restaurant } = useAuth();
-  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [menuItems, setMenuItems] = useState<any[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -58,12 +59,17 @@ const MenuManagement: React.FC = () => {
           const menuItemsData = menuItemsSnapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data()
-          })) as MenuItem[];
+          })) as any[];
           setMenuItems(menuItemsData.filter((item: any) => !item.deleted));
         }
       } catch (error) {
         console.error('Error fetching dishes:', error);
-        toast.error('Failed to load dishes');
+        toast.error('Failed to load dishes', {
+          style: {
+            background: designSystem.colors.error,
+            color: designSystem.colors.textInverse,
+          },
+        });
       } finally {
         setLoading(false);
       }
@@ -82,7 +88,12 @@ const MenuManagement: React.FC = () => {
         deleted: false,
       });
       setMenuItems(prev => [...prev, { ...data, id: docRef.id, restaurantId: restaurant.id, createdAt: new Date(), deleted: false }]);
-      toast.success('Dish added!');
+      toast.success('Dish added!', {
+        style: {
+          background: designSystem.colors.success,
+          color: designSystem.colors.textInverse,
+        },
+      });
       await logActivity({
         userId: restaurant.id,
         userEmail: restaurant.email,
@@ -92,7 +103,12 @@ const MenuManagement: React.FC = () => {
         details: data,
       });
     } catch (error) {
-      toast.error('Failed to add dish');
+      toast.error('Failed to add dish', {
+        style: {
+          background: designSystem.colors.error,
+          color: designSystem.colors.textInverse,
+        },
+      });
     }
   };
 
@@ -104,7 +120,12 @@ const MenuManagement: React.FC = () => {
         updatedAt: serverTimestamp(),
       });
       setMenuItems(prev => prev.map(i => i.id === item.id ? { ...i, ...data, updatedAt: new Date() } : i));
-      toast.success('Dish updated!');
+      toast.success('Dish updated!', {
+        style: {
+          background: designSystem.colors.success,
+          color: designSystem.colors.textInverse,
+        },
+      });
       await logActivity({
         userId: restaurant.id,
         userEmail: restaurant.email,
@@ -114,7 +135,12 @@ const MenuManagement: React.FC = () => {
         details: data,
       });
     } catch (error) {
-      toast.error('Failed to update dish');
+      toast.error('Failed to update dish', {
+        style: {
+          background: designSystem.colors.error,
+          color: designSystem.colors.textInverse,
+        },
+      });
     }
   };
 
@@ -126,7 +152,12 @@ const MenuManagement: React.FC = () => {
           updatedAt: serverTimestamp(),
         });
       setMenuItems(prev => prev.filter(i => i.id !== itemId));
-      toast.success('Dish deleted!');
+      toast.success('Dish deleted!', {
+        style: {
+          background: designSystem.colors.success,
+          color: designSystem.colors.textInverse,
+        },
+      });
       await logActivity({
         userId: restaurant.id,
         userEmail: restaurant.email,
@@ -135,7 +166,12 @@ const MenuManagement: React.FC = () => {
         entityId: itemId,
       });
     } catch (error) {
-      toast.error('Failed to delete dish');
+      toast.error('Failed to delete dish', {
+        style: {
+          background: designSystem.colors.error,
+          color: designSystem.colors.textInverse,
+        },
+      });
     }
   };
 
@@ -148,7 +184,12 @@ const MenuManagement: React.FC = () => {
         updatedAt: serverTimestamp(),
       });
       setMenuItems(prev => prev.map(i => i.id === item.id ? { ...i, status: newStatus, updatedAt: new Date() } : i));
-      toast.success(`Dish ${newStatus === 'active' ? 'activated' : 'deactivated'}!`);
+      toast.success(`Dish ${newStatus === 'active' ? 'activated' : 'deactivated'}!`, {
+        style: {
+          background: designSystem.colors.success,
+          color: designSystem.colors.textInverse,
+        },
+      });
       await logActivity({
         userId: restaurant.id,
         userEmail: restaurant.email,
@@ -158,7 +199,12 @@ const MenuManagement: React.FC = () => {
         details: { status: newStatus },
       });
     } catch (error) {
-      toast.error('Failed to update status');
+      toast.error('Failed to update status', {
+        style: {
+          background: designSystem.colors.error,
+          color: designSystem.colors.textInverse,
+        },
+      });
     }
   };
 
@@ -180,7 +226,12 @@ const MenuManagement: React.FC = () => {
           });
         }
         setMenuItems(prev => prev.filter(i => !itemIds.includes(i.id)));
-        toast.success(`${itemIds.length} dishes deleted!`);
+        toast.success(`${itemIds.length} dishes deleted!`, {
+          style: {
+            background: designSystem.colors.success,
+            color: designSystem.colors.textInverse,
+          },
+        });
       } else {
         const newStatus = action === 'activate' ? 'active' : 'inactive';
         for (const itemId of itemIds) {
@@ -198,10 +249,20 @@ const MenuManagement: React.FC = () => {
           });
         }
         setMenuItems(prev => prev.map(i => itemIds.includes(i.id) ? { ...i, status: newStatus, updatedAt: new Date() } : i));
-        toast.success(`${itemIds.length} dishes ${action === 'activate' ? 'activated' : 'deactivated'}!`);
+        toast.success(`${itemIds.length} dishes ${action === 'activate' ? 'activated' : 'deactivated'}!`, {
+          style: {
+            background: designSystem.colors.success,
+            color: designSystem.colors.textInverse,
+          },
+        });
       }
     } catch (error) {
-      toast.error('Failed to perform bulk action');
+      toast.error('Failed to perform bulk action', {
+        style: {
+          background: designSystem.colors.error,
+          color: designSystem.colors.textInverse,
+        },
+      });
     }
   };
 
