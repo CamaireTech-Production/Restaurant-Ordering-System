@@ -153,7 +153,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, open, onClose }) => {
                       }
                       style={{
                         background: window.location.pathname === '/profile-setup' ? designSystem.colors.accent : 'transparent',
-                        color: window.location.pathname === '/profile-setup' ? designSystem.colors.textInverse : designSystem.colors.textInverse,
+                        color: window.location.pathname === '/profile-setup' ? designSystem.colors.text : designSystem.colors.textInverse,
                         borderColor: window.location.pathname === '/profile-setup' ? designSystem.colors.accent : 'transparent',
                         transition: 'background 0.2s',
                       }}
@@ -238,7 +238,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, open, onClose }) => {
             className={`ml-2 px-3 py-2 rounded-lg font-bold transition-colors duration-200 flex items-center gap-1 ${collapsed ? 'w-full justify-center ml-0' : ''}`}
             style={{
               background: designSystem.colors.accent,
-              color: designSystem.colors.textInverse,
+              color: designSystem.colors.text,
             }}
             title="Sign Out"
           >

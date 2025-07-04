@@ -12,12 +12,9 @@ const DemoDashboard: React.FC = () => {
   const { demoAccount, loading } = useDemoAuth();
   const isDemoUser = useIsDemoUser();
   const navigate = useNavigate();
-  const [stats, setStats] = useState({
-    menuItems: 0,
-    categories: 0,
-    tables: 0,
-    orders: 0,
-  });
+  const [orders, setOrders] = useState<any[]>([]);
+  const [menuItems, setMenuItems] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
   const [statsLoading, setStatsLoading] = useState(true);
   const [daysLeft, setDaysLeft] = useState<number | null>(null);
 
@@ -26,21 +23,19 @@ const DemoDashboard: React.FC = () => {
       if (!demoAccount?.id) return;
       try {
         // Fetch demo menu items
-        const menuItemsSnapshot = await getDocs(collection(db, 'demoAccounts', demoAccount.id, 'menus'));
+        const menuItemsSnapshot = await getDocs(collection(db, 'demoAccounts', demoAccount.id, 'menuItems'));
+        const menuItemsData = menuItemsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setMenuItems(menuItemsData);
         // Fetch demo categories
         const categoriesSnapshot = await getDocs(collection(db, 'demoAccounts', demoAccount.id, 'categories'));
-        // Fetch demo tables
-        const tablesSnapshot = await getDocs(collection(db, 'demoAccounts', demoAccount.id, 'tables'));
+        const categoriesData = categoriesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setCategories(categoriesData);
         // Fetch demo orders
         const ordersSnapshot = await getDocs(collection(db, 'demoAccounts', demoAccount.id, 'orders'));
-        setStats({
-          menuItems: menuItemsSnapshot.size,
-          categories: categoriesSnapshot.size,
-          tables: tablesSnapshot.size,
-          orders: ordersSnapshot.size,
-        });
+        const ordersData = ordersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setOrders(ordersData);
       } catch (error) {
-        console.error('Error fetching demo dashboard stats:', error);
+        console.error('Error fetching demo dashboard data:', error);
       } finally {
         setStatsLoading(false);
       }
@@ -106,13 +101,7 @@ const DemoDashboard: React.FC = () => {
   }
 
   return (
-    <DashboardLayout title={
-        <div className="flex flex-col sm:flex-row items-center justify-between w-full">
-            <span className="text-base sm:text-lg md:text-xl">
-            Dashboard
-            </span>
-        </div>
-    }>
+    <DashboardLayout title="">
       {isDemoUser && daysLeft !== null && !isNaN(daysLeft) && (
         <div className="mb-4 p-4 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 rounded">
           <strong>Demo Mode:</strong> You are using a demo restaurant account. Some features are disabled. The restaurant name, logo, and colors are fixed. Demo accounts expire after 5 days. <br />
@@ -121,7 +110,9 @@ const DemoDashboard: React.FC = () => {
       )}
       <DashboardContent
         restaurant={demoRestaurant}
-        stats={stats}
+        orders={orders}
+        menuItems={menuItems}
+        categories={categories}
         isDemoUser={isDemoUser}
         loading={false}
       />

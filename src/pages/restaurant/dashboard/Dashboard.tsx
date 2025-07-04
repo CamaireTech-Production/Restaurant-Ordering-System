@@ -13,60 +13,46 @@ const Dashboard: React.FC = () => {
   const { restaurant } = useAuth();
   const isDemoUser = useIsDemoUser();
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({
-    menuItems: 0,
-    categories: 0,
-    tables: 0,
-    orders: 0,
-  });
+  const [orders, setOrders] = useState<any[]>([]);
+  const [menuItems, setMenuItems] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
 
   useEffect(() => {
-    const fetchStats = async () => {
+    const fetchData = async () => {
       if (!restaurant?.id) return;
-
+      setLoading(true);
       try {
-        // Fetch dishes count
+        // Fetch menu items
         const menuItemsQuery = query(
           collection(db, 'menuItems'),
           where('restaurantId', '==', restaurant.id)
         );
         const menuItemsSnapshot = await getDocs(menuItemsQuery);
-        
-        // Fetch categories count
+        const menuItemsData = menuItemsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setMenuItems(menuItemsData);
+        // Fetch categories
         const categoriesQuery = query(
           collection(db, 'categories'),
           where('restaurantId', '==', restaurant.id)
         );
         const categoriesSnapshot = await getDocs(categoriesQuery);
-        
-        // Fetch tables count
-        const tablesQuery = query(
-          collection(db, 'tables'),
-          where('restaurantId', '==', restaurant.id)
-        );
-        const tablesSnapshot = await getDocs(tablesQuery);
-        
-        // Fetch orders count
+        const categoriesData = categoriesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setCategories(categoriesData);
+        // Fetch orders
         const ordersQuery = query(
           collection(db, 'orders'),
           where('restaurantId', '==', restaurant.id)
         );
         const ordersSnapshot = await getDocs(ordersQuery);
-        
-        setStats({
-          menuItems: menuItemsSnapshot.size,
-          categories: categoriesSnapshot.size,
-          tables: tablesSnapshot.size,
-          orders: ordersSnapshot.size,
-        });
+        const ordersData = ordersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setOrders(ordersData);
       } catch (error) {
-        console.error('Error fetching dashboard stats:', error);
+        console.error('Error fetching dashboard data:', error);
       } finally {
         setLoading(false);
       }
     };
-
-    fetchStats();
+    fetchData();
   }, [restaurant]);
 
   if (loading) {
@@ -80,16 +66,12 @@ const Dashboard: React.FC = () => {
   }
 
   return (
-    <DashboardLayout title={
-      <div className="flex flex-col sm:flex-row items-center justify-between w-full">
-        <span className="text-base sm:text-lg md:text-xl">
-          Dashboard
-        </span>
-      </div>
-    }>
+    <DashboardLayout title="">
       <DashboardContent
         restaurant={restaurant}
-        stats={stats}
+        orders={orders}
+        menuItems={menuItems}
+        categories={categories}
         isDemoUser={isDemoUser}
         loading={loading}
       />

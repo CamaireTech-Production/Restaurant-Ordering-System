@@ -13,6 +13,19 @@ const designSystem = {
     borderLightGray: '#E5E5E5',  // Light border for white bg
     white: '#FFFFFF',           // White
     black: '#000000',           // Black
+    // Status colors for orders
+    statusPendingBg: '#FEF3C7',      // yellow-200
+    statusPendingText: '#B45309',    // yellow-800
+    statusPreparingBg: '#DBEAFE',    // blue-200
+    statusPreparingText: '#1E40AF',  // blue-800
+    statusReadyBg: '#BBF7D0',        // green-200
+    statusReadyText: '#166534',      // green-800
+    statusCompletedBg: '#E5E7EB',    // gray-200
+    statusCompletedText: '#374151',  // gray-800
+    statusCancelledBg: '#FECACA',    // red-200
+    statusCancelledText: '#991B1B',  // red-800
+    statusDefaultBg: '#F3F4F6',      // gray-100
+    statusDefaultText: '#4B5563',    // gray-600
   },
   fonts: {
     body: 'Inter, sans-serif',
