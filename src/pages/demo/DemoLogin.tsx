@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
-import { Mail, Lock, ChefHat, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, ChefHat, AlertCircle, Eye, EyeOff, Wifi, WifiOff } from 'lucide-react';
 import { useDemoAuth } from '../../contexts/DemoAuthContext';
 import { auth, db } from '../../firebase/config';
 import { doc, getDoc } from 'firebase/firestore';
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { getNetworkErrorMessage, checkInternetConnection } from '../../utils/networkUtils';
 
 const DemoLogin: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -16,6 +17,7 @@ const DemoLogin: React.FC = () => {
   const [phone, setPhone] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [expired, setExpired] = useState(false);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
 
   const { signIn, signInWithPhoneAndPassword } = useDemoAuth();
   const navigate = useNavigate();
@@ -28,11 +30,34 @@ const DemoLogin: React.FC = () => {
     }
   }, []);
 
+  // Monitor network status
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
+    
     try {
+      // Check internet connection first
+      const isConnected = await checkInternetConnection();
+      if (!isConnected) {
+        setError('No internet connection. Please check your network and try again.');
+        toast.error('No internet connection. Please check your network and try again.');
+        return;
+      }
+      
       if (loginMode === 'email') {
         await signIn(email, password);
       } else {
@@ -54,8 +79,9 @@ const DemoLogin: React.FC = () => {
         setError('No demo account found with this phone number. Please check your number or sign up.');
         toast.error('No demo account found with this phone number.');
       } else {
-        setError('Failed to log in to demo account');
-        toast.error('Failed to log in to demo account');
+        const errorMessage = getNetworkErrorMessage(error);
+        setError(errorMessage);
+        toast.error(errorMessage);
       }
     } finally {
       setIsLoading(false);
@@ -65,7 +91,16 @@ const DemoLogin: React.FC = () => {
   const handleGoogleSignIn = async () => {
     setError('');
     setIsLoading(true);
+    
     try {
+      // Check internet connection first
+      const isConnected = await checkInternetConnection();
+      if (!isConnected) {
+        setError('No internet connection. Please check your network and try again.');
+        toast.error('No internet connection. Please check your network and try again.');
+        return;
+      }
+      
       const provider = new GoogleAuthProvider();
       const userCredential = await signInWithPopup(auth, provider);
       if (userCredential.user && userCredential.user.email) {
@@ -83,8 +118,9 @@ const DemoLogin: React.FC = () => {
         toast.error('No email found from Google account');
       }
     } catch (error: any) {
-      setError('Failed to sign in with Google');
-      toast.error('Failed to sign in with Google');
+      const errorMessage = getNetworkErrorMessage(error);
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -108,6 +144,14 @@ const DemoLogin: React.FC = () => {
       </div>
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+          {/* Network Status Indicator */}
+          {!isOnline && (
+            <div className="mb-4 flex items-center gap-2 p-3 bg-yellow-50 text-yellow-700 rounded-md">
+              <WifiOff size={18} />
+              <span>You are currently offline. Please check your internet connection.</span>
+            </div>
+          )}
+          
           {expired ? (
             <div className="flex flex-col items-center gap-4">
               <div className="mb-4 flex items-center gap-2 p-3 bg-red-50 text-red-700 rounded-md">

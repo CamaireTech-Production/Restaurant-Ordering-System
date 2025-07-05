@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
-import { Mail, Lock, ChefHat, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, ChefHat, AlertCircle, Eye, EyeOff, Wifi, WifiOff } from 'lucide-react';
 import { useDemoAuth } from '../../contexts/DemoAuthContext';
 import { auth } from '../../firebase/config';
 import PaymentSetup from '../../components/payment/PaymentSetup';
 import { PaymentInfo } from '../../types';
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import designSystem from '../../designSystem';
+import { getNetworkErrorMessage, checkInternetConnection } from '../../utils/networkUtils';
 
 const DemoSignup: React.FC = () => {
   const [step, setStep] = useState(1);
@@ -20,6 +21,7 @@ const DemoSignup: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [paymentInfo, setPaymentInfo] = useState<PaymentInfo>({});
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
 
   const { signUp } = useDemoAuth();
   const navigate = useNavigate();
@@ -32,11 +34,39 @@ const DemoSignup: React.FC = () => {
     }
   }, [location.state]);
 
+  // Monitor network status
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
   // Step 1: Google sign-in
   const handleGoogleSignIn = async () => {
     setError('');
     setIsLoading(true);
+    
     try {
+      // Check internet connection first
+      const isConnected = await checkInternetConnection();
+      if (!isConnected) {
+        setError('No internet connection. Please check your network and try again.');
+        toast.error('No internet connection. Please check your network and try again.', {
+          style: {
+            background: designSystem.colors.error,
+            color: designSystem.colors.textInverse,
+          },
+        });
+        return;
+      }
+      
       const provider = new GoogleAuthProvider();
       const userCredential = await signInWithPopup(auth, provider);
       if (userCredential.user && userCredential.user.email) {
@@ -52,8 +82,9 @@ const DemoSignup: React.FC = () => {
         });
       }
     } catch (error: any) {
-      setError('Failed to sign in with Google');
-      toast.error('Failed to sign in with Google', {
+      const errorMessage = getNetworkErrorMessage(error);
+      setError(errorMessage);
+      toast.error(errorMessage, {
         style: {
           background: designSystem.colors.error,
           color: designSystem.colors.textInverse,
@@ -99,7 +130,21 @@ const DemoSignup: React.FC = () => {
       return;
     }
     setIsLoading(true);
+    
     try {
+      // Check internet connection first
+      const isConnected = await checkInternetConnection();
+      if (!isConnected) {
+        setError('No internet connection. Please check your network and try again.');
+        toast.error('No internet connection. Please check your network and try again.', {
+          style: {
+            background: designSystem.colors.error,
+            color: designSystem.colors.textInverse,
+          },
+        });
+        return;
+      }
+      
       // Create the Firestore demoAccounts document with all info
       await signUp(googleEmail, password, phone, { paymentInfo });
       toast.success('Demo account created successfully!', {
@@ -119,8 +164,9 @@ const DemoSignup: React.FC = () => {
           },
         });
       } else {
-        setError('Failed to create demo account');
-        toast.error('Failed to create demo account', {
+        const errorMessage = getNetworkErrorMessage(error);
+        setError(errorMessage);
+        toast.error(errorMessage, {
           style: {
             background: designSystem.colors.error,
             color: designSystem.colors.textInverse,
@@ -147,6 +193,14 @@ const DemoSignup: React.FC = () => {
       </div>
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-2xl">
         <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+          {/* Network Status Indicator */}
+          {!isOnline && (
+            <div className="mb-4 flex items-center gap-2 p-3 bg-yellow-50 text-yellow-700 rounded-md">
+              <WifiOff size={18} />
+              <span>You are currently offline. Please check your internet connection.</span>
+            </div>
+          )}
+          
           {error && (
             <div className="mb-4 flex items-center gap-2 p-3 bg-red-50 text-red-700 rounded-md">
               <AlertCircle size={18} />

@@ -9,12 +9,21 @@ import {
   signInWithPopup,
   signInWithPhoneNumber,
   ConfirmationResult,
+  EmailAuthProvider,
+  linkWithCredential,
 } from 'firebase/auth';
+import {
+  query as firestoreQuery,
+  where as firestoreWhere,
+  getDocs as firestoreGetDocs,
+  collection as firestoreCollection,
+} from 'firebase/firestore';
 import { auth, db } from '../firebase/config';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
 import { logActivity } from '../services/activityLogService';
 import { DemoAccount } from '../types';
+import { getNetworkErrorMessage, retryWithNetworkCheck } from '../utils/networkUtils';
 
 interface DemoAuthContextType {
   currentUser: User | null;
@@ -95,59 +104,92 @@ export const DemoAuthProvider: React.FC<{ children: ReactNode }> = ({ children }
   const signIn = async (email: string, password: string) => {
     try {
       console.log('[DemoAuth] signIn start', { email });
-      const cred = await signInWithEmailAndPassword(auth, email, password);
+      
+      const cred = await retryWithNetworkCheck(async () => {
+        return await signInWithEmailAndPassword(auth, email, password);
+      });
+      
       // Check for demo account
       const demoDocRef = doc(db, 'demoAccounts', cred.user.uid);
-      const demoDoc = await getDoc(demoDocRef);
+      const demoDoc = await retryWithNetworkCheck(async () => {
+        return await getDoc(demoDocRef);
+      });
+      
       if (!demoDoc.exists()) {
         console.error('[DemoAuth] No demo account found for user');
         throw new Error('No demo account found for this user');
       }
+      
       const demoData = demoDoc.data();
       const now = new Date();
       if (!demoData.expired && demoData.expiresAt && demoData.active && new Date(demoData.expiresAt) < now) {
         // Expire the account
-        await setDoc(demoDocRef, { active: false, expired: true }, { merge: true });
-        await logActivity({
-          userId: cred.user.uid,
-          userEmail: email,
-          action: 'demo_account_expired_on_login',
-          entityType: 'demoAccount',
-          entityId: cred.user.uid,
-          details: { expiredAt: demoData.expiresAt, expiredBy: 'login' },
+        await retryWithNetworkCheck(async () => {
+          await setDoc(demoDocRef, { active: false, expired: true }, { merge: true });
+        });
+        await retryWithNetworkCheck(async () => {
+          await logActivity({
+            userId: cred.user.uid,
+            userEmail: email,
+            action: 'demo_account_expired_on_login',
+            entityType: 'demoAccount',
+            entityId: cred.user.uid,
+            details: { expiredAt: demoData.expiresAt, expiredBy: 'login' },
+          });
         });
         throw new Error('EXPIRED_DEMO_ACCOUNT');
       }
+      
       if (demoData.expired) {
         console.error('[DemoAuth] Demo account expired');
         throw new Error('EXPIRED_DEMO_ACCOUNT');
       }
-      await logActivity({
-        userId: cred.user.uid,
-        userEmail: email,
-        action: 'demo_login',
-        entityType: 'demoAccount',
-        entityId: cred.user.uid,
+      
+      await retryWithNetworkCheck(async () => {
+        await logActivity({
+          userId: cred.user.uid,
+          userEmail: email,
+          action: 'demo_login',
+          entityType: 'demoAccount',
+          entityId: cred.user.uid,
+        });
       });
+      
       console.log('[DemoAuth] signIn success, navigating to dashboard');
       navigate('/dashboard');
-    } catch (error) {
+    } catch (error: any) {
       console.error('[DemoAuth] signIn error', error);
-      throw error;
+      
+      // Enhance error message for better user experience
+      if (error.message === 'No demo account found for this user') {
+        throw new Error('No demo account found for this user');
+      } else if (error.message === 'EXPIRED_DEMO_ACCOUNT') {
+        throw new Error('EXPIRED_DEMO_ACCOUNT');
+      } else {
+        // Use network-aware error message
+        const enhancedError = new Error(getNetworkErrorMessage(error));
+        (enhancedError as any).code = error.code;
+        throw enhancedError;
+      }
     }
   };
 
   const signUp = async (email: string, password: string, phone: string, extraData?: Partial<DemoAccount>) => {
     try {
       console.log('[DemoAuth] signUp start', { email, phone });
+      
       // Check for existing demo account by email
-      const q = await import('firebase/firestore').then(firestore => firestore.query);
-      const where = await import('firebase/firestore').then(firestore => firestore.where);
-      const getDocs = await import('firebase/firestore').then(firestore => firestore.getDocs);
-      const collection = await import('firebase/firestore').then(firestore => firestore.collection);
-      const dbRef = collection(db, 'demoAccounts');
-      const emailQuery = q(dbRef, where('email', '==', email));
-      const snapshot = await getDocs(emailQuery);
+      const q = firestoreQuery;
+      const where = firestoreWhere;
+      const getDocs = firestoreGetDocs;
+      const collection = firestoreCollection;
+      
+      const snapshot = await retryWithNetworkCheck(async () => {
+        const dbRef = collection(db, 'demoAccounts');
+        const emailQuery = q(dbRef, where('email', '==', email));
+        return await getDocs(emailQuery);
+      });
+      
       if (!snapshot.empty) {
         // If a demo account with this email exists, throw error
         throw new Error('DEMO_EMAIL_EXISTS');
@@ -155,74 +197,105 @@ export const DemoAuthProvider: React.FC<{ children: ReactNode }> = ({ children }
         if (auth.currentUser) {
           // User is signed in with Google, link password
           console.log('[DemoAuth] No existing demo account, user is signed in, linking password');
-          const { EmailAuthProvider, linkWithCredential } = await import('firebase/auth');
-          const credential = EmailAuthProvider.credential(email, password);
-          const providers = auth.currentUser?.providerData.map(p => p.providerId);
-          if (!providers || !providers.includes('password')) {
-            await linkWithCredential(auth.currentUser, credential);
+          
+          if (!auth.currentUser?.providerData.map(p => p.providerId) || !auth.currentUser?.providerData.map(p => p.providerId).includes('password')) {
+            await retryWithNetworkCheck(async () => {
+              if (auth.currentUser) {
+                await linkWithCredential(auth.currentUser, EmailAuthProvider.credential(email, password));
+              }
+            });
           } else {
             console.log('[DemoAuth] Password provider already linked, skipping linkWithCredential');
           }
+          
           const now = new Date();
           const expiresAt = new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000);
-          await setDoc(doc(db, 'demoAccounts', auth.currentUser.uid), {
-            email,
-            phone,
-            createdAt: serverTimestamp(),
-            expiresAt,
-            active: true,
-            expired: false,
-            name: 'Camairetech',
-            logo: '/public/icons/icon-192x192.png',
-            colorPalette: {
-              primary: '#1D4ED8',
-              secondary: '#F59E42',
-            },
-            ...extraData,
+          
+          await retryWithNetworkCheck(async () => {
+            if (auth.currentUser) {
+              await setDoc(doc(db, 'demoAccounts', auth.currentUser.uid), {
+                email,
+                phone,
+                createdAt: serverTimestamp(),
+                expiresAt,
+                active: true,
+                expired: false,
+                name: 'Camairetech',
+                logo: '/public/icons/icon-192x192.png',
+                colorPalette: {
+                  primary: '#1D4ED8',
+                  secondary: '#F59E42',
+                },
+                ...extraData,
+              });
+            }
           });
+          
           console.log('[DemoAuth] Logging activity for demo_signup_google_linked');
-          await logActivity({
-            userId: auth.currentUser.uid,
-            userEmail: email,
-            action: 'demo_signup_google_linked',
-            entityType: 'demoAccount',
-            entityId: null,
+          await retryWithNetworkCheck(async () => {
+            if (auth.currentUser) {
+              await logActivity({
+                userId: auth.currentUser.uid,
+                userEmail: email,
+                action: 'demo_signup_google_linked',
+                entityType: 'demoAccount',
+                entityId: null,
+              });
+            }
           });
         } else {
           // No user signed in, create new account (should not happen in Google flow)
           console.log('[DemoAuth] No existing demo account, creating new');
-          const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+          const userCredential = await retryWithNetworkCheck(async () => {
+            return await createUserWithEmailAndPassword(auth, email, password);
+          });
+          
           const now = new Date();
           const expiresAt = new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000);
-          await setDoc(doc(db, 'demoAccounts', userCredential.user.uid), {
-            email,
-            phone,
-            createdAt: serverTimestamp(),
-            expiresAt,
-            active: true,
-            expired: false,
-            name: 'Camairetech',
-            logo: '/public/icons/icon-192x192.png',
-            colorPalette: {
-              primary: '#1D4ED8',
-              secondary: '#F59E42',
-            },
-            ...extraData,
+          
+          await retryWithNetworkCheck(async () => {
+            await setDoc(doc(db, 'demoAccounts', userCredential.user.uid), {
+              email,
+              phone,
+              createdAt: serverTimestamp(),
+              expiresAt,
+              active: true,
+              expired: false,
+              name: 'Camairetech',
+              logo: '/public/icons/icon-192x192.png',
+              colorPalette: {
+                primary: '#1D4ED8',
+                secondary: '#F59E42',
+              },
+              ...extraData,
+            });
           });
+          
           console.log('[DemoAuth] Logging activity for demo_signup');
-          await logActivity({
-            userId: userCredential.user.uid,
-            userEmail: email,
-            action: 'demo_signup',
-            entityType: 'demoAccount',
+          await retryWithNetworkCheck(async () => {
+            await logActivity({
+              userId: userCredential.user.uid,
+              userEmail: email,
+              action: 'demo_signup',
+              entityType: 'demoAccount',
+            });
           });
         }
       }
       console.log('[DemoAuth] Signup complete, navigating to dashboard');
       navigate('/dashboard');
-    } catch (error) {
+    } catch (error: any) {
       console.error('[DemoAuth] signUp error', error);
-      throw error;
+      
+      // Enhance error message for better user experience
+      if (error.message === 'DEMO_EMAIL_EXISTS') {
+        throw new Error('DEMO_EMAIL_EXISTS');
+      } else {
+        // Use network-aware error message
+        const enhancedError = new Error(getNetworkErrorMessage(error));
+        (enhancedError as any).code = error.code;
+        throw enhancedError;
+      }
     }
   };
 
@@ -230,48 +303,75 @@ export const DemoAuthProvider: React.FC<{ children: ReactNode }> = ({ children }
     try {
       console.log('[DemoAuth] signInWithGoogle start');
       const provider = new GoogleAuthProvider();
-      const userCredential = await signInWithPopup(auth, provider);
+      const userCredential = await retryWithNetworkCheck(async () => {
+        return await signInWithPopup(auth, provider);
+      });
       const email = userCredential.user.email;
       if (!email) throw new Error('No email found from Google account');
+      
       // Check for demo account
       const demoDocRef = doc(db, 'demoAccounts', userCredential.user.uid);
-      const demoDoc = await getDoc(demoDocRef);
+      const demoDoc = await retryWithNetworkCheck(async () => {
+        return await getDoc(demoDocRef);
+      });
+      
       if (!demoDoc.exists()) {
         console.error('[DemoAuth] No demo account found for user after Google sign-in');
         throw new Error('No demo account found for this user');
       }
+      
       const demoData = demoDoc.data();
       const now = new Date();
       if (!demoData.expired && demoData.expiresAt && demoData.active && new Date(demoData.expiresAt) < now) {
         // Expire the account
-        await setDoc(demoDocRef, { active: false, expired: true }, { merge: true });
-        await logActivity({
-          userId: userCredential.user.uid,
-          userEmail: email,
-          action: 'demo_account_expired_on_login',
-          entityType: 'demoAccount',
-          entityId: userCredential.user.uid,
-          details: { expiredAt: demoData.expiresAt, expiredBy: 'login' },
+        await retryWithNetworkCheck(async () => {
+          await setDoc(demoDocRef, { active: false, expired: true }, { merge: true });
+        });
+        await retryWithNetworkCheck(async () => {
+          await logActivity({
+            userId: userCredential.user.uid,
+            userEmail: email,
+            action: 'demo_account_expired_on_login',
+            entityType: 'demoAccount',
+            entityId: userCredential.user.uid,
+            details: { expiredAt: demoData.expiresAt, expiredBy: 'login' },
+          });
         });
         throw new Error('EXPIRED_DEMO_ACCOUNT');
       }
+      
       if (demoData.expired) {
         console.error('[DemoAuth] Demo account expired');
         throw new Error('EXPIRED_DEMO_ACCOUNT');
       }
-      await logActivity({
-        userId: userCredential.user.uid,
-        userEmail: email,
-        action: 'demo_login_google',
-        entityType: 'demoAccount',
-        entityId: userCredential.user.uid,
+      
+      await retryWithNetworkCheck(async () => {
+        await logActivity({
+          userId: userCredential.user.uid,
+          userEmail: email,
+          action: 'demo_login_google',
+          entityType: 'demoAccount',
+          entityId: userCredential.user.uid,
+        });
       });
+      
       console.log('[DemoAuth] signInWithGoogle success, navigating to dashboard');
       navigate('/dashboard');
       return userCredential.user;
-    } catch (error) {
+    } catch (error: any) {
       console.error('[DemoAuth] signInWithGoogle error', error);
-      throw error;
+      
+      // Enhance error message for better user experience
+      if (error.message === 'No demo account found for this user') {
+        throw new Error('No demo account found for this user');
+      } else if (error.message === 'EXPIRED_DEMO_ACCOUNT') {
+        throw new Error('EXPIRED_DEMO_ACCOUNT');
+      } else {
+        // Use network-aware error message
+        const enhancedError = new Error(getNetworkErrorMessage(error));
+        (enhancedError as any).code = error.code;
+        throw enhancedError;
+      }
     }
   };
 
@@ -295,58 +395,94 @@ export const DemoAuthProvider: React.FC<{ children: ReactNode }> = ({ children }
   const signInWithPhoneAndPassword = async (phone: string, password: string) => {
     try {
       console.log('[DemoAuth] signInWithPhoneAndPassword start', { phone });
+      
       // Look up demo account by phone number
-      const q = await import('firebase/firestore').then(firestore => firestore.query);
-      const where = await import('firebase/firestore').then(firestore => firestore.where);
-      const getDocs = await import('firebase/firestore').then(firestore => firestore.getDocs);
-      const collection = await import('firebase/firestore').then(firestore => firestore.collection);
-      const dbRef = collection(db, 'demoAccounts');
-      const phoneQuery = q(dbRef, where('phone', '==', phone));
-      const snapshot = await getDocs(phoneQuery);
+      const q = firestoreQuery;
+      const where = firestoreWhere;
+      const getDocs = firestoreGetDocs;
+      const collection = firestoreCollection;
+      
+      const snapshot = await retryWithNetworkCheck(async () => {
+        const dbRef = collection(db, 'demoAccounts');
+        const phoneQuery = q(dbRef, where('phone', '==', phone));
+        return await getDocs(phoneQuery);
+      });
+      
       if (snapshot.empty) {
         console.error('[DemoAuth] No demo account found with this phone number');
         throw new Error('No demo account found with this phone number');
       }
+      
       const docData = snapshot.docs[0].data();
       const email = docData.email;
-      const cred = await signInWithEmailAndPassword(auth, email, password);
+      
+      const cred = await retryWithNetworkCheck(async () => {
+        return await signInWithEmailAndPassword(auth, email, password);
+      });
+      
       const demoDocRef = doc(db, 'demoAccounts', cred.user.uid);
-      const demoDoc = await getDoc(demoDocRef);
+      const demoDoc = await retryWithNetworkCheck(async () => {
+        return await getDoc(demoDocRef);
+      });
+      
       if (!demoDoc.exists()) {
         console.error('[DemoAuth] No demo account found for user after phone login');
         throw new Error('No demo account found for this user');
       }
+      
       const demoData = demoDoc.data();
       const now = new Date();
       if (demoData && !demoData.expired && demoData.expiresAt && demoData.active && new Date(demoData.expiresAt) < now) {
         // Expire the account
-        await setDoc(demoDocRef, { active: false, expired: true }, { merge: true });
-        await logActivity({
-          userId: cred.user.uid,
-          userEmail: email,
-          action: 'demo_account_expired_on_login',
-          entityType: 'demoAccount',
-          entityId: cred.user.uid,
-          details: { expiredAt: demoData.expiresAt, expiredBy: 'login' },
+        await retryWithNetworkCheck(async () => {
+          await setDoc(demoDocRef, { active: false, expired: true }, { merge: true });
+        });
+        await retryWithNetworkCheck(async () => {
+          await logActivity({
+            userId: cred.user.uid,
+            userEmail: email,
+            action: 'demo_account_expired_on_login',
+            entityType: 'demoAccount',
+            entityId: cred.user.uid,
+            details: { expiredAt: demoData.expiresAt, expiredBy: 'login' },
+          });
         });
         throw new Error('EXPIRED_DEMO_ACCOUNT');
       }
+      
       if (demoData && demoData.expired) {
         console.error('[DemoAuth] Demo account expired');
         throw new Error('EXPIRED_DEMO_ACCOUNT');
       }
-      await logActivity({
-        userId: cred.user.uid,
-        userEmail: email,
-        action: 'demo_login_phone_password',
-        entityType: 'demoAccount',
-        entityId: cred.user.uid,
+      
+      await retryWithNetworkCheck(async () => {
+        await logActivity({
+          userId: cred.user.uid,
+          userEmail: email,
+          action: 'demo_login_phone_password',
+          entityType: 'demoAccount',
+          entityId: cred.user.uid,
+        });
       });
+      
       console.log('[DemoAuth] signInWithPhoneAndPassword success, navigating to dashboard');
       navigate('/dashboard');
-    } catch (error) {
+    } catch (error: any) {
       console.error('[DemoAuth] signInWithPhoneAndPassword error', error);
-      throw error;
+      
+      // Enhance error message for better user experience
+      if (error.message === 'No demo account found with this phone number') {
+        throw new Error('No demo account found with this phone number');
+      } else if (error.message === 'No demo account found for this user') {
+        throw new Error('No demo account found for this user');
+      } else if (error.message === 'EXPIRED_DEMO_ACCOUNT') {
+        throw new Error('EXPIRED_DEMO_ACCOUNT');
+      } else {
+        // Use network-aware error message
+        const enhancedError = new Error(getNetworkErrorMessage(error));
+        (enhancedError as any).code = error.code;
+        throw enhancedError;
+      }
     }
   };
 
