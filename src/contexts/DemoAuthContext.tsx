@@ -26,6 +26,7 @@ interface DemoAuthContextType {
   signInWithPhone: (phone: string, appVerifier: any) => Promise<ConfirmationResult>;
   signInWithPhoneAndPassword: (phone: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
+  refreshDemoAccount: () => Promise<void>;
 }
 
 export const DemoAuthContext = createContext<DemoAuthContextType | undefined>(undefined);
@@ -365,6 +366,19 @@ export const DemoAuthProvider: React.FC<{ children: ReactNode }> = ({ children }
     }
   };
 
+  // Add a method to refresh the demoAccount from Firestore
+  const refreshDemoAccount = async () => {
+    if (!currentUser) return;
+    try {
+      const demoDoc = await getDoc(doc(db, 'demoAccounts', currentUser.uid));
+      if (demoDoc.exists()) {
+        setDemoAccount({ id: demoDoc.id, ...demoDoc.data() } as DemoAccount);
+      }
+    } catch (error) {
+      // Optionally handle error
+    }
+  };
+
   const contextValue = {
     currentUser,
     demoAccount,
@@ -375,6 +389,7 @@ export const DemoAuthProvider: React.FC<{ children: ReactNode }> = ({ children }
     signInWithPhone,
     signInWithPhoneAndPassword,
     signOut,
+    refreshDemoAccount,
   };
 
   return (

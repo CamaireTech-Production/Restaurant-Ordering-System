@@ -1,18 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
-import { Lock, Eye, EyeOff, Save, ArrowLeft, AlertCircle, CheckCircle } from 'lucide-react';
+import { Lock, Eye, EyeOff, Save, AlertCircle } from 'lucide-react';
 import { useDemoAuth } from '../../contexts/DemoAuthContext';
-import { updateProfile, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
+import { EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 'firebase/auth';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 import PaymentSetup from '../../components/payment/PaymentSetup';
 import { PaymentInfo } from '../../types';
 import { validateCameroonPhone, formatCameroonPhone } from '../../utils/paymentUtils';
+import DashboardLayout from '../../components/layout/DashboardLayout';
+import designSystem from '../../designSystem';
+import { logActivity } from '../../services/activityLogService';
 
 const DemoProfileEdit: React.FC = () => {
-  const { demoAccount, currentUser } = useDemoAuth();
-  const navigate = useNavigate();
+  const { demoAccount, currentUser, refreshDemoAccount } = useDemoAuth();
   
   const [phone, setPhone] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
@@ -83,13 +84,14 @@ const DemoProfileEdit: React.FC = () => {
       // Re-authenticate user before password change
       const credential = EmailAuthProvider.credential(currentUser.email!, currentPassword);
       await reauthenticateWithCredential(currentUser, credential);
-      
       // Update password
-      await updateProfile(currentUser, {});
-      // Note: Firebase doesn't allow password update through updateProfile
-      // We'll need to use a different approach or inform the user to use the auth system
-      
-      toast.success('Password updated successfully!');
+      await updatePassword(currentUser, newPassword);
+      toast.success('Password updated successfully!', {
+        style: {
+          background: designSystem.colors.success,
+          color: designSystem.colors.textInverse,
+        },
+      });
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
@@ -99,6 +101,12 @@ const DemoProfileEdit: React.FC = () => {
       } else {
         setError('Failed to update password. Please try again.');
       }
+      toast.error('Failed to update password', {
+        style: {
+          background: designSystem.colors.error,
+          color: designSystem.colors.textInverse,
+        },
+      });
     } finally {
       setIsLoading(false);
     }
@@ -106,30 +114,45 @@ const DemoProfileEdit: React.FC = () => {
 
   const handleSaveProfile = async () => {
     if (!demoAccount || !currentUser) return;
-
-    // Validate phone number
     if (!validatePhoneNumber(phone)) {
       return;
     }
-
     setIsLoading(true);
     setError('');
-
     try {
-      // Phone number is already clean (without +237 prefix)
-      
-      // Update demo account in Firestore
       await updateDoc(doc(db, 'demoAccounts', currentUser.uid), {
         phone: phone,
         paymentInfo,
         updatedAt: serverTimestamp()
       });
-
-      toast.success('Profile updated successfully!');
-      navigate('/demo-dashboard');
+      // Log activity
+      await logActivity({
+        userId: currentUser.uid,
+        userEmail: currentUser.email || undefined,
+        action: 'update_profile',
+        entityType: 'demoAccount',
+        entityId: currentUser.uid,
+        details: {
+          phone,
+          paymentInfo
+        }
+      });
+      // Refresh local state
+      await refreshDemoAccount();
+      toast.success('Profile updated successfully!', {
+        style: {
+          background: designSystem.colors.success,
+          color: designSystem.colors.textInverse,
+        },
+      });
     } catch (error: any) {
       setError('Failed to update profile. Please try again.');
-      toast.error('Failed to update profile');
+      toast.error('Failed to update profile', {
+        style: {
+          background: designSystem.colors.error,
+          color: designSystem.colors.textInverse,
+        },
+      });
     } finally {
       setIsLoading(false);
     }
@@ -137,26 +160,21 @@ const DemoProfileEdit: React.FC = () => {
 
   if (!demoAccount) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col justify-center items-center p-4">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Loading...</h1>
+      <DashboardLayout title="">
+        <div className="min-h-screen bg-gray-50 flex flex-col justify-center items-center p-4">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Loading...</h1>
+          </div>
         </div>
-      </div>
+      </DashboardLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <DashboardLayout title="">
       <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
-          <button
-            onClick={() => navigate('/demo-dashboard')}
-            className="flex items-center text-primary hover:text-primary-dark mb-4"
-          >
-            <ArrowLeft size={20} className="mr-2" />
-            Back to Dashboard
-          </button>
           <h1 className="text-3xl font-bold text-gray-900">Edit Demo Profile</h1>
           <p className="text-gray-600 mt-2">
             Update your demo account information. Some fields are fixed and cannot be changed.
@@ -207,7 +225,6 @@ const DemoProfileEdit: React.FC = () => {
               {/* Editable Information Section */}
               <div className="space-y-6">
                 <h2 className="text-xl font-semibold text-gray-900">Editable Information</h2>
-                
                 {/* Phone Number */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-3">
@@ -232,11 +249,6 @@ const DemoProfileEdit: React.FC = () => {
                       />
                     </div>
                   </div>
-                  {phone && !phoneError && validateCameroonPhone(phone) && (
-                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-                      <CheckCircle size={18} className="text-green-500" />
-                    </div>
-                  )}
                   {phoneError && (
                     <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
                       <AlertCircle size={14} />
@@ -275,7 +287,7 @@ const DemoProfileEdit: React.FC = () => {
                           type={showCurrentPassword ? 'text' : 'password'}
                           value={currentPassword}
                           onChange={(e) => setCurrentPassword(e.target.value)}
-                          className="pl-10 pr-10 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
+                          className="pl-10 pr-10 block w-full py-3 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
                           placeholder="••••••••"
                         />
                         <button
@@ -300,7 +312,7 @@ const DemoProfileEdit: React.FC = () => {
                           type={showNewPassword ? 'text' : 'password'}
                           value={newPassword}
                           onChange={(e) => setNewPassword(e.target.value)}
-                          className="pl-10 pr-10 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
+                          className="pl-10 pr-10 block w-full py-3 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
                           placeholder="••••••••"
                         />
                         <button
@@ -325,7 +337,7 @@ const DemoProfileEdit: React.FC = () => {
                           type={showConfirmPassword ? 'text' : 'password'}
                           value={confirmPassword}
                           onChange={(e) => setConfirmPassword(e.target.value)}
-                          className="pl-10 pr-10 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
+                          className="pl-10 pr-10 block w-full py-3 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
                           placeholder="••••••••"
                         />
                         <button
@@ -366,7 +378,7 @@ const DemoProfileEdit: React.FC = () => {
           </div>
         </div>
       </div>
-    </div>
+    </DashboardLayout>
   );
 };
 
