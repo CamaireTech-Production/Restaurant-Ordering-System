@@ -3,8 +3,8 @@ import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { Mail, Lock, ChefHat, AlertCircle, Phone } from 'lucide-react';
 import { useDemoAuth } from '../../contexts/DemoAuthContext';
-import { auth, db } from '../../firebase/config';
-import { doc, updateDoc, getDoc } from 'firebase/firestore';
+import { db } from '../../firebase/config';
+import { doc, updateDoc } from 'firebase/firestore';
 import { EmailAuthProvider, linkWithCredential } from 'firebase/auth';
 import designSystem from '../../designSystem';
 

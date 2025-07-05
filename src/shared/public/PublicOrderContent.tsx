@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect, useMemo } from 'react';
-import { ChefHat, Search, X, ShoppingCart, PlusCircle, MinusCircle, Trash2 } from 'lucide-react';
+import { ChefHat, Search, X, ShoppingCart, PlusCircle, MinusCircle, Trash2, AlertCircle } from 'lucide-react';
 
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import DishDetailModal from '../../pages/client/customer/DishDetailModal';
@@ -7,7 +7,7 @@ import Modal from '../../components/ui/Modal';
 import toast from 'react-hot-toast';
 import designSystem from '../../designSystem';
 import { Dish, Category, Restaurant, OrderItem, Order } from '../../types';
-import { generatePaymentMessage } from '../../utils/paymentUtils';
+import { generatePaymentMessage, validateCameroonPhone, formatCameroonPhone } from '../../utils/paymentUtils';
 
 interface PublicOrderContentProps {
   restaurant: Restaurant | null;
@@ -33,6 +33,8 @@ const PublicOrderContent: React.FC<PublicOrderContentProps> = ({ restaurant, cat
   const [checkoutLocation, setCheckoutLocation] = useState('');
   const [placingOrder, setPlacingOrder] = useState(false);
   const [cartAnim, setCartAnim] = useState(false);
+  const [phoneTouched, setPhoneTouched] = useState(false);
+  const phoneError = phoneTouched && !validateCameroonPhone(checkoutPhone) ? 'Please enter a valid Cameroon phone number' : '';
   let lastManualClick = 0;
 
   // --- Cart Logic ---
@@ -406,7 +408,7 @@ const PublicOrderContent: React.FC<PublicOrderContentProps> = ({ restaurant, cat
                                     e.stopPropagation();
                                     addToCart(item);
                                   }}
-                                  className="inline-flex justify-center items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-xs sm:text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+                                  className="inline-flex justify-center items-center px-3 py-2 mt-4 border border-transparent rounded-md shadow-sm text-xs sm:text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
                                 >
                                   <PlusCircle size={14} className="mr-2" />
                                   Add to Cart
@@ -546,7 +548,37 @@ const PublicOrderContent: React.FC<PublicOrderContentProps> = ({ restaurant, cat
             <button type="button" onClick={() => setShowCheckout(false)} className="mb-4 text-primary hover:underline">&larr; Back to Cart</button>
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
-              <input type="tel" value={checkoutPhone} onChange={e => setCheckoutPhone(e.target.value)} className="w-full border border-gray-300 rounded-md p-2" required />
+              <div className="relative">
+                <div className="flex">
+                  {/* Fixed +237 prefix */}
+                  <div className="flex items-center px-4 py-3 bg-gray-100 border border-r-0 border-gray-300 rounded-l-md text-sm font-medium text-gray-700">
+                    +237
+                  </div>
+                  {/* Phone number input */}
+                  <input
+                    type="tel"
+                    value={checkoutPhone}
+                    onChange={e => setCheckoutPhone(e.target.value.replace(/[^0-9]/g, ''))}
+                    onBlur={() => setPhoneTouched(true)}
+                    className={`flex-1 px-4 py-3 border rounded-r-md shadow-sm focus:ring-primary focus:border-primary text-sm ${
+                      phoneError ? 'border-red-300' : 'border-gray-300'
+                    }`}
+                    placeholder="612345678"
+                    maxLength={9}
+                  />
+                </div>
+              </div>
+              {phoneError && (
+                <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
+                  <AlertCircle size={14} />
+                  {phoneError}
+                </p>
+              )}
+              {checkoutPhone && !phoneError && (
+                <p className="mt-2 text-sm text-gray-500">
+                  {formatCameroonPhone(checkoutPhone)}
+                </p>
+              )}
             </div>
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-1">Location / Address</label>

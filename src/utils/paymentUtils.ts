@@ -55,29 +55,25 @@ export const generatePaymentMessage = (
   // Add payment information if available
   if (paymentInfo && (paymentInfo.momo || paymentInfo.om)) {
     message += `💳 *Payment Methods:*\n`;
-    
     if (paymentInfo.momo) {
       const momoCode = generatePaymentCode('momo', paymentInfo.momo.number, totalAmount);
       message += `📱 *MTN Mobile Money:*\n`;
       message += `   Number: ${paymentInfo.momo.number}\n`;
       message += `   Name: ${paymentInfo.momo.name}\n`;
-      message += `   USSD Code: \`${momoCode}\`\n\n`;
+      message += `   USSD Code: _*${momoCode}*_\n\n`;
     }
-    
     if (paymentInfo.om) {
       const omCode = generatePaymentCode('om', paymentInfo.om.number, totalAmount);
       message += `📱 *Orange Money:*\n`;
       message += `   Number: ${paymentInfo.om.number}\n`;
       message += `   Name: ${paymentInfo.om.name}\n`;
-      message += `   USSD Code: \`${omCode}\`\n\n`;
+      message += `   USSD Code: _*${omCode}*_\n\n`;
     }
-    
     message += `💡 *Payment Instructions:*\n`;
-    message += `1. Dial the USSD code above\n`;
-    message += `2. Follow the prompts to complete payment\n`;
-    message += `3. Send payment confirmation screenshot\n`;
+    message += `1. Copy the USSD code above\n`;
+    message += `2. Open your phone app and paste/dial the code\n`;
+    message += `3. Complete payment and send a screenshot as confirmation\n`;
   }
-
   return message;
 };
 
