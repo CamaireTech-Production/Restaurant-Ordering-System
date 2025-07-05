@@ -32,15 +32,16 @@ interface DemoAuthContextType {
   signOut: () => Promise<void>;
 }
 
-const DemoAuthContext = createContext<DemoAuthContextType | undefined>(undefined);
+export const DemoAuthContext = createContext<DemoAuthContextType | undefined>(undefined);
+export const DemoAuthContextSafe = React.createContext<DemoAuthContextType | undefined>(undefined);
 
 export const useDemoAuth = () => {
-  const context = useContext(DemoAuthContext);
-  if (context === undefined) {
-    throw new Error('useDemoAuth must be used within a DemoAuthProvider');
-  }
-  return context;
+  const ctx = useContext(DemoAuthContext);
+  if (!ctx) throw new Error('useDemoAuth must be used within a DemoAuthProvider');
+  return ctx;
 };
+
+export const useDemoAuthSafe = () => useContext(DemoAuthContextSafe);
 
 export const DemoAuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -368,7 +369,7 @@ export const DemoAuthProvider: React.FC<{ children: ReactNode }> = ({ children }
     }
   };
 
-  const value = {
+  const contextValue = {
     currentUser,
     demoAccount,
     loading,
@@ -381,8 +382,10 @@ export const DemoAuthProvider: React.FC<{ children: ReactNode }> = ({ children }
   };
 
   return (
-    <DemoAuthContext.Provider value={value}>
-      {!loading && children}
+    <DemoAuthContext.Provider value={contextValue}>
+      <DemoAuthContextSafe.Provider value={contextValue}>
+        {!loading && children}
+      </DemoAuthContextSafe.Provider>
     </DemoAuthContext.Provider>
   );
 };

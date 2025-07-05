@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import designSystem from '../../designSystem';
 import { Share2, ExternalLink } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { useIsDemoUser } from '../../contexts/DemoAuthContext';
+import { useDemoAuthSafe } from '../../contexts/DemoAuthContext';
 
 interface HeaderProps {
   title: string;
@@ -11,10 +11,10 @@ interface HeaderProps {
   onMobileSidebarToggle: () => void;
   isMobile: boolean;
   restaurant: any;
-  isDemoUser: boolean;
 }
 
-const Header: React.FC<HeaderProps> = ({ title, onSidebarToggle, sidebarCollapsed, onMobileSidebarToggle, isMobile, restaurant, isDemoUser }) => {
+const Header: React.FC<HeaderProps> = ({ title, onSidebarToggle, sidebarCollapsed, onMobileSidebarToggle, isMobile, restaurant }) => {
+  const isDemoUser = !!useDemoAuthSafe();
   const menuLinks = React.useMemo(() => {
     if (!restaurant?.id) return [];
     if (isDemoUser) {

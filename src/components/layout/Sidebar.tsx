@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { useIsDemoUser } from '../../contexts/DemoAuthContext';
+import { useDemoAuthSafe } from '../../contexts/DemoAuthContext';
 import { useOfflineSync } from '../../contexts/OfflineSyncContext';
 import designSystem from '../../designSystem';
 import {
@@ -26,7 +26,7 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ collapsed, open, onClose }) => {
   const { signOut, restaurant } = useAuth();
-  const isDemoUser = useIsDemoUser();
+  const isDemoUser = !!useDemoAuthSafe();
   const { isOnline } = useOfflineSync();
   const navigate = useNavigate();
 

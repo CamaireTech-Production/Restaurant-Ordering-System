@@ -3,7 +3,7 @@ import Sidebar from './Sidebar';
 import OfflineStatusBanner from './OfflineStatusBanner';
 import Header from './Header';
 import { useAuth } from '../../contexts/AuthContext';
-import { useDemoAuth, useIsDemoUser } from '../../contexts/DemoAuthContext';
+import { useDemoAuthSafe } from '../../contexts/DemoAuthContext';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -19,8 +19,9 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, title }) =>
   const [isMobile, setIsMobile] = useState(false);
 
   const { restaurant } = useAuth();
-  const { demoAccount } = useDemoAuth();
-  const isDemoUser = useIsDemoUser();
+  const demoContext = useDemoAuthSafe();
+  const isDemoUser = !!demoContext;
+  const demoAccount = demoContext?.demoAccount;
   const effectiveRestaurant = isDemoUser ? demoAccount : restaurant;
 
   // Detect mobile
@@ -64,7 +65,6 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, title }) =>
           onMobileSidebarToggle={handleSidebarOpen}
           isMobile={isMobile}
           restaurant={effectiveRestaurant}
-          isDemoUser={isDemoUser}
         />
         <main className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">
           {children}

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 // import QRCode from 'qrcode.react'; // Uncomment if you add qrcode.react to dependencies
 import { useAuth } from '../../../contexts/AuthContext';
-import { useIsDemoUser } from '../../../contexts/DemoAuthContext';
+import { useDemoAuthSafe } from '../../../contexts/DemoAuthContext';
 import DashboardLayout from '../../../components/layout/DashboardLayout';
 import { db } from '../../../firebase/config';
 import { collection, query, where, getDocs } from 'firebase/firestore';
@@ -11,7 +11,7 @@ import DashboardContent from '../../../shared/DashboardContent';
 
 const Dashboard: React.FC = () => {
   const { restaurant } = useAuth();
-  const isDemoUser = useIsDemoUser();
+  const isDemoUser = !!useDemoAuthSafe();
   const [loading, setLoading] = useState(true);
   const [orders, setOrders] = useState<any[]>([]);
   const [menuItems, setMenuItems] = useState<any[]>([]);

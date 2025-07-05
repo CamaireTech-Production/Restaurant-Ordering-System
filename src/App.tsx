@@ -62,62 +62,49 @@ function App() {
               <Route 
                 path="/profile-setup" 
                 element={
-                  <DemoAuthProvider>
-                    <ProtectedRoute>
-                      {/* Show sidebar if not coming from onboarding (i.e., if not redirected from register) */}
-                      <ProfileSetup key="profile-setup" />
-                    </ProtectedRoute>
-                  </DemoAuthProvider>
+                  <ProtectedRoute>
+                    <ProfileSetup key="profile-setup" />
+                  </ProtectedRoute>
                 } 
               />
               <Route 
                 path="/dashboard" 
                 element={
-                  <DemoAuthProvider>
-                    <ProtectedRoute>
-                      <Dashboard />
-                    </ProtectedRoute>
-                  </DemoAuthProvider>
+                  <ProtectedRoute>
+                    <Dashboard />
+                  </ProtectedRoute>
                 } 
               />
               <Route 
                 path="/menu-management" 
                 element={
-                  <DemoAuthProvider>
-                    <ProtectedRoute>
-                      <MenuManagement />
-                    </ProtectedRoute>
-                  </DemoAuthProvider>
+                  <ProtectedRoute>
+                    <MenuManagement />
+                  </ProtectedRoute>
                 } 
               />
               <Route 
                 path="/category-management" 
                 element={
-                  <DemoAuthProvider>
-                    <ProtectedRoute>
-                      <CategoryManagement />
-                    </ProtectedRoute>
-                  </DemoAuthProvider>
+                  <ProtectedRoute>
+                    <CategoryManagement />
+                  </ProtectedRoute>
                 } 
               />
               <Route 
                 path="/table-management" 
                 element={
-                  <DemoAuthProvider>
-                    <ProtectedRoute>
-                      <TableManagement />
-                    </ProtectedRoute>
-                  </DemoAuthProvider>
+                  <ProtectedRoute>
+                    <TableManagement />
+                  </ProtectedRoute>
                 } 
               />
               <Route 
                 path="/orders" 
                 element={
-                  <DemoAuthProvider>
-                    <ProtectedRoute>
-                      <OrdersPage />
-                    </ProtectedRoute>
-                  </DemoAuthProvider>
+                  <ProtectedRoute>
+                    <OrdersPage />
+                  </ProtectedRoute>
                 } 
               />
               <Route
