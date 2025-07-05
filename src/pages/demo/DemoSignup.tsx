@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
-import { Mail, Lock, ChefHat, AlertCircle, Phone, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, ChefHat, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { useDemoAuth } from '../../contexts/DemoAuthContext';
 import { auth } from '../../firebase/config';
 import PaymentSetup from '../../components/payment/PaymentSetup';
 import { PaymentInfo } from '../../types';
+import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import designSystem from '../../designSystem';
 
 const DemoSignup: React.FC = () => {
   const [step, setStep] = useState(1);
@@ -19,25 +21,44 @@ const DemoSignup: React.FC = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [paymentInfo, setPaymentInfo] = useState<PaymentInfo>({});
 
-  const { signInWithGoogle, signUp, currentUser } = useDemoAuth();
+  const { signUp } = useDemoAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    if (location.state && location.state.email) {
+      setGoogleEmail(location.state.email);
+      setStep(2);
+    }
+  }, [location.state]);
 
   // Step 1: Google sign-in
   const handleGoogleSignIn = async () => {
     setError('');
     setIsLoading(true);
     try {
-      await signInWithGoogle();
-      // Get email from currentUser in context
-      if (auth.currentUser && auth.currentUser.email) {
-        setGoogleEmail(auth.currentUser.email);
-      } else if (currentUser && currentUser.email) {
-        setGoogleEmail(currentUser.email);
+      const provider = new GoogleAuthProvider();
+      const userCredential = await signInWithPopup(auth, provider);
+      if (userCredential.user && userCredential.user.email) {
+        setGoogleEmail(userCredential.user.email);
+        setStep(2);
+      } else {
+        setError('No email found from Google account');
+        toast.error('No email found from Google account', {
+          style: {
+            background: designSystem.colors.error,
+            color: designSystem.colors.textInverse,
+          },
+        });
       }
-      setStep(2);
     } catch (error: any) {
       setError('Failed to sign in with Google');
-      toast.error('Failed to sign in with Google');
+      toast.error('Failed to sign in with Google', {
+        style: {
+          background: designSystem.colors.error,
+          color: designSystem.colors.textInverse,
+        },
+      });
     } finally {
       setIsLoading(false);
     }
@@ -49,29 +70,62 @@ const DemoSignup: React.FC = () => {
     setError('');
     if (password !== confirmPassword) {
       setError('Passwords do not match');
-      toast.error('Passwords do not match');
+      toast.error('Passwords do not match', {
+        style: {
+          background: designSystem.colors.error,
+          color: designSystem.colors.textInverse,
+        },
+      });
       return;
     }
     if (password.length < 6) {
       setError('Password should be at least 6 characters');
-      toast.error('Password should be at least 6 characters');
+      toast.error('Password should be at least 6 characters', {
+        style: {
+          background: designSystem.colors.error,
+          color: designSystem.colors.textInverse,
+        },
+      });
+      return;
+    }
+    if (!googleEmail) {
+      setError('Please sign in with Google first');
+      toast.error('Please sign in with Google first', {
+        style: {
+          background: designSystem.colors.error,
+          color: designSystem.colors.textInverse,
+        },
+      });
       return;
     }
     setIsLoading(true);
     try {
-      // Phone number is already clean (without +237 prefix)
-      
-      // Use the email from Google sign-in
+      // Create the Firestore demoAccounts document with all info
       await signUp(googleEmail, password, phone, { paymentInfo });
-      toast.success('Demo account created successfully!');
+      toast.success('Demo account created successfully!', {
+        style: {
+          background: designSystem.colors.success,
+          color: designSystem.colors.textInverse,
+        },
+      });
       navigate('/demo-dashboard');
     } catch (error: any) {
       if (error.message === 'DEMO_EMAIL_EXISTS') {
         setError('A demo account with this email already exists. Please use a different email or log in.');
-        toast.error('A demo account with this email already exists. Please use a different email or log in.');
+        toast.error('A demo account with this email already exists. Please use a different email or log in.', {
+          style: {
+            background: designSystem.colors.error,
+            color: designSystem.colors.textInverse,
+          },
+        });
       } else {
         setError('Failed to create demo account');
-        toast.error('Failed to create demo account');
+        toast.error('Failed to create demo account', {
+          style: {
+            background: designSystem.colors.error,
+            color: designSystem.colors.textInverse,
+          },
+        });
       }
     } finally {
       setIsLoading(false);
@@ -80,7 +134,7 @@ const DemoSignup: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
+      <div className="sm:mx-auto sm:w-full sm:max-w-2xl">
         <div className="flex justify-center">
           <ChefHat size={48} className="text-primary" />
         </div>
@@ -91,7 +145,7 @@ const DemoSignup: React.FC = () => {
           Try the restaurant app with a demo account
         </p>
       </div>
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-2xl">
         <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
           {error && (
             <div className="mb-4 flex items-center gap-2 p-3 bg-red-50 text-red-700 rounded-md">

@@ -1,16 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
-import { Phone, Lock, Eye, EyeOff, Save, ArrowLeft, AlertCircle, CheckCircle } from 'lucide-react';
+import { Lock, Eye, EyeOff, Save, ArrowLeft, AlertCircle, CheckCircle } from 'lucide-react';
 import { useDemoAuth } from '../../contexts/DemoAuthContext';
-import { auth } from '../../firebase/config';
 import { updateProfile, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 import PaymentSetup from '../../components/payment/PaymentSetup';
 import { PaymentInfo } from '../../types';
 import { validateCameroonPhone, formatCameroonPhone } from '../../utils/paymentUtils';
-import designSystem from '../../designSystem';
 
 const DemoProfileEdit: React.FC = () => {
   const { demoAccount, currentUser } = useDemoAuth();

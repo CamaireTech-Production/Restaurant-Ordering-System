@@ -3,6 +3,9 @@ import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { Mail, Lock, ChefHat, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { useDemoAuth } from '../../contexts/DemoAuthContext';
+import { auth, db } from '../../firebase/config';
+import { doc, getDoc } from 'firebase/firestore';
+import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 
 const DemoLogin: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -14,7 +17,7 @@ const DemoLogin: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [expired, setExpired] = useState(false);
 
-  const { signIn, signInWithGoogle, signInWithPhoneAndPassword } = useDemoAuth();
+  const { signIn, signInWithPhoneAndPassword } = useDemoAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -63,16 +66,25 @@ const DemoLogin: React.FC = () => {
     setError('');
     setIsLoading(true);
     try {
-      await signInWithGoogle();
-      navigate('/demo-dashboard');
-    } catch (error: any) {
-      if (error.message === 'EXPIRED_DEMO_ACCOUNT') {
-        setExpired(true);
-        setError('Your demo account has expired.');
+      const provider = new GoogleAuthProvider();
+      const userCredential = await signInWithPopup(auth, provider);
+      if (userCredential.user && userCredential.user.email) {
+        // Check if Firestore demo account exists
+        const demoDoc = await getDoc(doc(db, 'demoAccounts', userCredential.user.uid));
+        if (!demoDoc.exists()) {
+          // Redirect to step 2 of signup with pre-filled email
+          navigate('/demo-signup', { state: { email: userCredential.user.email } });
+          return;
+        }
+        // Normal flow: navigate to dashboard
+        navigate('/demo-dashboard');
       } else {
-        setError('Failed to sign in with Google');
-        toast.error('Failed to sign in with Google');
+        setError('No email found from Google account');
+        toast.error('No email found from Google account');
       }
+    } catch (error: any) {
+      setError('Failed to sign in with Google');
+      toast.error('Failed to sign in with Google');
     } finally {
       setIsLoading(false);
     }

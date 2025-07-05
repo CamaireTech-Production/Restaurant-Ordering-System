@@ -7,11 +7,7 @@ import {
   onAuthStateChanged,
   GoogleAuthProvider,
   signInWithPopup,
-  PhoneAuthProvider,
   signInWithPhoneNumber,
-  linkWithCredential,
-  EmailAuthProvider,
-  updateProfile,
   ConfirmationResult,
 } from 'firebase/auth';
 import { auth, db } from '../firebase/config';
@@ -151,7 +147,6 @@ export const DemoAuthProvider: React.FC<{ children: ReactNode }> = ({ children }
       const dbRef = collection(db, 'demoAccounts');
       const emailQuery = q(dbRef, where('email', '==', email));
       const snapshot = await getDocs(emailQuery);
-      let docId;
       if (!snapshot.empty) {
         // If a demo account with this email exists, throw error
         throw new Error('DEMO_EMAIL_EXISTS');
@@ -363,7 +358,8 @@ export const DemoAuthProvider: React.FC<{ children: ReactNode }> = ({ children }
         action: 'demo_logout',
         entityType: 'demoAccount',
       });
-      navigate('/demo-login');
+      // Hard redirect to demo-login to prevent dashboard flash
+      window.location.replace('/demo-login');
     } catch (error) {
       throw error;
     }
