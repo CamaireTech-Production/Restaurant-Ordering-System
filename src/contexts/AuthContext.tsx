@@ -12,22 +12,7 @@ import { auth, db } from '../firebase/config';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
 import { logActivity } from '../services/activityLogService';
-
-// Define types
-type Restaurant = {
-  id: string;
-  name: string;
-  logo?: string;
-  address?: string;
-  description?: string;
-  email: string;
-  phone?: string;
-  createdAt: any;
-  colorPalette?: {
-    primary: string;
-    secondary: string;
-  };
-};
+import { Restaurant } from '../types';
 
 interface AuthContextType {
   currentUser: User | null;

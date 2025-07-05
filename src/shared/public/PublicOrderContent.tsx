@@ -7,6 +7,7 @@ import Modal from '../../components/ui/Modal';
 import toast from 'react-hot-toast';
 import designSystem from '../../designSystem';
 import { Dish, Category, Restaurant, OrderItem, Order } from '../../types';
+import { generatePaymentMessage } from '../../utils/paymentUtils';
 
 interface PublicOrderContentProps {
   restaurant: Restaurant | null;
@@ -61,6 +62,7 @@ const PublicOrderContent: React.FC<PublicOrderContentProps> = ({ restaurant, cat
     try {
       if (!restaurant?.id) throw new Error('Missing restaurant');
       if (!checkoutPhone || !checkoutLocation) throw new Error('Missing info');
+      
       // Register order in Firestore
       const orderPayload: Omit<Order, 'id' | 'createdAt' | 'updatedAt'> = {
         items: cart,
@@ -71,14 +73,22 @@ const PublicOrderContent: React.FC<PublicOrderContentProps> = ({ restaurant, cat
         tableNumber: 0, // 0 for public orders
       };
       await createOrder(orderPayload); // Ensure order is saved before WhatsApp
-      // WhatsApp message (send after order is registered)
-      const message =
-        `New command from ${restaurant.name}\n` +
-        cart.map(item => `- ${item.title} x ${item.quantity} = ${(item.price * item.quantity).toLocaleString()} FCFA`).join('\n') +
-        `\nTotal: ${totalCartAmount.toLocaleString()} FCFA\n\nCustomer phone: ${checkoutPhone}\nCustomer location: ${checkoutLocation}`;
+      
+      // Generate WhatsApp message with payment information
+      const message = generatePaymentMessage(
+        restaurant.name,
+        cart,
+        totalCartAmount,
+        checkoutPhone,
+        checkoutLocation,
+        restaurant.paymentInfo
+      );
+      
+      // Send WhatsApp message
       const phone = restaurant.phone ? restaurant.phone.replace(/[^\d]/g, '') : '237000000000';
       const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
       window.location.href = waUrl;
+      
       clearCart();
       setShowCart(false);
       setShowCheckout(false);

@@ -32,6 +32,7 @@ import DemoLogin from './pages/demo/DemoLogin';
 import DemoSignup from './pages/demo/DemoSignup';
 import DemoCompleteSetup from './pages/demo/DemoCompleteSetup';
 import DemoDashboard from './pages/demo/DemoDashboard';
+import DemoProfileEdit from './pages/demo/DemoProfileEdit';
 import DemoCategoryManagement from './pages/demo/menu/DemoCategoryManagement';
 import DemoMenuManagement from './pages/demo/menu/DemoMenuManagement';
 import DemoOrderManagement from './pages/demo/DemoOrderManagement';
@@ -197,6 +198,11 @@ function App() {
               <Route path="/demo-dashboard" element={
                 <DemoAuthProvider>
                   <DemoDashboard />
+                </DemoAuthProvider>
+              } />
+              <Route path="/demo-profile-edit" element={
+                <DemoAuthProvider>
+                  <DemoProfileEdit />
                 </DemoAuthProvider>
               } />
               <Route path="/demo-category-management" element={

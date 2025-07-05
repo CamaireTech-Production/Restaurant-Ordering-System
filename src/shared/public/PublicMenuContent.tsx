@@ -3,31 +3,9 @@ import designSystem from '../../designSystem';
 import { ChefHat, Search, X } from 'lucide-react';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import DishDetailModal from '../../pages/client/customer/DishDetailModal';
-import { Dish } from '../../types';
-
-interface Category {
-  id: string;
-  title: string;
-  order?: number;
-}
-
-// Use the Dish type for menu items
-// interface MenuItem {
-//   id: string;
-//   title: string;
-//   description?: string;
-//   price: number;
-//   image?: string;
-//   categoryId: string;
-// }
+import { Dish, Category, Restaurant } from '../../types';
 
 type MenuItem = Dish;
-
-interface Restaurant {
-  id: string;
-  name: string;
-  logo?: string;
-}
 
 interface PublicMenuContentProps {
   restaurant: Restaurant | null;

@@ -18,30 +18,14 @@ import { auth, db } from '../firebase/config';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
 import { logActivity } from '../services/activityLogService';
-
-// Demo account type
-type DemoAccount = {
-  id: string;
-  email: string;
-  phone: string;
-  createdAt: any;
-  expiresAt: any;
-  active: boolean;
-  expired: boolean;
-  name: string;
-  logo: string;
-  colorPalette: {
-    primary: string;
-    secondary: string;
-  };
-};
+import { DemoAccount } from '../types';
 
 interface DemoAuthContextType {
   currentUser: User | null;
   demoAccount: DemoAccount | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, phone: string) => Promise<void>;
+  signUp: (email: string, password: string, phone: string, extraData?: Partial<DemoAccount>) => Promise<void>;
   signInWithGoogle: () => Promise<User>;
   signInWithPhone: (phone: string, appVerifier: any) => Promise<ConfirmationResult>;
   signInWithPhoneAndPassword: (phone: string, password: string) => Promise<void>;
@@ -155,7 +139,7 @@ export const DemoAuthProvider: React.FC<{ children: ReactNode }> = ({ children }
     }
   };
 
-  const signUp = async (email: string, password: string, phone: string) => {
+  const signUp = async (email: string, password: string, phone: string, extraData?: Partial<DemoAccount>) => {
     try {
       console.log('[DemoAuth] signUp start', { email, phone });
       // Check for existing demo account by email
@@ -197,6 +181,7 @@ export const DemoAuthProvider: React.FC<{ children: ReactNode }> = ({ children }
               primary: '#1D4ED8',
               secondary: '#F59E42',
             },
+            ...extraData,
           });
           console.log('[DemoAuth] Logging activity for demo_signup_google_linked');
           await logActivity({
@@ -225,6 +210,7 @@ export const DemoAuthProvider: React.FC<{ children: ReactNode }> = ({ children }
               primary: '#1D4ED8',
               secondary: '#F59E42',
             },
+            ...extraData,
           });
           console.log('[DemoAuth] Logging activity for demo_signup');
           await logActivity({

@@ -1,14 +1,5 @@
 import { getFirestore, collection, addDoc, serverTimestamp } from 'firebase/firestore';
-
-export interface ActivityLog {
-  userId?: string;
-  userEmail?: string;
-  action: string;
-  entityType?: string;
-  entityId?: string | null;
-  details?: any;
-  timestamp?: any;
-}
+import { ActivityLog } from '../types';
 
 export async function logActivity({ userId, userEmail, action, entityType, entityId, details }: ActivityLog) {
   const db = getFirestore();

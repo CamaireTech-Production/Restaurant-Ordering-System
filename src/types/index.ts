@@ -21,6 +21,12 @@ export interface Restaurant {
   phone?: string;
   createdAt: any;
   updatedAt?: any;
+  colorPalette?: {
+    primary: string;
+    secondary: string;
+  };
+  // Payment information for Cameroon context
+  paymentInfo?: PaymentInfo;
 }
 
 // Dish Types
@@ -67,6 +73,7 @@ export interface OrderItem {
   price: number;
   quantity: number;
   notes?: string;
+  image?: string;
 }
 
 export interface Order {
@@ -80,4 +87,54 @@ export interface Order {
   createdAt: any;
   updatedAt?: any;
   deleted?: boolean;
+}
+
+// Demo Account Types
+export interface DemoAccount {
+  id: string;
+  email: string;
+  phone: string;
+  createdAt: any;
+  expiresAt: any;
+  active: boolean;
+  expired: boolean;
+  name: string;
+  logo: string;
+  colorPalette: {
+    primary: string;
+    secondary: string;
+  };
+  // Payment information for Cameroon context
+  paymentInfo?: PaymentInfo;
+}
+
+// Admin Types
+export interface AdminUser {
+  id: string;
+  email: string;
+  role: 'admin' | 'super_admin';
+  isDeleted: boolean;
+}
+
+// Activity Log Types
+export interface ActivityLog {
+  userId?: string;
+  userEmail?: string;
+  action: string;
+  entityType?: string;
+  entityId?: string | null;
+  details?: any;
+  timestamp?: any;
+}
+
+// Payment Types for Cameroon
+export interface PaymentMethod {
+  type: 'momo' | 'om';
+  number: string;
+  name: string;
+}
+
+export interface PaymentInfo {
+  momo?: PaymentMethod;
+  om?: PaymentMethod;
 }

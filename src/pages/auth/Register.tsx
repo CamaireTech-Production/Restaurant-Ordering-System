@@ -4,7 +4,6 @@ import { toast } from 'react-hot-toast';
 import { useAuth } from '../../contexts/AuthContext';
 import { Mail, Lock, ChefHat, AlertCircle } from 'lucide-react';
 import designSystem from '../../designSystem';
-// ...existing code...
 
 const Register: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -14,7 +13,6 @@ const Register: React.FC = () => {
   const [error, setError] = useState('');
   
   const { signUp, signInWithGoogle } = useAuth();
-// ...existing code...
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -65,8 +63,6 @@ const Register: React.FC = () => {
     }
   };
 
-  // ...existing code...
-
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
@@ -91,7 +87,6 @@ const Register: React.FC = () => {
           )}
           
           <form className="space-y-6" onSubmit={handleSubmit}>
-            {/* ...existing code... */}
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
                 Email address

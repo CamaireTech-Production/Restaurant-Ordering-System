@@ -19,7 +19,7 @@ const ColorPicker: React.FC<ColorPickerProps> = ({ initialPrimary, initialSecond
 
   useEffect(() => {
     onChange(primary, secondary);
-  }, [primary, secondary, onChange]);
+  }, [primary, secondary]);
 
   return (
     <div className="flex gap-4 items-center my-2">

@@ -3,23 +3,12 @@ import { PlusCircle, Edit, Trash2, Eye, EyeOff, Search, X, Upload, Image, Filter
 import Modal from '../components/ui/Modal';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import designSystem from '../designSystem';
+import { Category, Dish } from '../types';
 
-interface Category {
-  id: string;
-  title: string;
-}
-
-interface MenuItem {
-  id: string;
-  title: string;
-  price: number;
-  description?: string;
-  categoryId: string;
-  status: 'active' | 'inactive';
-  image?: string;
+type MenuItem = Dish & {
   deleted: boolean;
   [key: string]: any;
-}
+};
 
 interface MenuManagementContentProps {
   menuItems: MenuItem[];
@@ -313,7 +302,7 @@ const MenuManagementContent: React.FC<MenuManagementContentProps> = ({
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             placeholder="Search dishes..."
-            className="pl-10 block w-full py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
+            className="pl-10 block w-full py-3 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
           />
           {searchQuery && (
             <button
@@ -332,7 +321,7 @@ const MenuManagementContent: React.FC<MenuManagementContentProps> = ({
           <select
             value={filterCategory}
             onChange={e => setFilterCategory(e.target.value)}
-            className="pl-10 block w-full py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
+            className="pl-10 block w-full py-3 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
           >
             <option value="">All Categories</option>
             {categories.map(category => (

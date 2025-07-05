@@ -214,7 +214,7 @@ const CategoryManagementContent: React.FC<CategoryManagementContentProps> = ({
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             placeholder="Search categories..."
-            className="pl-10 block w-full py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
+                              className="pl-10 block w-full py-3 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
             style={{ color: designSystem.colors.text }}
           />
           {searchQuery && (
@@ -414,7 +414,7 @@ const CategoryManagementContent: React.FC<CategoryManagementContentProps> = ({
               name="title"
               value={formData.title}
               onChange={handleInputChange}
-              className="mt-1 block w-full py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
+              className="mt-1 block w-full py-3 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
               required
             />
           </div>
@@ -425,7 +425,7 @@ const CategoryManagementContent: React.FC<CategoryManagementContentProps> = ({
               name="status"
               value={formData.status}
               onChange={handleInputChange}
-              className="mt-1 block w-full py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
+              className="mt-1 block w-full py-3 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
             >
               <option value="active">Active</option>
               <option value="inactive">Inactive</option>
@@ -440,7 +440,7 @@ const CategoryManagementContent: React.FC<CategoryManagementContentProps> = ({
               min="0"
               value={formData.order}
               onChange={handleInputChange}
-              className="mt-1 block w-full py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
+              className="mt-1 block w-full py-3 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
             />
             <p className="mt-1 text-xs text-gray-500">Lower numbers will appear first in the menu</p>
           </div>

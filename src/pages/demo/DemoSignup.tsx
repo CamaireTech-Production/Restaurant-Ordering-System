@@ -4,6 +4,8 @@ import { toast } from 'react-hot-toast';
 import { Mail, Lock, ChefHat, AlertCircle, Phone, Eye, EyeOff } from 'lucide-react';
 import { useDemoAuth } from '../../contexts/DemoAuthContext';
 import { auth } from '../../firebase/config';
+import PaymentSetup from '../../components/payment/PaymentSetup';
+import { PaymentInfo } from '../../types';
 
 const DemoSignup: React.FC = () => {
   const [step, setStep] = useState(1);
@@ -15,6 +17,7 @@ const DemoSignup: React.FC = () => {
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [paymentInfo, setPaymentInfo] = useState<PaymentInfo>({});
 
   const { signInWithGoogle, signUp, currentUser } = useDemoAuth();
   const navigate = useNavigate();
@@ -56,8 +59,10 @@ const DemoSignup: React.FC = () => {
     }
     setIsLoading(true);
     try {
+      // Phone number is already clean (without +237 prefix)
+      
       // Use the email from Google sign-in
-      await signUp(googleEmail, password, phone);
+      await signUp(googleEmail, password, phone, { paymentInfo });
       toast.success('Demo account created successfully!');
       navigate('/demo-dashboard');
     } catch (error: any) {
@@ -130,24 +135,28 @@ const DemoSignup: React.FC = () => {
                 </div>
               </div>
               <div>
-                <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-3">
                   Phone number
                 </label>
-                <div className="mt-1 relative rounded-md shadow-sm">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Phone size={18} className="text-gray-400" />
+                <div className="relative">
+                  <div className="flex">
+                    {/* Fixed +237 prefix */}
+                    <div className="flex items-center px-4 py-3 bg-gray-100 border border-r-0 border-gray-300 rounded-l-md text-sm font-medium text-gray-700">
+                      +237
+                    </div>
+                    {/* Phone number input */}
+                    <input
+                      id="phone"
+                      name="phone"
+                      type="tel"
+                      autoComplete="tel"
+                      required
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      className="flex-1 px-4 py-3 border border-gray-300 rounded-r-md shadow-sm focus:ring-primary focus:border-primary text-sm"
+                      placeholder="612345678"
+                    />
                   </div>
-                  <input
-                    id="phone"
-                    name="phone"
-                    type="tel"
-                    autoComplete="tel"
-                    required
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    className="pl-10 block w-full py-3 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
-                    placeholder="e.g. +237612345678"
-                  />
                 </div>
               </div>
               <div>
@@ -208,6 +217,16 @@ const DemoSignup: React.FC = () => {
                   </button>
                 </div>
               </div>
+
+              {/* Payment Setup Section */}
+              <div className="border-t border-gray-200 pt-6">
+                <PaymentSetup
+                  paymentInfo={paymentInfo}
+                  onPaymentInfoChange={setPaymentInfo}
+                  isRequired={false}
+                />
+              </div>
+
               <div>
                 <button
                   type="submit"

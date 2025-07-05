@@ -2,19 +2,13 @@ import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { getAuth, signInWithEmailAndPassword, signOut as firebaseSignOut, User as FirebaseUser } from 'firebase/auth';
 import { getFirestore, doc, getDoc } from 'firebase/firestore';
 import { logActivity } from '../services/activityLogService';
+import { AdminUser } from '../types';
 
 // Mock admin users (replace with Firestore logic later)
 const mockAdmins = [
   { id: '1', email: 'superadmin@example.com', password: 'superadmin', role: 'super_admin' as const, isDeleted: false },
   { id: '2', email: 'admin@example.com', password: 'admin', role: 'admin' as const, isDeleted: false },
 ];
-
-export type AdminUser = {
-  id: string;
-  email: string;
-  role: 'admin' | 'super_admin';
-  isDeleted: boolean;
-};
 
 interface AdminAuthContextType {
   currentAdmin: AdminUser | null;

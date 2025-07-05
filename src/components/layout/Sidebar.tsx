@@ -15,6 +15,7 @@ import {
   ChefHat,
   Table,
   Circle,
+  User,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -81,7 +82,13 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, open, onClose }) => {
             isSettings: true,
           },
         ]
-      : []),
+      : [
+          {
+            name: 'Profile',
+            path: '/demo-profile-edit',
+            icon: <User size={20} />,
+          },
+        ]),
   ];
 
   // Sidebar width and collapsed logic

@@ -3,23 +3,7 @@ import { ClipboardList, Clock, CheckCircle2, ChefHat, XCircle, Filter, Table, Tr
 import Modal from '../components/ui/Modal';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import designSystem from '../designSystem';
-
-interface OrderItem {
-  title: string;
-  price: number;
-  quantity: number;
-  image?: string;
-}
-
-interface Order {
-  id: string;
-  tableNumber?: string | number;
-  status: 'pending' | 'preparing' | 'ready' | 'completed' | 'cancelled';
-  totalAmount: number;
-  createdAt: any;
-  items: OrderItem[];
-  [key: string]: any;
-}
+import { OrderItem, Order } from '../types';
 
 interface OrderManagementContentProps {
   orders: Order[];
