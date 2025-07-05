@@ -87,6 +87,13 @@ const DemoDashboard: React.FC = () => {
     }
   }, [loading, demoAccount, navigate]);
 
+  useEffect(() => {
+    if (!loading && !demoAccount) {
+      navigate('/demo-login', { replace: true });
+      return;
+    }
+  }, [loading, demoAccount, navigate]);
+
   // Ensure the restaurant name is always 'Camairetech' for demo dashboard
   const demoRestaurant = demoAccount ? { ...demoAccount, name: 'Camairetech' } : { name: 'Camairetech' };
 
