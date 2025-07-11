@@ -91,6 +91,11 @@ const RestaurantDetail: React.FC = () => {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  // In state, add deleted items arrays for each entity
+  const [deletedDishes, setDeletedDishes] = useState<any[]>([]);
+  const [deletedCategories, setDeletedCategories] = useState<any[]>([]);
+  const [deletedTables, setDeletedTables] = useState<any[]>([]);
+  const [deletedOrders, setDeletedOrders] = useState<any[]>([]);
 
   // Sync form state with restaurant data
   useEffect(() => {
@@ -259,14 +264,18 @@ const RestaurantDetail: React.FC = () => {
           getDocs(query(collection(db, 'tables'), where('restaurantId', '==', id))),
           getDocs(query(collection(db, 'orders'), where('restaurantId', '==', id), where('deleted', '!=', true))),
         ]);
-        const dishesData = dishesSnap.docs.map(d => ({ id: d.id, ...d.data() })).filter((d: any) => !d.deleted);
-        setDishes(dishesData);
-        const categoriesData = categoriesSnap.docs.map(c => ({ id: c.id, ...c.data() })).filter((c: any) => !c.deleted);
-        setCategories(categoriesData);
+        const dishesData = dishesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        setDishes(dishesData.filter((d: any) => !d.deleted));
+        setDeletedDishes(dishesData.filter((d: any) => d.deleted));
+        const categoriesData = categoriesSnap.docs.map(c => ({ id: c.id, ...c.data() }));
+        setCategories(categoriesData.filter((c: any) => !c.deleted));
+        setDeletedCategories(categoriesData.filter((c: any) => c.deleted));
         const tablesData = tablesSnap.docs.map(t => ({ id: t.id, ...t.data() }));
-        setTables(tablesData);
+        setTables(tablesData.filter((t: any) => !t.deleted));
+        setDeletedTables(tablesData.filter((t: any) => t.deleted));
         const ordersData = ordersSnap.docs.map(o => ({ id: o.id, ...o.data() }));
-        setOrders(ordersData);
+        setOrders(ordersData.filter((o: any) => !o.deleted));
+        setDeletedOrders(ordersData.filter((o: any) => o.deleted));
         setCounts({
           dishes: dishesData.length,
           categories: categoriesData.length,
@@ -550,6 +559,49 @@ const RestaurantDetail: React.FC = () => {
         </tbody>
       </table>
       {dishesLoading && <div className="flex justify-center items-center py-4"><LoadingSpinner size={32} color={designSystem.colors.primary} /></div>}
+      {/* Deleted Dishes Table */}
+      {deletedDishes.length > 0 && (
+        <div className="mt-8">
+          <h3 className="text-base font-semibold mb-2 text-red-600">Deleted Dishes</h3>
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Image</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {deletedDishes.map((dish) => (
+                <tr key={dish.id} className="opacity-60">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {dish.image ? (
+                      <img src={dish.image} alt={dish.title} className="w-12 h-12 object-cover rounded" />
+                    ) : (
+                      <span className="text-gray-400">—</span>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap font-medium text-primary">{dish.title}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">{getCategoryName(dish.categoryId)}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">{dish.price ? `${dish.price} FCFA` : '—'}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Deleted</span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right">
+                    <div className="flex justify-end space-x-2">
+                      <button title="View Details" onClick={() => setShowAddEditModal({ mode: 'details', dish })} className="p-2 rounded hover:bg-blue-100 transition text-blue-600"><Eye size={18} /></button>
+                      <button title="Restore" onClick={() => setConfirmAction({ type: 'restore', dish })} className="p-2 rounded hover:bg-blue-100 transition"><RotateCcw size={18} className="text-blue-600" /></button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 
@@ -603,6 +655,38 @@ const RestaurantDetail: React.FC = () => {
         </tbody>
       </table>
       {categoriesLoading && <div className="flex justify-center items-center py-4"><LoadingSpinner size={32} color={designSystem.colors.primary} /></div>}
+      {/* Deleted Categories Table */}
+      {deletedCategories.length > 0 && (
+        <div className="mt-8">
+          <h3 className="text-base font-semibold mb-2 text-red-600">Deleted Categories</h3>
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {deletedCategories.map((cat) => (
+                <tr key={cat.id} className="opacity-60">
+                  <td className="px-6 py-4 whitespace-nowrap font-medium text-primary">{cat.title}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Deleted</span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">{cat.order ?? '—'}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right">
+                    <div className="flex justify-end space-x-2">
+                      <button title="Restore" onClick={() => setConfirmCategoryAction({ type: 'restore', category: cat })} className="p-2 rounded hover:bg-blue-100 transition"><RotateCcw size={18} className="text-blue-600" /></button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 
@@ -763,6 +847,38 @@ const RestaurantDetail: React.FC = () => {
         </tbody>
       </table>
       {tablesLoading && <div className="flex justify-center items-center py-4"><LoadingSpinner size={32} color={designSystem.colors.primary} /></div>}
+      {/* Deleted Tables Table */}
+      {deletedTables.length > 0 && (
+        <div className="mt-8">
+          <h3 className="text-base font-semibold mb-2 text-red-600">Deleted Tables</h3>
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Number</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {deletedTables.map((table) => (
+                <tr key={table.id} className="opacity-60">
+                  <td className="px-6 py-4 whitespace-nowrap font-medium text-primary">{table.number}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">{table.name || '—'}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Deleted</span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right">
+                    <div className="flex justify-end space-x-2">
+                      <button title="Restore" onClick={() => setConfirmTableAction({ type: 'restore', table })} className="p-2 rounded hover:bg-blue-100 transition"><RotateCcw size={18} className="text-blue-600" /></button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 
@@ -812,6 +928,40 @@ const RestaurantDetail: React.FC = () => {
         </tbody>
       </table>
       {ordersLoading && <div className="flex justify-center items-center py-4"><LoadingSpinner size={32} color={designSystem.colors.primary} /></div>}
+      {/* Deleted Orders Table */}
+      {deletedOrders.length > 0 && (
+        <div className="mt-8">
+          <h3 className="text-base font-semibold mb-2 text-red-600">Deleted Orders</h3>
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order ID</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Table</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {deletedOrders.map((delOrder) => (
+                <tr key={delOrder.id} className="opacity-60">
+                  <td className="px-6 py-4 whitespace-nowrap font-medium text-primary">{delOrder.id}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">{delOrder.tableNumber ?? '—'}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Deleted</span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">{delOrder.totalAmount ? `${delOrder.totalAmount} FCFA` : '—'}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right">
+                    <div className="flex justify-end space-x-2">
+                      <button title="Restore" onClick={() => setConfirmOrderAction({ type: 'restore', order: delOrder })} className="p-2 rounded hover:bg-blue-100 transition"><RotateCcw size={18} className="text-blue-600" /></button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 
