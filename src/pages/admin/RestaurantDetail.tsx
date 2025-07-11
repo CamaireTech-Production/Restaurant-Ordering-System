@@ -8,7 +8,7 @@ import toast from 'react-hot-toast';
 import { Trash2, RotateCcw, ArrowLeft, Eye, Pencil } from 'lucide-react';
 import { logActivity } from '../../services/activityLogService';
 import { Switch } from '@headlessui/react';
-import { Dish, Category } from '../../types';
+import { Dish, Category, Table } from '../../types';
 import { useAdminAuth } from '../../contexts/AdminAuthContext';
 
 const TABS = [
@@ -55,6 +55,9 @@ const RestaurantDetail: React.FC = () => {
   });
   // Add modal state for add/edit/details
   const [showAddEditModal, setShowAddEditModal] = useState<null | { mode: 'add' | 'edit' | 'details', dish?: any }>(null);
+  const [tablesLoading, setTablesLoading] = useState(false);
+  const [confirmTableAction, setConfirmTableAction] = useState<null | { type: 'delete' | 'restore'; table: any }>(null);
+  const [showTableModal, setShowTableModal] = useState<null | { mode: 'add' | 'edit', table?: any }>(null);
   const { currentAdmin } = useAdminAuth();
 
   useEffect(() => {
@@ -431,20 +434,137 @@ const RestaurantDetail: React.FC = () => {
     </div>
   );
 
+  const handleTableAction = async (type: 'delete' | 'restore', table: any) => {
+    setTablesLoading(true);
+    try {
+      const ref = doc(db, 'tables', table.id);
+      if (type === 'delete') {
+        await updateDoc(ref, { deleted: true, updatedAt: serverTimestamp() });
+        setTables(prev => prev.map(t => t.id === table.id ? { ...t, deleted: true } : t));
+        await logActivity({
+          userId: currentAdmin?.id,
+          userEmail: currentAdmin?.email,
+          action: 'admin_delete_table',
+          entityType: 'table',
+          entityId: table.id,
+          details: { number: table.number, name: table.name, role: 'admin' },
+        });
+        toast('Table deleted.', {
+          style: {
+            background: designSystem.colors.white,
+            color: designSystem.colors.primary,
+            border: `1px solid ${designSystem.colors.error}`,
+            fontWeight: 500,
+          },
+          icon: '❌',
+        });
+      } else if (type === 'restore') {
+        await updateDoc(ref, { deleted: false, updatedAt: serverTimestamp() });
+        setTables(prev => prev.map(t => t.id === table.id ? { ...t, deleted: false } : t));
+        await logActivity({
+          userId: currentAdmin?.id,
+          userEmail: currentAdmin?.email,
+          action: 'admin_restore_table',
+          entityType: 'table',
+          entityId: table.id,
+          details: { number: table.number, name: table.name, role: 'admin' },
+        });
+        toast('Table restored.', {
+          style: {
+            background: designSystem.colors.white,
+            color: designSystem.colors.primary,
+            border: `1px solid ${designSystem.colors.success}`,
+            fontWeight: 500,
+          },
+          icon: '✅',
+        });
+      }
+    } catch (err) {
+      toast('Action failed. Please try again.', {
+        style: {
+          background: designSystem.colors.white,
+          color: designSystem.colors.primary,
+          border: `1px solid ${designSystem.colors.error}`,
+          fontWeight: 500,
+        },
+        icon: '❌',
+      });
+    } finally {
+      setTablesLoading(false);
+      setConfirmTableAction(null);
+    }
+  };
+
+  const handleTableSave = async (mode: 'add' | 'edit', tableData: Partial<Table>, editingTable?: any) => {
+    setTablesLoading(true);
+    try {
+      if (mode === 'add') {
+        const ref = await addDoc(collection(db, 'tables'), {
+          ...tableData,
+          restaurantId: restaurant.id,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+          deleted: false,
+        });
+        setTables(prev => [...prev, { id: ref.id, ...tableData, deleted: false }]);
+        await logActivity({
+          userId: currentAdmin?.id,
+          userEmail: currentAdmin?.email,
+          action: 'admin_add_table',
+          entityType: 'table',
+          entityId: ref.id,
+          details: { ...tableData, role: 'admin' },
+        });
+        toast.success('Table added!');
+      } else if (mode === 'edit' && editingTable) {
+        const ref = doc(db, 'tables', editingTable.id);
+        await updateDoc(ref, {
+          ...tableData,
+          updatedAt: serverTimestamp(),
+        });
+        setTables(prev => prev.map(t => t.id === editingTable.id ? { ...t, ...tableData } : t));
+        await logActivity({
+          userId: currentAdmin?.id,
+          userEmail: currentAdmin?.email,
+          action: 'admin_edit_table',
+          entityType: 'table',
+          entityId: editingTable.id,
+          details: { ...tableData, role: 'admin' },
+        });
+        toast.success('Table updated!');
+      }
+      setShowTableModal(null);
+    } catch (err) {
+      toast.error('Failed to save table.');
+    } finally {
+      setTablesLoading(false);
+    }
+  };
+
   const renderTablesTable = () => (
     <div className="overflow-x-auto">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-lg font-semibold">Tables</h2>
+        <button
+          className="px-4 py-2 bg-primary text-white rounded hover:bg-primary-dark transition"
+          onClick={() => setShowTableModal({ mode: 'add' })}
+        >
+          + Add Table
+        </button>
+      </div>
       <table className="min-w-full divide-y divide-gray-200">
         <thead className="bg-gray-50">
           <tr>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Number</th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
           </tr>
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
           {tables.length === 0 ? (
             <tr>
-              <td colSpan={3} className="px-6 py-10 text-center text-gray-500">No tables found.</td>
+              <td colSpan={4} className="px-6 py-10 text-center text-gray-500">No tables found.</td>
             </tr>
           ) : (
             tables.map((table) => (
@@ -454,11 +574,23 @@ const RestaurantDetail: React.FC = () => {
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${table.status === 'available' ? 'bg-green-100 text-green-800' : table.status === 'occupied' ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800'}`}>{table.status}</span>
                 </td>
+                <td className="px-6 py-4 whitespace-nowrap text-right">
+                  <div className="flex justify-end space-x-2">
+                    <button title="Edit" onClick={() => setShowTableModal({ mode: 'edit', table })} className="p-2 rounded hover:bg-green-100 transition text-green-600"><Pencil size={18} /></button>
+                    {!table.deleted && (
+                      <button title="Delete" onClick={() => setConfirmTableAction({ type: 'delete', table })} className="p-2 rounded hover:bg-red-100 transition"><Trash2 size={18} className="text-red-600" /></button>
+                    )}
+                    {table.deleted && (
+                      <button title="Restore" onClick={() => setConfirmTableAction({ type: 'restore', table })} className="p-2 rounded hover:bg-blue-100 transition"><RotateCcw size={18} className="text-blue-600" /></button>
+                    )}
+                  </div>
+                </td>
               </tr>
             ))
           )}
         </tbody>
       </table>
+      {tablesLoading && <div className="flex justify-center items-center py-4"><LoadingSpinner size={32} color={designSystem.colors.primary} /></div>}
     </div>
   );
 
@@ -675,6 +807,35 @@ const RestaurantDetail: React.FC = () => {
                   setDishesLoading(false);
                 }
               }}
+            />
+          </div>
+        </div>
+      )}
+      {/* Confirmation Modal for Tables */}
+      {confirmTableAction && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
+          <div className="bg-white rounded shadow-lg p-6 w-full max-w-sm">
+            <h2 className="text-lg font-bold mb-2">Confirm {confirmTableAction.type === 'delete' ? 'Delete' : 'Restore'}</h2>
+            <p className="mb-4">Are you sure you want to {confirmTableAction.type} <span className="font-semibold">Table {confirmTableAction.table.number}</span>?</p>
+            <div className="flex justify-end gap-2">
+              <button className="px-4 py-2 bg-gray-200 rounded" onClick={() => setConfirmTableAction(null)}>Cancel</button>
+              <button className="px-4 py-2 bg-primary text-white rounded" onClick={() => handleTableAction(confirmTableAction.type, confirmTableAction.table)}>Confirm</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Add/Edit Modal for Tables */}
+      {showTableModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50" onClick={e => { if (e.target === e.currentTarget) setShowTableModal(null); }}>
+          <div className="bg-white rounded shadow-lg p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <h2 className="text-lg font-bold mb-4">
+              {showTableModal.mode === 'add' ? 'Add Table' : 'Edit Table'}
+            </h2>
+            <TableModalContent
+              mode={showTableModal.mode}
+              table={showTableModal.table}
+              onClose={() => setShowTableModal(null)}
+              onSave={data => handleTableSave(showTableModal.mode, data, showTableModal.table)}
             />
           </div>
         </div>
@@ -907,6 +1068,68 @@ function CategoryModalContent({ mode, category, onClose, onSave }: { mode: 'add'
             onChange={e => setOrder(Number(e.target.value))}
             min={0}
           />
+        </div>
+      </div>
+      <div className="flex justify-end gap-2 mt-6">
+        <button type="button" className="px-4 py-2 bg-gray-200 rounded" onClick={onClose}>Close</button>
+        <button type="submit" className="px-4 py-2 bg-primary text-white rounded">Save</button>
+      </div>
+    </form>
+  );
+}
+
+// Table Modal Component
+function TableModalContent({ mode, table, onClose, onSave }: { mode: 'add' | 'edit'; table?: any; onClose: () => void; onSave: (data: Partial<Table>) => void }) {
+  const [number, setNumber] = useState<number>(table?.number || 1);
+  const [name, setName] = useState<string>(table?.name || '');
+  const [status, setStatus] = useState<'available' | 'occupied' | 'reserved'>(table?.status || 'available');
+  const [error, setError] = useState<string>('');
+
+  const handleSave = () => {
+    setError('');
+    if (!number || number <= 0) {
+      setError('Table number is required and must be greater than 0.');
+      return;
+    }
+    onSave({ number, name, status });
+  };
+
+  return (
+    <form onSubmit={e => { e.preventDefault(); handleSave(); }}>
+      {error && <div className="mb-2 text-red-600 text-sm">{error}</div>}
+      <div className="flex flex-col gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Table Number</label>
+          <input
+            type="number"
+            className="w-full border rounded px-3 py-2"
+            value={number}
+            onChange={e => setNumber(Number(e.target.value))}
+            min={1}
+            required
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Table Name (optional)</label>
+          <input
+            type="text"
+            className="w-full border rounded px-3 py-2"
+            value={name}
+            onChange={e => setName(e.target.value)}
+            placeholder={`Table ${number}`}
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+          <select
+            className="w-full border rounded px-3 py-2"
+            value={status}
+            onChange={e => setStatus(e.target.value as 'available' | 'occupied' | 'reserved')}
+          >
+            <option value="available">Available</option>
+            <option value="reserved">Reserved</option>
+            <option value="occupied">Occupied</option>
+          </select>
         </div>
       </div>
       <div className="flex justify-end gap-2 mt-6">
