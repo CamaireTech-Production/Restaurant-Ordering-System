@@ -43,6 +43,8 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, open, onClose }) => {
     }
   };
 
+  const orderManagement = restaurant?.orderManagement !== false;
+  const tableManagement = restaurant?.tableManagement !== false;
   const navItems = [
     {
       name: 'Dashboard',
@@ -59,7 +61,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, open, onClose }) => {
       path: isDemoUser ? '/demo-category-management' : '/category-management',
       icon: <Layers size={20} />,
     },
-    ...(!isDemoUser
+    ...(!isDemoUser && tableManagement
       ? [
           {
             name: 'Tables',
@@ -68,11 +70,17 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, open, onClose }) => {
           },
         ]
       : []),
-    {
-      name: 'Orders',
-      path: isDemoUser ? '/demo-order-management' : '/orders',
-      icon: <ClipboardList size={20} />,
-    },
+    ...(
+      orderManagement
+        ? [
+            {
+              name: 'Orders',
+              path: isDemoUser ? '/demo-order-management' : '/orders',
+              icon: <ClipboardList size={20} />,
+            },
+          ]
+        : []
+    ),
     ...(!isDemoUser
       ? [
           {

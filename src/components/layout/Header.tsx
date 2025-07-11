@@ -15,40 +15,40 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ title, onSidebarToggle, sidebarCollapsed, onMobileSidebarToggle, isMobile, restaurant }) => {
   const isDemoUser = !!useDemoAuthSafe();
+  const publicMenuLink = restaurant?.publicMenuLink !== false;
+  const publicOrderLink = restaurant?.publicOrderLink !== false;
   const menuLinks = React.useMemo(() => {
     if (!restaurant?.id) return [];
+    const links = [];
     if (isDemoUser) {
-      return [
-        {
+      if (publicMenuLink) {
+        links.push({
           label: 'Menu Link',
-          icon: <ExternalLink size={18} className="mr-2" />,
-          href: `/demo-public-menu/${restaurant.id}`,
-          variant: 'outline',
-        },
-        {
+          icon: <ExternalLink size={18} className="mr-2" />, href: `/demo-public-menu/${restaurant.id}`, variant: 'outline',
+        });
+      }
+      if (publicOrderLink) {
+        links.push({
           label: 'Order Link',
-          icon: <Share2 size={18} className="mr-2" />,
-          href: `/demo-public-order/${restaurant.id}`,
-          variant: 'gold',
-        },
-      ];
+          icon: <Share2 size={18} className="mr-2" />, href: `/demo-public-order/${restaurant.id}`, variant: 'gold',
+        });
+      }
     } else {
-      return [
-        {
+      if (publicMenuLink) {
+        links.push({
           label: 'Menu Link',
-          icon: <ExternalLink size={18} className="mr-2" />,
-          href: `/public-menu/${restaurant.id}`,
-          variant: 'outline',
-        },
-        {
+          icon: <ExternalLink size={18} className="mr-2" />, href: `/public-menu/${restaurant.id}`, variant: 'outline',
+        });
+      }
+      if (publicOrderLink) {
+        links.push({
           label: 'Order Link',
-          icon: <Share2 size={18} className="mr-2" />,
-          href: `/public-order/${restaurant.id}`,
-          variant: 'gold',
-        },
-      ];
+          icon: <Share2 size={18} className="mr-2" />, href: `/public-order/${restaurant.id}`, variant: 'gold',
+        });
+      }
     }
-  }, [restaurant, isDemoUser]);
+    return links;
+  }, [restaurant, isDemoUser, publicMenuLink, publicOrderLink]);
 
   // For mobile slideshow
   const [slideIndex, setSlideIndex] = useState(0);

@@ -57,7 +57,7 @@ const Dashboard: React.FC = () => {
 
   if (loading) {
     return (
-      <DashboardLayout title="Dashboard">
+      <DashboardLayout title="">
         <div className="flex justify-center items-center h-64">
           <LoadingSpinner size={60} />
         </div>

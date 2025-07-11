@@ -151,6 +151,10 @@ const ProfileSetup: React.FC = () => {
   // Determine if we are in dashboard/settings (show sidebar) or onboarding (hide sidebar)
   const showSidebar = location.state && location.state.fromSettings === true;
 
+  // Feature toggles
+  const paymentInfoEnabled = restaurant?.paymentInfoEnabled === true;
+  const colorCustomizationEnabled = restaurant?.colorCustomization === true;
+
   const content = (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
@@ -208,14 +212,16 @@ const ProfileSetup: React.FC = () => {
                   className="hidden"
                 />
                 {/* Color pickers after logo */}
-                <ColorPicker
-                  initialPrimary={primaryColor}
-                  initialSecondary={secondaryColor}
-                  onChange={(p, s) => {
-                    setPrimaryColor(p);
-                    setSecondaryColor(s);
-                  }}
-                />
+                {colorCustomizationEnabled && (
+                  <ColorPicker
+                    initialPrimary={primaryColor}
+                    initialSecondary={secondaryColor}
+                    onChange={(p, s) => {
+                      setPrimaryColor(p);
+                      setSecondaryColor(s);
+                    }}
+                  />
+                )}
               </div>
             </div>
 
@@ -308,9 +314,11 @@ const ProfileSetup: React.FC = () => {
             </div>
 
             {/* Payment Info Section */}
-            <div className="mt-8">
-              <PaymentSetup paymentInfo={paymentInfo} onPaymentInfoChange={setPaymentInfo} isRequired={false} />
-            </div>
+            {paymentInfoEnabled && (
+              <div className="mt-8">
+                <PaymentSetup paymentInfo={paymentInfo} onPaymentInfoChange={setPaymentInfo} isRequired={false} />
+              </div>
+            )}
 
             {/* Email & Password Edit Section (dashboard only) */}
             {showSidebar && (

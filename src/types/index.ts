@@ -27,6 +27,13 @@ export interface Restaurant {
   };
   // Payment information for Cameroon context
   paymentInfo?: PaymentInfo;
+  // Feature toggles
+  orderManagement?: boolean;
+  tableManagement?: boolean;
+  paymentInfoEnabled?: boolean;
+  colorCustomization?: boolean;
+  publicMenuLink?: boolean;
+  publicOrderLink?: boolean;
 }
 
 // Dish Types

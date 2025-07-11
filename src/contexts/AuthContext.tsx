@@ -9,7 +9,7 @@ import {
   signInWithPopup
 } from 'firebase/auth';
 import { auth, db } from '../firebase/config';
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
 import { logActivity } from '../services/activityLogService';
 import { Restaurant } from '../types';
@@ -45,21 +45,27 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user);
       if (user) {
-        // Fetch restaurant data
-        try {
-          const restaurantDoc = await getDoc(doc(db, 'restaurants', user.uid));
+        // Real-time restaurant data
+        const restaurantRef = doc(db, 'restaurants', user.uid);
+        const unsubRestaurant = onSnapshot(restaurantRef, (restaurantDoc) => {
           if (restaurantDoc.exists()) {
             setRestaurant({ id: restaurantDoc.id, ...restaurantDoc.data() } as Restaurant);
+          } else {
+            setRestaurant(null);
           }
-        } catch (error) {
-          console.error('Error fetching restaurant data:', error);
-        }
+          setLoading(false);
+        }, (error) => {
+          console.error('Error listening to restaurant data:', error);
+          setRestaurant(null);
+          setLoading(false);
+        });
+        // Clean up restaurant listener on user change
+        return unsubRestaurant;
       } else {
         setRestaurant(null);
+        setLoading(false);
       }
-      setLoading(false);
     });
-
     return unsubscribe;
   }, []);
 

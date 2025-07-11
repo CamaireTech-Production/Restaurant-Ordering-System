@@ -28,6 +28,7 @@ import AdminUsers from './pages/admin/AdminUsers';
 import AdminMenus from './pages/admin/AdminMenus';
 import AdminOrders from './pages/admin/AdminOrders';
 import AdminActivityLog from './pages/admin/AdminActivityLog';
+import RestaurantDetail from './pages/admin/RestaurantDetail';
 import DemoLogin from './pages/demo/DemoLogin';
 import DemoSignup from './pages/demo/DemoSignup';
 import DemoCompleteSetup from './pages/demo/DemoCompleteSetup';
@@ -132,6 +133,14 @@ function App() {
                 element={
                   <AdminProtectedRoute>
                     <AdminRestaurants />
+                  </AdminProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/restaurants/:id"
+                element={
+                  <AdminProtectedRoute>
+                    <RestaurantDetail />
                   </AdminProtectedRoute>
                 }
               />
