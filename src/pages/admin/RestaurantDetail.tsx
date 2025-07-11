@@ -38,6 +38,10 @@ const RestaurantDetail: React.FC = () => {
   const [dishesLoading, setDishesLoading] = useState(false);
   const [confirmAction, setConfirmAction] = useState<null | { type: string; dish: any }>(null);
   const [categories, setCategories] = useState<any[]>([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(false);
+  const [confirmCategoryAction, setConfirmCategoryAction] = useState<null | { type: 'delete' | 'restore'; category: any }>(null);
+  // Change showCategoryModal type to only allow 'add' | 'edit'
+  const [showCategoryModal, setShowCategoryModal] = useState<null | { mode: 'add' | 'edit', category?: any }>(null);
   const [tables, setTables] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
   const [settingsLoading, setSettingsLoading] = useState(false);
@@ -195,6 +199,113 @@ const RestaurantDetail: React.FC = () => {
     }
   };
 
+  const handleCategoryAction = async (type: 'delete' | 'restore', category: any) => {
+    setCategoriesLoading(true);
+    try {
+      const ref = doc(db, 'categories', category.id);
+      if (type === 'delete') {
+        await updateDoc(ref, { deleted: true, updatedAt: serverTimestamp() });
+        setCategories(prev => prev.map(c => c.id === category.id ? { ...c, deleted: true } : c));
+        await logActivity({
+          userId: currentAdmin?.id,
+          userEmail: currentAdmin?.email,
+          action: 'admin_delete_category',
+          entityType: 'category',
+          entityId: category.id,
+          details: { title: category.title, role: 'admin' },
+        });
+        toast('Category deleted.', {
+          style: {
+            background: designSystem.colors.white,
+            color: designSystem.colors.primary,
+            border: `1px solid ${designSystem.colors.error}`,
+            fontWeight: 500,
+          },
+          icon: '❌',
+        });
+      } else if (type === 'restore') {
+        await updateDoc(ref, { deleted: false, updatedAt: serverTimestamp() });
+        setCategories(prev => prev.map(c => c.id === category.id ? { ...c, deleted: false } : c));
+        await logActivity({
+          userId: currentAdmin?.id,
+          userEmail: currentAdmin?.email,
+          action: 'admin_restore_category',
+          entityType: 'category',
+          entityId: category.id,
+          details: { title: category.title, role: 'admin' },
+        });
+        toast('Category restored.', {
+          style: {
+            background: designSystem.colors.white,
+            color: designSystem.colors.primary,
+            border: `1px solid ${designSystem.colors.success}`,
+            fontWeight: 500,
+          },
+          icon: '✅',
+        });
+      }
+    } catch (err) {
+      toast('Action failed. Please try again.', {
+        style: {
+          background: designSystem.colors.white,
+          color: designSystem.colors.primary,
+          border: `1px solid ${designSystem.colors.error}`,
+          fontWeight: 500,
+        },
+        icon: '❌',
+      });
+    } finally {
+      setCategoriesLoading(false);
+      setConfirmCategoryAction(null);
+    }
+  };
+
+  const handleCategorySave = async (mode: 'add' | 'edit', categoryData: Partial<Category>, editingCategory?: any) => {
+    setCategoriesLoading(true);
+    try {
+      if (mode === 'add') {
+        const ref = await addDoc(collection(db, 'categories'), {
+          ...categoryData,
+          restaurantId: restaurant.id,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+          deleted: false,
+        });
+        setCategories(prev => [...prev, { id: ref.id, ...categoryData, deleted: false }]);
+        await logActivity({
+          userId: currentAdmin?.id,
+          userEmail: currentAdmin?.email,
+          action: 'admin_add_category',
+          entityType: 'category',
+          entityId: ref.id,
+          details: { ...categoryData, role: 'admin' },
+        });
+        toast.success('Category added!');
+      } else if (mode === 'edit' && editingCategory) {
+        const ref = doc(db, 'categories', editingCategory.id);
+        await updateDoc(ref, {
+          ...categoryData,
+          updatedAt: serverTimestamp(),
+        });
+        setCategories(prev => prev.map(c => c.id === editingCategory.id ? { ...c, ...categoryData } : c));
+        await logActivity({
+          userId: currentAdmin?.id,
+          userEmail: currentAdmin?.email,
+          action: 'admin_edit_category',
+          entityType: 'category',
+          entityId: editingCategory.id,
+          details: { ...categoryData, role: 'admin' },
+        });
+        toast.success('Category updated!');
+      }
+      setShowCategoryModal(null);
+    } catch (err) {
+      toast.error('Failed to save category.');
+    } finally {
+      setCategoriesLoading(false);
+    }
+  };
+
   const getCategoryName = (categoryId: string) => {
     if (!categoryId) return '—';
     const cat = categories.find((c: any) => c.id === categoryId);
@@ -269,18 +380,28 @@ const RestaurantDetail: React.FC = () => {
 
   const renderCategoriesTable = () => (
     <div className="overflow-x-auto">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-lg font-semibold">Categories</h2>
+        <button
+          className="px-4 py-2 bg-primary text-white rounded hover:bg-primary-dark transition"
+          onClick={() => setShowCategoryModal({ mode: 'add' })}
+        >
+          + Add Category
+        </button>
+      </div>
       <table className="min-w-full divide-y divide-gray-200">
         <thead className="bg-gray-50">
           <tr>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order</th>
+            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
           </tr>
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
           {categories.length === 0 ? (
             <tr>
-              <td colSpan={3} className="px-6 py-10 text-center text-gray-500">No categories found.</td>
+              <td colSpan={4} className="px-6 py-10 text-center text-gray-500">No categories found.</td>
             </tr>
           ) : (
             categories.map((cat) => (
@@ -290,11 +411,23 @@ const RestaurantDetail: React.FC = () => {
                   <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${cat.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>{cat.status === 'active' ? 'Active' : 'Inactive'}</span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">{cat.order ?? '—'}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-right">
+                  <div className="flex justify-end space-x-2">
+                    <button title="Edit" onClick={() => setShowCategoryModal({ mode: 'edit', category: cat })} className="p-2 rounded hover:bg-green-100 transition text-green-600"><Pencil size={18} /></button>
+                    {!cat.deleted && (
+                      <button title="Delete" onClick={() => setConfirmCategoryAction({ type: 'delete', category: cat })} className="p-2 rounded hover:bg-red-100 transition"><Trash2 size={18} className="text-red-600" /></button>
+                    )}
+                    {cat.deleted && (
+                      <button title="Restore" onClick={() => setConfirmCategoryAction({ type: 'restore', category: cat })} className="p-2 rounded hover:bg-blue-100 transition"><RotateCcw size={18} className="text-blue-600" /></button>
+                    )}
+                  </div>
+                </td>
               </tr>
             ))
           )}
         </tbody>
       </table>
+      {categoriesLoading && <div className="flex justify-center items-center py-4"><LoadingSpinner size={32} color={designSystem.colors.primary} /></div>}
     </div>
   );
 
@@ -451,6 +584,35 @@ const RestaurantDetail: React.FC = () => {
               <button className="px-4 py-2 bg-gray-200 rounded" onClick={() => setConfirmAction(null)}>Cancel</button>
               <button className="px-4 py-2 bg-primary text-white rounded" onClick={() => handleDishAction(confirmAction.type as any, confirmAction.dish)}>Confirm</button>
             </div>
+          </div>
+        </div>
+      )}
+      {/* Confirmation Modal for Categories */}
+      {confirmCategoryAction && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
+          <div className="bg-white rounded shadow-lg p-6 w-full max-w-sm">
+            <h2 className="text-lg font-bold mb-2">Confirm {confirmCategoryAction.type === 'delete' ? 'Delete' : 'Restore'}</h2>
+            <p className="mb-4">Are you sure you want to {confirmCategoryAction.type} <span className="font-semibold">{confirmCategoryAction.category.title}</span>?</p>
+            <div className="flex justify-end gap-2">
+              <button className="px-4 py-2 bg-gray-200 rounded" onClick={() => setConfirmCategoryAction(null)}>Cancel</button>
+              <button className="px-4 py-2 bg-primary text-white rounded" onClick={() => handleCategoryAction(confirmCategoryAction.type, confirmCategoryAction.category)}>Confirm</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Add/Edit Modal for Categories */}
+      {showCategoryModal && (showCategoryModal.mode === 'add' || showCategoryModal.mode === 'edit') && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50" onClick={e => { if (e.target === e.currentTarget) setShowCategoryModal(null); }}>
+          <div className="bg-white rounded shadow-lg p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <h2 className="text-lg font-bold mb-4">
+              {showCategoryModal.mode === 'add' ? 'Add Category' : 'Edit Category'}
+            </h2>
+            <CategoryModalContent
+              mode={showCategoryModal.mode}
+              category={showCategoryModal.category}
+              onClose={() => setShowCategoryModal(null)}
+              onSave={data => handleCategorySave(showCategoryModal.mode, data, showCategoryModal.category)}
+            />
           </div>
         </div>
       )}
@@ -690,6 +852,66 @@ function DishModalContent({ mode, dish, categories, restaurantId, onClose, onSav
         {!isDetails && (
           <button type="submit" className="px-4 py-2 bg-primary text-white rounded">Save</button>
         )}
+      </div>
+    </form>
+  );
+}
+
+// Category Modal Component
+function CategoryModalContent({ mode, category, onClose, onSave }: { mode: 'add' | 'edit'; category?: any; onClose: () => void; onSave: (data: Partial<Category>) => void }) {
+  const [title, setTitle] = useState<string>(category?.title || '');
+  const [status, setStatus] = useState<'active' | 'inactive'>(category?.status || 'active');
+  const [order, setOrder] = useState<number>(category?.order ?? 0);
+  const [error, setError] = useState<string>('');
+
+  const handleSave = () => {
+    setError('');
+    if (!title.trim()) {
+      setError('Title is required.');
+      return;
+    }
+    onSave({ title: title.trim(), status, order });
+  };
+
+  return (
+    <form onSubmit={e => { e.preventDefault(); handleSave(); }}>
+      {error && <div className="mb-2 text-red-600 text-sm">{error}</div>}
+      <div className="flex flex-col gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+          <input
+            type="text"
+            className="w-full border rounded px-3 py-2"
+            value={title}
+            onChange={e => setTitle(e.target.value)}
+            required
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+          <select
+            className="w-full border rounded px-3 py-2"
+            value={status}
+            onChange={e => setStatus(e.target.value as 'active' | 'inactive')}
+          >
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Order</label>
+          <input
+            type="number"
+            className="w-full border rounded px-3 py-2"
+            value={order}
+            onChange={e => setOrder(Number(e.target.value))}
+            min={0}
+          />
+        </div>
+      </div>
+      <div className="flex justify-end gap-2 mt-6">
+        <button type="button" className="px-4 py-2 bg-gray-200 rounded" onClick={onClose}>Close</button>
+        <button type="submit" className="px-4 py-2 bg-primary text-white rounded">Save</button>
       </div>
     </form>
   );
