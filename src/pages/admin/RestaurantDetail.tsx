@@ -1,13 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getFirestore, doc, getDoc, collection, query, where, getDocs, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { getFirestore, doc, getDoc, collection, query, where, getDocs, updateDoc, serverTimestamp, addDoc } from 'firebase/firestore';
 import AdminDashboardLayout from '../../components/layout/AdminDashboardLayout';
 import designSystem from '../../designSystem';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import toast from 'react-hot-toast';
-import { Trash2, RotateCcw, ArrowLeft } from 'lucide-react';
+import { Trash2, RotateCcw, ArrowLeft, Eye, Pencil } from 'lucide-react';
 import { logActivity } from '../../services/activityLogService';
 import { Switch } from '@headlessui/react';
+import { Dish, Category } from '../../types';
+import { useAdminAuth } from '../../contexts/AdminAuthContext';
 
 const TABS = [
   { key: 'dishes', label: 'Dishes' },
@@ -47,6 +49,9 @@ const RestaurantDetail: React.FC = () => {
     publicMenuLink: false,
     publicOrderLink: false,
   });
+  // Add modal state for add/edit/details
+  const [showAddEditModal, setShowAddEditModal] = useState<null | { mode: 'add' | 'edit' | 'details', dish?: any }>(null);
+  const { currentAdmin } = useAdminAuth();
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -105,10 +110,12 @@ const RestaurantDetail: React.FC = () => {
         await updateDoc(ref, { deleted: true, updatedAt: serverTimestamp() });
         setDishes(prev => prev.map(d => d.id === dish.id ? { ...d, deleted: true } : d));
         await logActivity({
-          action: 'delete_dish',
+          userId: currentAdmin?.id,
+          userEmail: currentAdmin?.email,
+          action: 'admin_delete_dish',
           entityType: 'dish',
           entityId: dish.id,
-          details: { title: dish.title },
+          details: { title: dish.title, role: 'admin' },
         });
         toast('Dish deleted.', {
           style: {
@@ -123,10 +130,12 @@ const RestaurantDetail: React.FC = () => {
         await updateDoc(ref, { deleted: false, updatedAt: serverTimestamp() });
         setDishes(prev => prev.map(d => d.id === dish.id ? { ...d, deleted: false } : d));
         await logActivity({
-          action: 'restore_dish',
+          userId: currentAdmin?.id,
+          userEmail: currentAdmin?.email,
+          action: 'admin_restore_dish',
           entityType: 'dish',
           entityId: dish.id,
-          details: { title: dish.title },
+          details: { title: dish.title, role: 'admin' },
         });
         toast('Dish restored.', {
           style: {
@@ -194,9 +203,19 @@ const RestaurantDetail: React.FC = () => {
 
   const renderDishesTable = () => (
     <div className="overflow-x-auto">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-lg font-semibold">Dishes</h2>
+        <button
+          className="px-4 py-2 bg-primary text-white rounded hover:bg-primary-dark transition"
+          onClick={() => setShowAddEditModal({ mode: 'add' })}
+        >
+          + Add Dish
+        </button>
+      </div>
       <table className="min-w-full divide-y divide-gray-200">
         <thead className="bg-gray-50">
           <tr>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Image</th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
@@ -207,11 +226,18 @@ const RestaurantDetail: React.FC = () => {
         <tbody className="bg-white divide-y divide-gray-200">
           {dishes.length === 0 ? (
             <tr>
-              <td colSpan={5} className="px-6 py-10 text-center text-gray-500">No dishes found.</td>
+              <td colSpan={6} className="px-6 py-10 text-center text-gray-500">No dishes found.</td>
             </tr>
           ) : (
             dishes.map((dish) => (
               <tr key={dish.id} className={`hover:bg-gray-50 transition ${dish.deleted ? 'opacity-60' : ''}`}>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  {dish.image ? (
+                    <img src={dish.image} alt={dish.title} className="w-12 h-12 object-cover rounded" />
+                  ) : (
+                    <span className="text-gray-400">—</span>
+                  )}
+                </td>
                 <td className="px-6 py-4 whitespace-nowrap font-medium text-primary">{dish.title}</td>
                 <td className="px-6 py-4 whitespace-nowrap">{getCategoryName(dish.categoryId)}</td>
                 <td className="px-6 py-4 whitespace-nowrap">{dish.price ? `${dish.price} FCFA` : '—'}</td>
@@ -220,6 +246,10 @@ const RestaurantDetail: React.FC = () => {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right">
                   <div className="flex justify-end space-x-2">
+                    <button title="View Details" onClick={() => setShowAddEditModal({ mode: 'details', dish })} className="p-2 rounded hover:bg-blue-100 transition text-blue-600"><Eye size={18} /></button>
+                    {!dish.deleted && (
+                      <button title="Edit" onClick={() => setShowAddEditModal({ mode: 'edit', dish })} className="p-2 rounded hover:bg-green-100 transition text-green-600"><Pencil size={18} /></button>
+                    )}
                     {!dish.deleted && (
                       <button title="Delete" onClick={() => setConfirmAction({ type: 'delete', dish })} className="p-2 rounded hover:bg-red-100 transition"><Trash2 size={18} className="text-red-600" /></button>
                     )}
@@ -424,8 +454,243 @@ const RestaurantDetail: React.FC = () => {
           </div>
         </div>
       )}
+      {/* Add/Edit/Details Modal (filled) */}
+      {showAddEditModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50" onClick={e => { if (e.target === e.currentTarget) setShowAddEditModal(null); }}>
+          <div className="bg-white rounded shadow-lg p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            {/* Modal content based on mode: add, edit, details */}
+            <h2 className="text-lg font-bold mb-4">
+              {showAddEditModal.mode === 'add' ? 'Add Dish' : showAddEditModal.mode === 'edit' ? 'Edit Dish' : 'Dish Details'}
+            </h2>
+            <DishModalContent
+              mode={showAddEditModal.mode}
+              dish={showAddEditModal.dish}
+              categories={categories}
+              restaurantId={restaurant?.id}
+              onClose={() => setShowAddEditModal(null)}
+              onSave={async (dishData) => {
+                setDishesLoading(true);
+                try {
+                  if (showAddEditModal.mode === 'add') {
+                    const ref = await addDoc(collection(db, 'menuItems'), {
+                      ...dishData,
+                      restaurantId: restaurant.id,
+                      createdAt: serverTimestamp(),
+                      updatedAt: serverTimestamp(),
+                      deleted: false,
+                    });
+                    setDishes(prev => [...prev, { id: ref.id, ...dishData, deleted: false }]);
+                    await logActivity({
+                      userId: currentAdmin?.id,
+                      userEmail: currentAdmin?.email,
+                      action: 'admin_add_dish',
+                      entityType: 'dish',
+                      entityId: ref.id,
+                      details: { ...dishData, role: 'admin' },
+                    });
+                    toast.success('Dish added!');
+                  } else if (showAddEditModal.mode === 'edit') {
+                    const ref = doc(db, 'menuItems', showAddEditModal.dish.id);
+                    await updateDoc(ref, {
+                      ...dishData,
+                      updatedAt: serverTimestamp(),
+                    });
+                    setDishes(prev => prev.map(d => d.id === showAddEditModal.dish.id ? { ...d, ...dishData } : d));
+                    await logActivity({
+                      userId: currentAdmin?.id,
+                      userEmail: currentAdmin?.email,
+                      action: 'admin_edit_dish',
+                      entityType: 'dish',
+                      entityId: showAddEditModal.dish.id,
+                      details: { ...dishData, role: 'admin' },
+                    });
+                    toast.success('Dish updated!');
+                  }
+                  setShowAddEditModal(null);
+                } catch (err) {
+                  toast.error('Failed to save dish.');
+                } finally {
+                  setDishesLoading(false);
+                }
+              }}
+            />
+          </div>
+        </div>
+      )}
     </AdminDashboardLayout>
   );
 };
 
-export default RestaurantDetail; 
+export default RestaurantDetail;
+
+// DishModalContent component (to be placed at the end of the file)
+interface DishModalContentProps {
+  mode: 'add' | 'edit' | 'details';
+  dish?: Dish;
+  categories: Category[];
+  restaurantId?: string;
+  onClose: () => void;
+  onSave: (dishData: Partial<Dish>) => void;
+}
+
+function DishModalContent({ mode, dish, categories, restaurantId, onClose, onSave }: DishModalContentProps) {
+  const [title, setTitle] = useState<string>(dish?.title || '');
+  const [price, setPrice] = useState<string | number>(dish?.price || '');
+  const [categoryId, setCategoryId] = useState<string>(dish?.categoryId || (categories[0]?.id || ''));
+  const [status, setStatus] = useState<'active' | 'inactive'>(dish?.status || 'active');
+  const [description, setDescription] = useState<string>(dish?.description || '');
+  const [image, setImage] = useState<string | undefined>(dish?.image || undefined);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [error, setError] = useState<string>('');
+  const isDetails = mode === 'details';
+
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onload = () => setImage(reader.result as string);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeImage = () => {
+    setImage(undefined);
+    setImageFile(null);
+  };
+
+  const handleSave = () => {
+    setError('');
+    if (!title.trim() || !price || !categoryId) {
+      setError('Title, price, and category are required.');
+      return;
+    }
+    onSave({
+      title: title.trim(),
+      price: Number(price),
+      categoryId,
+      status,
+      description,
+      image: image || undefined,
+    });
+  };
+
+  return (
+    <form onSubmit={e => { e.preventDefault(); if (!isDetails) handleSave(); }}>
+      {error && <div className="mb-2 text-red-600 text-sm">{error}</div>}
+      <div className="flex flex-col gap-4">
+        {/* Image upload/preview styled like dashboard */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Image</label>
+          <div className="flex items-center gap-6 flex-wrap">
+            {image ? (
+              <div className="relative">
+                <img
+                  src={image}
+                  alt="Dish"
+                  className="w-24 h-24 object-cover rounded-lg"
+                />
+                {!isDetails && (
+                  <button
+                    type="button"
+                    onClick={removeImage}
+                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+            ) : (
+              !isDetails && (
+                <label
+                  htmlFor="dish-image-upload"
+                  className="cursor-pointer flex flex-col items-center justify-center w-24 h-24 border-2 border-dashed border-gray-300 rounded-lg hover:border-[#8B0000] transition-colors"
+                >
+                  <span className="text-gray-400">Upload</span>
+                  <span className="mt-2 text-xs text-gray-500">Image</span>
+                  <input
+                    id="dish-image-upload"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="hidden"
+                  />
+                </label>
+              )
+            )}
+          </div>
+        </div>
+        {/* Title */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+          <input
+            type="text"
+            className="w-full border rounded px-3 py-2"
+            value={title}
+            onChange={e => setTitle(e.target.value)}
+            disabled={isDetails}
+            required
+          />
+        </div>
+        {/* Price */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Price (FCFA)</label>
+          <input
+            type="number"
+            className="w-full border rounded px-3 py-2"
+            value={price}
+            onChange={e => setPrice(e.target.value)}
+            disabled={isDetails}
+            required
+            min={0}
+          />
+        </div>
+        {/* Category */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+          <select
+            className="w-full border rounded px-3 py-2"
+            value={categoryId}
+            onChange={e => setCategoryId(e.target.value)}
+            disabled={isDetails}
+            required
+          >
+            {categories.map((cat: Category) => (
+              <option key={cat.id} value={cat.id}>{cat.title}</option>
+            ))}
+          </select>
+        </div>
+        {/* Status */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+          <select
+            className="w-full border rounded px-3 py-2"
+            value={status}
+            onChange={e => setStatus(e.target.value as 'active' | 'inactive')}
+            disabled={isDetails}
+          >
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
+        </div>
+        {/* Description */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+          <textarea
+            className="w-full border rounded px-3 py-2"
+            value={description}
+            onChange={e => setDescription(e.target.value)}
+            disabled={isDetails}
+            rows={3}
+          />
+        </div>
+      </div>
+      <div className="flex justify-end gap-2 mt-6">
+        <button type="button" className="px-4 py-2 bg-gray-200 rounded" onClick={onClose}>Close</button>
+        {!isDetails && (
+          <button type="submit" className="px-4 py-2 bg-primary text-white rounded">Save</button>
+        )}
+      </div>
+    </form>
+  );
+} 
