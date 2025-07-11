@@ -44,6 +44,9 @@ const RestaurantDetail: React.FC = () => {
   const [showCategoryModal, setShowCategoryModal] = useState<null | { mode: 'add' | 'edit', category?: any }>(null);
   const [tables, setTables] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
+  const [confirmOrderAction, setConfirmOrderAction] = useState<null | { type: 'delete' | 'restore'; order: any }>(null);
+  const [showOrderDetails, setShowOrderDetails] = useState<null | any>(null);
   const [settingsLoading, setSettingsLoading] = useState(false);
   const [settings, setSettings] = useState({
     orderManagement: false,
@@ -59,6 +62,68 @@ const RestaurantDetail: React.FC = () => {
   const [confirmTableAction, setConfirmTableAction] = useState<null | { type: 'delete' | 'restore'; table: any }>(null);
   const [showTableModal, setShowTableModal] = useState<null | { mode: 'add' | 'edit', table?: any }>(null);
   const { currentAdmin } = useAdminAuth();
+
+  // Move handleOrderAction here so it is defined before usage in JSX
+  const handleOrderAction = async (type: 'delete' | 'restore', order: any) => {
+    setOrdersLoading(true);
+    try {
+      const ref = doc(db, 'orders', order.id);
+      if (type === 'delete') {
+        await updateDoc(ref, { deleted: true, updatedAt: serverTimestamp() });
+        setOrders(prev => prev.map(o => o.id === order.id ? { ...o, deleted: true } : o));
+        await logActivity({
+          userId: currentAdmin?.id,
+          userEmail: currentAdmin?.email,
+          action: 'admin_delete_order',
+          entityType: 'order',
+          entityId: order.id,
+          details: { tableNumber: order.tableNumber, totalAmount: order.totalAmount, role: 'admin' },
+        });
+        toast('Order deleted.', {
+          style: {
+            background: designSystem.colors.white,
+            color: designSystem.colors.primary,
+            border: `1px solid ${designSystem.colors.error}`,
+            fontWeight: 500,
+          },
+          icon: '❌',
+        });
+      } else if (type === 'restore') {
+        await updateDoc(ref, { deleted: false, updatedAt: serverTimestamp() });
+        setOrders(prev => prev.map(o => o.id === order.id ? { ...o, deleted: false } : o));
+        await logActivity({
+          userId: currentAdmin?.id,
+          userEmail: currentAdmin?.email,
+          action: 'admin_restore_order',
+          entityType: 'order',
+          entityId: order.id,
+          details: { tableNumber: order.tableNumber, totalAmount: order.totalAmount, role: 'admin' },
+        });
+        toast('Order restored.', {
+          style: {
+            background: designSystem.colors.white,
+            color: designSystem.colors.primary,
+            border: `1px solid ${designSystem.colors.success}`,
+            fontWeight: 500,
+          },
+          icon: '✅',
+        });
+      }
+    } catch (err) {
+      toast('Action failed. Please try again.', {
+        style: {
+          background: designSystem.colors.white,
+          color: designSystem.colors.primary,
+          border: `1px solid ${designSystem.colors.error}`,
+          fontWeight: 500,
+        },
+        icon: '❌',
+      });
+    } finally {
+      setOrdersLoading(false);
+      setConfirmOrderAction(null);
+    }
+  };
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -596,6 +661,9 @@ const RestaurantDetail: React.FC = () => {
 
   const renderOrdersTable = () => (
     <div className="overflow-x-auto">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-lg font-semibold">Orders</h2>
+      </div>
       <table className="min-w-full divide-y divide-gray-200">
         <thead className="bg-gray-50">
           <tr>
@@ -603,12 +671,13 @@ const RestaurantDetail: React.FC = () => {
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Table</th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
           </tr>
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
           {orders.length === 0 ? (
             <tr>
-              <td colSpan={4} className="px-6 py-10 text-center text-gray-500">No orders found.</td>
+              <td colSpan={5} className="px-6 py-10 text-center text-gray-500">No orders found.</td>
             </tr>
           ) : (
             orders.map((order) => (
@@ -619,11 +688,23 @@ const RestaurantDetail: React.FC = () => {
                   <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${order.status === 'completed' ? 'bg-green-100 text-green-800' : order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : order.status === 'cancelled' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'}`}>{order.status}</span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">{order.totalAmount ? `${order.totalAmount} FCFA` : '—'}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-right">
+                  <div className="flex justify-end space-x-2">
+                    <button title="View Details" onClick={() => setShowOrderDetails(order)} className="p-2 rounded hover:bg-blue-100 transition text-blue-600"><Eye size={18} /></button>
+                    {!order.deleted && (
+                      <button title="Delete" onClick={() => setConfirmOrderAction({ type: 'delete', order })} className="p-2 rounded hover:bg-red-100 transition"><Trash2 size={18} className="text-red-600" /></button>
+                    )}
+                    {order.deleted && (
+                      <button title="Restore" onClick={() => setConfirmOrderAction({ type: 'restore', order })} className="p-2 rounded hover:bg-blue-100 transition"><RotateCcw size={18} className="text-blue-600" /></button>
+                    )}
+                  </div>
+                </td>
               </tr>
             ))
           )}
         </tbody>
       </table>
+      {ordersLoading && <div className="flex justify-center items-center py-4"><LoadingSpinner size={32} color={designSystem.colors.primary} /></div>}
     </div>
   );
 
@@ -837,6 +918,28 @@ const RestaurantDetail: React.FC = () => {
               onClose={() => setShowTableModal(null)}
               onSave={data => handleTableSave(showTableModal.mode, data, showTableModal.table)}
             />
+          </div>
+        </div>
+      )}
+      {/* Confirmation Modal for Orders */}
+      {confirmOrderAction && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
+          <div className="bg-white rounded shadow-lg p-6 w-full max-w-sm">
+            <h2 className="text-lg font-bold mb-2">Confirm {confirmOrderAction.type === 'delete' ? 'Delete' : 'Restore'}</h2>
+            <p className="mb-4">Are you sure you want to {confirmOrderAction.type} <span className="font-semibold">Order {confirmOrderAction.order.id}</span>?</p>
+            <div className="flex justify-end gap-2">
+              <button className="px-4 py-2 bg-gray-200 rounded" onClick={() => setConfirmOrderAction(null)}>Cancel</button>
+              <button className="px-4 py-2 bg-primary text-white rounded" onClick={() => handleOrderAction(confirmOrderAction.type, confirmOrderAction.order)}>Confirm</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Details Modal for Orders */}
+      {showOrderDetails && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50" onClick={e => { if (e.target === e.currentTarget) setShowOrderDetails(null); }}>
+          <div className="bg-white rounded shadow-lg p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <h2 className="text-lg font-bold mb-4">Order Details</h2>
+            <OrderDetailsModalContent order={showOrderDetails} onClose={() => setShowOrderDetails(null)} />
           </div>
         </div>
       )}
@@ -1137,5 +1240,88 @@ function TableModalContent({ mode, table, onClose, onSave }: { mode: 'add' | 'ed
         <button type="submit" className="px-4 py-2 bg-primary text-white rounded">Save</button>
       </div>
     </form>
+  );
+}
+
+// Enhanced Order Details Modal Component
+function OrderDetailsModalContent({ order, onClose }: { order: any; onClose: () => void }) {
+  const statusColors: Record<string, string> = {
+    completed: 'bg-green-100 text-green-800',
+    pending: 'bg-yellow-100 text-yellow-800',
+    preparing: 'bg-blue-100 text-blue-800',
+    ready: 'bg-cyan-100 text-cyan-800',
+    cancelled: 'bg-red-100 text-red-800',
+    deleted: 'bg-gray-200 text-gray-500',
+  };
+  const status = typeof order.status === 'string' ? order.status : '';
+  const statusClass = statusColors[status] || 'bg-gray-100 text-gray-700';
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
+        <div>
+          <div className="font-semibold text-primary text-lg flex items-center gap-2">
+            <span>Order</span>
+            <span className="font-mono text-base bg-gray-100 px-2 py-0.5 rounded">{order.id}</span>
+            <span className={`ml-2 px-2 py-0.5 rounded text-xs font-semibold ${statusClass}`}>{order.status.charAt(0).toUpperCase() + order.status.slice(1)}</span>
+          </div>
+          <div className="text-sm text-gray-500 mt-1">Table: <span className="font-semibold text-gray-700">{order.tableNumber ?? '—'}</span></div>
+        </div>
+        <button className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded text-gray-700 font-medium transition" onClick={onClose}>Close</button>
+      </div>
+      {/* Divider */}
+      <div className="border-b" />
+      {/* Items Table */}
+      <div>
+        <h3 className="font-semibold mb-3 text-gray-800">Ordered Items</h3>
+        <div className="overflow-x-auto rounded-lg border border-gray-100 bg-gray-50">
+          <table className="min-w-full divide-y divide-gray-200 text-sm">
+            <thead className="bg-gray-100">
+              <tr>
+                <th className="px-3 py-2 text-left font-medium text-gray-500 uppercase">Dish</th>
+                <th className="px-3 py-2 text-center font-medium text-gray-500 uppercase">Qty</th>
+                <th className="px-3 py-2 text-right font-medium text-gray-500 uppercase">Price</th>
+                <th className="px-3 py-2 text-right font-medium text-gray-500 uppercase">Subtotal</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-100">
+              {order.items?.map((item: any, idx: number) => (
+                <tr key={idx}>
+                  <td className="px-3 py-2 flex items-center gap-2">
+                    {item.image && (
+                      <img src={item.image} alt={item.title} className="w-8 h-8 rounded object-cover border" />
+                    )}
+                    <span className="font-medium text-primary">{item.title}</span>
+                  </td>
+                  <td className="px-3 py-2 text-center">{item.quantity}</td>
+                  <td className="px-3 py-2 text-right">{item.price ? `${item.price} FCFA` : '—'}</td>
+                  <td className="px-3 py-2 text-right">{item.price && item.quantity ? `${item.price * item.quantity} FCFA` : '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot className="bg-gray-50">
+              <tr>
+                <td colSpan={3} className="px-3 py-2 text-right font-bold text-gray-700">Total</td>
+                <td className="px-3 py-2 text-right font-bold text-primary">{order.totalAmount ? `${order.totalAmount} FCFA` : '—'}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+      {/* Divider */}
+      <div className="border-b" />
+      {/* Summary Section */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+        <div className="space-y-1">
+          <div className="text-gray-500">Created:</div>
+          <div className="font-medium text-gray-700">{order.createdAt?.toDate ? order.createdAt.toDate().toLocaleString() : '—'}</div>
+        </div>
+        <div className="space-y-1">
+          <div className="text-gray-500">Last Updated:</div>
+          <div className="font-medium text-gray-700">{order.updatedAt?.toDate ? order.updatedAt.toDate().toLocaleString() : '—'}</div>
+        </div>
+      </div>
+    </div>
   );
 } 
