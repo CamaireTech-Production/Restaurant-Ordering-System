@@ -288,6 +288,7 @@ const MenuManagement: React.FC = () => {
         onToggleStatus={handleToggleStatus}
         onBulkAction={handleBulkAction}
         isDemoUser={false}
+        restaurantId={restaurant?.id || ''}
       />
     </DashboardLayout>
   );

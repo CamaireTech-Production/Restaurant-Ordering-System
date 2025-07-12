@@ -1,9 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PlusCircle, Edit, Trash2, Eye, EyeOff, Search, X, Upload, Image, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
 import Modal from '../components/ui/Modal';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import designSystem from '../designSystem';
 import { Category, Dish } from '../types';
+import Papa from 'papaparse';
+import type { ParseResult } from 'papaparse';
+import { db } from '../firebase/config';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 type MenuItem = Dish & {
   deleted: boolean;
@@ -20,6 +24,8 @@ interface MenuManagementContentProps {
   onToggleStatus: (item: MenuItem) => void;
   onBulkAction: (action: 'delete' | 'activate' | 'deactivate', itemIds: string[]) => void;
   isDemoUser: boolean;
+  restaurantId: string; // <-- add this prop
+  onImportComplete?: () => void; // optional callback
 }
 
 const initialFormState = {
@@ -36,16 +42,16 @@ const initialFormState = {
 const MenuManagementContent: React.FC<MenuManagementContentProps> = ({
   menuItems,
   categories,
-  loading,
   onAdd,
   onEdit,
   onDelete,
   onToggleStatus,
   onBulkAction,
-  isDemoUser,
+  restaurantId,
+  onImportComplete,
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [isDeleting] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [filterCategory, setFilterCategory] = useState('');
@@ -57,9 +63,32 @@ const MenuManagementContent: React.FC<MenuManagementContentProps> = ({
   const [itemToDelete, setItemToDelete] = useState<MenuItem | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [bulkDeleteConfirmOpen, setBulkDeleteConfirmOpen] = useState(false);
+  const [isCSVModalOpen, setIsCSVModalOpen] = useState(false);
+  const [csvFile, setCSVFile] = useState<File | null>(null);
+  const [csvHeaders, setCSVHeaders] = useState<string[]>([]);
+  const [csvRows, setCSVRows] = useState<any[]>([]);
+  const [csvMapping, setCSVMapping] = useState<{ [key: string]: string }>({});
+  const [csvStep, setCSVStep] = useState<'upload' | 'mapping' | 'importing' | 'done'>('upload');
+  const [csvProgress, setCSVProgress] = useState(0);
+  const [csvError, setCSVError] = useState<string | null>(null);
+  const [importSummary, setImportSummary] = useState<{ total: number; success: number; failed: number; errors: string[] }>({ total: 0, success: 0, failed: 0, errors: [] });
+  const [localCategories, setLocalCategories] = useState<Category[]>(categories);
+  const [localMenuItems, setLocalMenuItems] = useState<MenuItem[]>(menuItems);
+
+  useEffect(() => { setLocalCategories(categories); }, [categories]);
+  useEffect(() => { setLocalMenuItems(menuItems); }, [menuItems]);
+
+  const dishFields = [
+    { key: 'title', label: 'Title*' },
+    { key: 'price', label: 'Price*' },
+    { key: 'description', label: 'Description' },
+    { key: 'category', label: 'Category*' },
+    { key: 'status', label: 'Status (active/inactive)' },
+    { key: 'image', label: 'Image URL' },
+  ];
 
   // Filter out deleted menu items for admin view
-  const visibleMenuItems = menuItems.filter(item => item.deleted !== true);
+  const visibleMenuItems = localMenuItems.filter(item => item.deleted !== true);
 
   // Filter and search
   const filteredItems = visibleMenuItems.filter(item => {
@@ -272,8 +301,150 @@ const MenuManagementContent: React.FC<MenuManagementContentProps> = ({
   };
 
   const getCategoryName = (categoryId: string) => {
-    const category = categories.find(c => c.id === categoryId);
+    const category = localCategories.find(c => c.id === categoryId);
     return category ? category.title : 'Uncategorized';
+  };
+
+  const openCSVModal = () => {
+    setIsCSVModalOpen(true);
+    setCSVFile(null);
+    setCSVHeaders([]);
+    setCSVRows([]);
+    setCSVMapping({});
+    setCSVStep('upload');
+    setCSVProgress(0);
+    setCSVError(null);
+    setImportSummary({ total: 0, success: 0, failed: 0, errors: [] });
+  };
+
+  const closeCSVModal = () => {
+    setIsCSVModalOpen(false);
+    setCSVFile(null);
+    setCSVHeaders([]);
+    setCSVRows([]);
+    setCSVMapping({});
+    setCSVStep('upload');
+    setCSVProgress(0);
+    setCSVError(null);
+    setImportSummary({ total: 0, success: 0, failed: 0, errors: [] });
+  };
+
+  const handleCSVFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setCSVFile(e.target.files[0]);
+      Papa.parse(e.target.files[0], {
+        header: true,
+        skipEmptyLines: true,
+        complete: (results: ParseResult<any>) => {
+          if (results.errors.length) {
+            setCSVError('CSV parsing error. Please check your file.');
+            return;
+          }
+          const headers = results.meta.fields || [];
+          setCSVHeaders(headers);
+          setCSVRows(results.data as any[]);
+          setCSVStep('mapping');
+        },
+        error: () => setCSVError('CSV parsing error. Please check your file.'),
+      });
+    }
+  };
+
+  const handleCSVMappingChange = (field: string, header: string) => {
+    setCSVMapping(prev => ({ ...prev, [field]: header }));
+  };
+
+  const handleCSVImport = async () => {
+    setCSVStep('importing');
+    setCSVProgress(0);
+    setCSVError(null);
+    setImportSummary({ total: csvRows.length, success: 0, failed: 0, errors: [] });
+    let createdCategories: { [name: string]: string } = {};
+    let updatedCategories = [...localCategories];
+    // 1. Create categories if not found (in Firestore)
+    const uniqueCategoryNames = Array.from(new Set(csvRows.map(row => row[csvMapping['category']]).filter(Boolean)));
+    let totalSteps = uniqueCategoryNames.length + csvRows.length;
+    let currentStep = 0;
+    for (const categoryName of uniqueCategoryNames) {
+      const normalizedCategoryName = categoryName.trim().toLowerCase();
+      const existingCategory = updatedCategories.find(c => (c as any).deleted !== true && c.title.trim().toLowerCase() === normalizedCategoryName);
+      if (categoryName && !existingCategory && !createdCategories[normalizedCategoryName]) {
+        try {
+          const docRef = await addDoc(collection(db, 'categories'), {
+            title: categoryName,
+            status: 'active' as 'active',
+            restaurantId,
+            order: 0,
+            createdAt: serverTimestamp(),
+            deleted: false,
+          });
+          createdCategories[normalizedCategoryName] = docRef.id;
+          const newCat = {
+            id: docRef.id,
+            title: categoryName,
+            status: 'active' as 'active',
+            restaurantId,
+            order: 0,
+            createdAt: new Date().toISOString(),
+          };
+          updatedCategories.push(newCat);
+          setLocalCategories(prev => [...prev, newCat]);
+        } catch (err) {
+          setCSVError('Failed to create category: ' + categoryName);
+          setCSVStep('mapping');
+          setImportSummary(prev => ({ ...prev, failed: prev.failed + 1, errors: [...prev.errors, `Category: ${categoryName}`] }));
+          return;
+        }
+      }
+      currentStep++;
+      setCSVProgress(Math.round((currentStep / totalSteps) * 100));
+    }
+    // 2. Import dishes
+    let success = 0;
+    let failed = 0;
+    let errors: string[] = [];
+    const existingDishTitles = localMenuItems.map(d => d.title.trim().toLowerCase());
+    const newDishes: MenuItem[] = [];
+    for (let i = 0; i < csvRows.length; i++) {
+      const row = csvRows[i];
+      const dishTitle = row[csvMapping['title']]?.trim().toLowerCase() || '';
+      if (existingDishTitles.includes(dishTitle) || newDishes.some(d => d.title.trim().toLowerCase() === dishTitle)) {
+        failed++;
+        errors.push(`Duplicate dish skipped: ${row[csvMapping['title']]}`);
+        currentStep++;
+        setCSVProgress(Math.round((currentStep / totalSteps) * 100));
+        continue;
+      }
+      const categoryName = row[csvMapping['category']];
+      const normalizedCategoryName = categoryName ? categoryName.trim().toLowerCase() : '';
+      const categoryId = createdCategories[normalizedCategoryName] || (updatedCategories.find(c => (c as any).deleted !== true && c.title.trim().toLowerCase() === normalizedCategoryName)?.id ?? '');
+      const dish: MenuItem = {
+        id: Math.random().toString(36).substr(2, 9), // placeholder id
+        title: row[csvMapping['title']] || '',
+        price: parseFloat(row[csvMapping['price']] || '0'),
+        description: row[csvMapping['description']] || '',
+        categoryId,
+        status: (row[csvMapping['status']] || 'active') as 'active' | 'inactive',
+        image: row[csvMapping['image']] || '/icons/placeholder.jpg',
+        restaurantId,
+        deleted: false,
+        createdAt: new Date().toISOString(), // placeholder
+      };
+      try {
+        await onAdd(dish);
+        success++;
+        newDishes.push(dish);
+      } catch (err) {
+        failed++;
+        errors.push(`Failed to import dish: ${dish.title}`);
+      }
+      currentStep++;
+      setCSVProgress(Math.round((currentStep / totalSteps) * 100));
+    }
+    setLocalMenuItems(prev => [...newDishes, ...prev]);
+    setImportSummary({ total: csvRows.length, success, failed, errors });
+    setCSVStep('done');
+    if (typeof onImportComplete === 'function') onImportComplete();
   };
 
   return (
@@ -283,13 +454,21 @@ const MenuManagementContent: React.FC<MenuManagementContentProps> = ({
           <h2 className="text-xl font-semibold" style={{ color: designSystem.colors.primary }}>Dishes</h2>
           <p className="text-sm" style={{ color: designSystem.colors.text }}>Manage your restaurant dishes</p>
         </div>
-        <button
-          onClick={openAddModal}
-          className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium"
-          style={{ background: designSystem.colors.primary, color: designSystem.colors.white }}
-        >
-          <PlusCircle size={16} className="mr-2" /> Add Dish
-        </button>
+        <div className="flex flex-row gap-2 items-center">
+          <button
+            onClick={openAddModal}
+            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium"
+            style={{ background: designSystem.colors.primary, color: designSystem.colors.white }}
+          >
+            <PlusCircle size={16} className="mr-2" /> Add Dish
+          </button>
+          <button
+            onClick={openCSVModal}
+            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium bg-blue-600 text-white hover:bg-blue-700"
+          >
+            <Upload size={16} className="mr-2" /> Import CSV
+          </button>
+        </div>
       </div>
       {/* Search & Filter */}
       <div className="p-4 flex flex-col sm:flex-row gap-4">
@@ -324,7 +503,7 @@ const MenuManagementContent: React.FC<MenuManagementContentProps> = ({
             className="pl-10 block w-full py-3 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
           >
             <option value="">All Categories</option>
-            {categories.map(category => (
+            {localCategories.map(category => (
               <option key={category.id} value={category.id}>{category.title}</option>
             ))}
           </select>
@@ -447,7 +626,7 @@ const MenuManagementContent: React.FC<MenuManagementContentProps> = ({
             {currentItems.length === 0 ? (
               <tr>
                 <td colSpan={6} className="px-6 py-10 text-center text-gray-500">
-                  {menuItems.length === 0 ? 
+                  {localMenuItems.length === 0 ? 
                     "No dishes found. Add your first dish!" : 
                     "No dishes match your search criteria."}
                 </td>
@@ -608,7 +787,7 @@ const MenuManagementContent: React.FC<MenuManagementContentProps> = ({
               required
             >
               <option value="">Select a category</option>
-              {categories.map(category => (
+              {localCategories.map(category => (
                 <option key={category.id} value={category.id}>{category.title}</option>
               ))}
             </select>
@@ -712,6 +891,105 @@ const MenuManagementContent: React.FC<MenuManagementContentProps> = ({
             </button>
           </div>
         </div>
+      </Modal>
+      {/* CSV Import Modal */}
+      <Modal isOpen={isCSVModalOpen} onClose={closeCSVModal} title="Import Dishes from CSV">
+        {csvStep === 'upload' && (
+          <div className="space-y-4">
+            <div className="flex flex-col items-center justify-center border-2 border-dashed border-blue-400 rounded-lg p-6 bg-blue-50 hover:bg-blue-100 transition-colors cursor-pointer relative w-full max-w-md mx-auto"
+              onClick={() => document.getElementById('csv-upload-input')?.click()}
+              tabIndex={0}
+              onKeyPress={e => { if (e.key === 'Enter') document.getElementById('csv-upload-input')?.click(); }}
+              role="button"
+              aria-label="Upload CSV file"
+            >
+              <Upload size={36} className="text-blue-500 mb-2" />
+              <span className="text-base font-medium text-blue-700">Click or drag CSV file to upload</span>
+              <span className="text-xs text-blue-500 mt-1">Only .csv files are supported</span>
+              <input
+                id="csv-upload-input"
+                type="file"
+                accept=".csv"
+                onChange={handleCSVFileChange}
+                className="hidden"
+              />
+              {csvFile && (
+                <div className="mt-4 flex items-center gap-2 bg-white px-3 py-2 rounded shadow border border-gray-200">
+                  <span className="text-sm text-gray-700">{csvFile.name}</span>
+                  <button
+                    type="button"
+                    onClick={e => { e.stopPropagation(); setCSVFile(null); setCSVHeaders([]); setCSVRows([]); setCSVMapping({}); setCSVStep('upload'); }}
+                    className="ml-2 text-red-500 hover:text-red-700"
+                    aria-label="Remove file"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+              )}
+            </div>
+            {csvError && <div className="text-red-500 text-sm text-center">{csvError}</div>}
+          </div>
+        )}
+        {csvStep === 'mapping' && (
+          <div className="space-y-4">
+            <div className="text-sm text-gray-700">Map CSV columns to dish fields:</div>
+            {dishFields.map(field => (
+              <div key={field.key} className="flex items-center gap-2">
+                <label className="w-40 text-gray-700">{field.label}</label>
+                <select
+                  value={csvMapping[field.key] || ''}
+                  onChange={e => handleCSVMappingChange(field.key, e.target.value)}
+                  className="block w-60 py-2 px-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
+                >
+                  <option value="">-- Not mapped --</option>
+                  {csvHeaders.map(header => (
+                    <option key={header} value={header}>{header}</option>
+                  ))}
+                </select>
+              </div>
+            ))}
+            <button
+              onClick={handleCSVImport}
+              className="mt-4 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium bg-green-600 text-white hover:bg-green-700"
+              disabled={!csvMapping['title'] || !csvMapping['price'] || !csvMapping['category']}
+            >
+              Start Import
+            </button>
+          </div>
+        )}
+        {csvStep === 'importing' && (
+          <div className="space-y-4">
+            <div className="text-sm text-gray-700">Importing dishes... Please wait.</div>
+            <div className="w-full bg-gray-200 rounded-full h-4">
+              <div
+                className="bg-blue-600 h-4 rounded-full transition-all duration-300"
+                style={{ width: `${csvProgress}%` }}
+              ></div>
+            </div>
+            <div className="text-xs text-gray-500">{csvProgress}% complete</div>
+          </div>
+        )}
+        {csvStep === 'done' && (
+          <div className="space-y-4">
+            <div className="text-green-600 text-sm font-medium">Import complete!</div>
+            <div className="text-sm text-gray-700">
+              <div>Total rows processed: <b>{importSummary.total}</b></div>
+              <div>Successfully imported: <b>{importSummary.success}</b></div>
+              <div>Skipped/Failed: <b>{importSummary.failed}</b></div>
+              {importSummary.errors.length > 0 && (
+                <ul className="mt-2 text-xs text-red-500 list-disc list-inside">
+                  {importSummary.errors.map((err, idx) => <li key={idx}>{err}</li>)}
+                </ul>
+              )}
+            </div>
+            <button
+              onClick={closeCSVModal}
+              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium bg-primary text-white hover:bg-primary-dark"
+            >
+              Close
+            </button>
+          </div>
+        )}
       </Modal>
     </div>
   );
