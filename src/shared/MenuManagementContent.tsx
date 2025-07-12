@@ -418,13 +418,15 @@ const MenuManagementContent: React.FC<MenuManagementContentProps> = ({
       const categoryName = row[csvMapping['category']];
       const normalizedCategoryName = categoryName ? categoryName.trim().toLowerCase() : '';
       const categoryId = createdCategories[normalizedCategoryName] || (updatedCategories.find(c => (c as any).deleted !== true && c.title.trim().toLowerCase() === normalizedCategoryName)?.id ?? '');
+      const rawStatus = (row[csvMapping['status']] || 'active').toString().trim().toLowerCase();
+      const status: 'active' | 'inactive' = rawStatus === 'inactive' ? 'inactive' : 'active';
       const dish: MenuItem = {
         id: Math.random().toString(36).substr(2, 9), // placeholder id
         title: row[csvMapping['title']] || '',
         price: parseFloat(row[csvMapping['price']] || '0'),
         description: row[csvMapping['description']] || '',
         categoryId,
-        status: (row[csvMapping['status']] || 'active') as 'active' | 'inactive',
+        status,
         image: row[csvMapping['image']] || '/icons/placeholder.jpg',
         restaurantId,
         deleted: false,
