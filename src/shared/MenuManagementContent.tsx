@@ -8,6 +8,7 @@ import Papa from 'papaparse';
 import type { ParseResult } from 'papaparse';
 import { db } from '../firebase/config';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import imageCompression from 'browser-image-compression';
 
 type MenuItem = Dish & {
   deleted: boolean;
@@ -18,7 +19,7 @@ interface MenuManagementContentProps {
   menuItems: MenuItem[];
   categories: Category[];
   loading: boolean;
-  onAdd: (data: any) => void;
+  onAdd: (data: Omit<Dish, 'id'> & { [key: string]: any }) => void;
   onEdit: (item: MenuItem, data: any) => void;
   onDelete: (itemId: string) => void;
   onToggleStatus: (item: MenuItem) => void;
@@ -74,6 +75,8 @@ const MenuManagementContent: React.FC<MenuManagementContentProps> = ({
   const [importSummary, setImportSummary] = useState<{ total: number; success: number; failed: number; errors: string[] }>({ total: 0, success: 0, failed: 0, errors: [] });
   const [localCategories, setLocalCategories] = useState<Category[]>(categories);
   const [localMenuItems, setLocalMenuItems] = useState<MenuItem[]>(menuItems);
+  const [isImageUploading, setIsImageUploading] = useState(false);
+  const [imageError, setImageError] = useState<string | null>(null);
 
   useEffect(() => { setLocalCategories(categories); }, [categories]);
   useEffect(() => { setLocalMenuItems(menuItems); }, [menuItems]);
@@ -157,14 +160,39 @@ const MenuManagementContent: React.FC<MenuManagementContentProps> = ({
 
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
+      setIsImageUploading(true);
+      setImageError(null);
       const file = e.target.files[0];
-      const base64 = await fileToBase64(file);
+      console.log('[Image Upload] Original size:', file.size, 'bytes');
+      let compressedFile = file;
+      if (file.size > 300 * 1024) { // 300KB threshold
+        try {
+          compressedFile = await imageCompression(file, {
+            maxSizeMB: 0.3,
+            maxWidthOrHeight: 1024,
+            useWebWorker: true,
+          });
+          console.log('[Image Upload] Compressed size:', compressedFile.size, 'bytes');
+        } catch (err) {
+          console.error('[Image Compression Error]', err);
+          // fallback to original file
+          compressedFile = file;
+        }
+      }
+      const base64 = await fileToBase64(compressedFile);
+      // Check base64 length (Firestore doc limit is 1MB, be safe and use 900,000 chars)
+      if (base64.length > 900000) {
+        setImageError('Image is too large to upload. Please choose a smaller image.');
+        setIsImageUploading(false);
+        return;
+      }
       setFormData({
         ...formData,
         image: file,
-        imageURL: URL.createObjectURL(file),
+        imageURL: URL.createObjectURL(compressedFile),
         imageBase64: base64,
       });
+      setIsImageUploading(false);
     }
   };
 
@@ -182,19 +210,28 @@ const MenuManagementContent: React.FC<MenuManagementContentProps> = ({
     if (!formData.title.trim() || !formData.price || !formData.categoryId) return;
     const price = parseFloat(formData.price);
     if (isNaN(price) || price <= 0) return;
+    const status: 'active' | 'inactive' = formData.status === 'inactive' ? 'inactive' : 'active';
     const data = {
       title: formData.title.trim(),
       price,
       description: formData.description.trim(),
       categoryId: formData.categoryId,
-      status: formData.status,
+      status,
       image: formData.imageBase64 || formData.imageURL || '/icons/placeholder.jpg',
+      restaurantId,
+      createdAt: new Date().toISOString(),
     };
     setIsSubmitting(true);
-    if (editingItem) {
-      await onEdit(editingItem, data);
-    } else {
-      await onAdd(data);
+    try {
+      if (editingItem) {
+        console.log('[Dish Edit] Payload:', data);
+        await onEdit(editingItem, data);
+      } else {
+        console.log('[Dish Add] Payload:', data);
+        await onAdd(data);
+      }
+    } catch (error) {
+      console.error('[Dish Submit Error]', error);
     }
     setIsSubmitting(false);
     closeModal();
@@ -404,7 +441,7 @@ const MenuManagementContent: React.FC<MenuManagementContentProps> = ({
     let failed = 0;
     let errors: string[] = [];
     const existingDishTitles = localMenuItems.map(d => d.title.trim().toLowerCase());
-    const newDishes: MenuItem[] = [];
+    const newDishes: any[] = [];
     for (let i = 0; i < csvRows.length; i++) {
       const row = csvRows[i];
       const dishTitle = row[csvMapping['title']]?.trim().toLowerCase() || '';
@@ -420,8 +457,8 @@ const MenuManagementContent: React.FC<MenuManagementContentProps> = ({
       const categoryId = createdCategories[normalizedCategoryName] || (updatedCategories.find(c => (c as any).deleted !== true && c.title.trim().toLowerCase() === normalizedCategoryName)?.id ?? '');
       const rawStatus = (row[csvMapping['status']] || 'active').toString().trim().toLowerCase();
       const status: 'active' | 'inactive' = rawStatus === 'inactive' ? 'inactive' : 'active';
-      const dish: MenuItem = {
-        id: Math.random().toString(36).substr(2, 9), // placeholder id
+      // Do NOT use MenuItem type here, just use 'any' or inline type
+      const dish = {
         title: row[csvMapping['title']] || '',
         price: parseFloat(row[csvMapping['price']] || '0'),
         description: row[csvMapping['description']] || '',
@@ -430,7 +467,7 @@ const MenuManagementContent: React.FC<MenuManagementContentProps> = ({
         image: row[csvMapping['image']] || '/icons/placeholder.jpg',
         restaurantId,
         deleted: false,
-        createdAt: new Date().toISOString(), // placeholder
+        createdAt: new Date().toISOString(), // optional
       };
       try {
         await onAdd(dish);
@@ -443,7 +480,11 @@ const MenuManagementContent: React.FC<MenuManagementContentProps> = ({
       currentStep++;
       setCSVProgress(Math.round((currentStep / totalSteps) * 100));
     }
-    setLocalMenuItems(prev => [...newDishes, ...prev]);
+    // For local state only, add a temporary id to each new dish (not sent to Firestore)
+    setLocalMenuItems(prev => [
+      ...newDishes.map(dish => ({ ...dish, id: `${Date.now()}_${Math.random()}` })),
+      ...prev
+    ]);
     setImportSummary({ total: csvRows.length, success, failed, errors });
     setCSVStep('done');
     if (typeof onImportComplete === 'function') onImportComplete();
@@ -821,7 +862,11 @@ const MenuManagementContent: React.FC<MenuManagementContentProps> = ({
           <div className="mb-2">
             <label className="block text-sm font-medium text-gray-700 mb-1">Image</label>
             <div className="flex items-center">
-              {formData.imageURL ? (
+              {isImageUploading ? (
+                <div className="w-24 h-24 flex items-center justify-center">
+                  <LoadingSpinner size={36} />
+                </div>
+              ) : formData.imageURL ? (
                 <div className="relative">
                   <img
                     src={formData.imageURL}
@@ -853,6 +898,7 @@ const MenuManagementContent: React.FC<MenuManagementContentProps> = ({
                 className="hidden"
               />
             </div>
+            {imageError && <div className="text-xs text-red-500 mt-2">{imageError}</div>}
           </div>
           <div className="flex justify-end gap-2 pt-2">
             <button
