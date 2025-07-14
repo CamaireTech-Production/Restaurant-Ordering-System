@@ -13,6 +13,7 @@ const designSystem = {
     borderLightGray: '#E5E5E5',  // Light border for white bg
     white: '#FFFFFF',           // White
     black: '#000000',           // Black
+    backgroundLight: '#F3F4F6', // Light gray for inactive/hover backgrounds
     // Status colors for orders
     statusPendingBg: '#FEF3C7',      // yellow-200
     statusPendingText: '#B45309',    // yellow-800
@@ -28,6 +29,11 @@ const designSystem = {
     statusDefaultText: '#4B5563',    // gray-600
 
     iconFiltercolor: '#9CA3AF',
+    highlightYellow: '#FFE600', // For the 'All' tab background (from screenshot)
+    iconGray: '#B0B4BA', // For icons and muted text (from screenshot)
+    subtitleGray: '#6B7280', // For subtitle text (address, phone, etc.)
+    starYellow: '#FFD600', // For the star icon (rating)
+    timeGray: '#7C7C7C', // For delivery time text
 
     // Modal and input colors for consistent UI polish
     modalOverlay: 'rgba(30, 41, 59, 0.65)', // dark overlay for modals
@@ -47,6 +53,8 @@ const designSystem = {
   fonts: {
     body: 'Inter, sans-serif',
     heading: 'Poppins, sans-serif',
+    bold: 'Poppins-Bold, Poppins, sans-serif', // For extra bold headers
+    regular: 'Poppins-Regular, Poppins, sans-serif', // For regular text
   },
 };
 

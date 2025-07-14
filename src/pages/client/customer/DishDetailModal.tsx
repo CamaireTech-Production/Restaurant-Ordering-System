@@ -1,4 +1,5 @@
 import Modal from '../../../components/ui/Modal';
+import designSystem from '../../../designSystem';
 import { Dish as MenuItem } from '../../../types/index';
 
 interface DishDetailModalProps {
@@ -9,9 +10,10 @@ interface DishDetailModalProps {
   inCart?: { id: string; quantity: number } | null;
   incrementItem?: (itemId: string) => void;
   decrementItem?: (itemId: string) => void;
+  categoryName?: string;
 }
 
-export default function DishDetailModal({ isOpen, dish, onClose, addToCart, inCart, incrementItem, decrementItem }: DishDetailModalProps) {
+export default function DishDetailModal({ isOpen, dish, onClose, addToCart, inCart, incrementItem, decrementItem, categoryName }: DishDetailModalProps) {
   if (!dish) return null;
 
   return (
@@ -28,6 +30,20 @@ export default function DishDetailModal({ isOpen, dish, onClose, addToCart, inCa
             alt={dish.title}
             className="w-full h-full object-cover"
           />
+        </div>
+      )}
+      {categoryName && (
+        <div className="mb-4 flex justify-start">
+          <span
+            className="inline-block px-3 py-1 rounded-full text-sm font-medium"
+            style={{
+              background: designSystem.colors.highlightYellow,
+              color: designSystem.colors.primary,
+              fontFamily: 'Poppins, sans-serif'
+            }}
+          >
+            {categoryName}
+          </span>
         </div>
       )}
       <p className="text-gray-700 mb-4">{dish.description || 'No description available.'}</p>
