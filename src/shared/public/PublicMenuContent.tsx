@@ -184,32 +184,44 @@ const PublicMenuContent: React.FC<PublicMenuContentProps> = ({ restaurant, categ
                 {/* Name and Details */}
                 <div className="flex flex-col flex-1 min-w-0">
                   <h1
-                    className="truncate"
+                    className="break-words sm:truncate"
                     style={{
                       fontFamily: designSystem.fonts.heading,
                       fontWeight: 700,
-                      fontSize: '2.1rem',
+                      fontSize: '1.3rem', // mobile default
                       color: designSystem.colors.primary,
                       letterSpacing: '-0.5px',
                       lineHeight: 1.1,
                     }}
                   >
-                    {restaurant?.name}
+                    <span className="sm:text-2xl" style={{ fontSize: '2.1rem' }}>{restaurant?.name}</span>
                   </h1>
-                  <div className="flex flex-row flex-wrap items-center gap-6 mt-2 text-sm min-w-0">
+                  <div className="flex flex-row flex-wrap items-center gap-4 sm:gap-6 mt-2 text-sm min-w-0">
                     {/* Address */}
                     {restaurant?.address && (
-                      <span className="flex items-center gap-2 text-xs sm:text-sm truncate min-w-0" style={{ color: designSystem.colors.subtitleGray, maxWidth: '220px' }}>
-                        <MapPin size={16} color={designSystem.colors.iconGray} style={{ opacity: 0.6, minWidth: 16, verticalAlign: 'middle' }} />
-                        <span className="truncate min-w-0">{restaurant.address}</span>
-                      </span>
+                      <a
+                        href={`https://maps.google.com/?q=${encodeURIComponent(restaurant.address)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 text-xs sm:text-sm min-w-0 max-w-[220px] break-words group transition-colors"
+                        style={{ color: designSystem.colors.subtitleGray, cursor: 'pointer', textDecoration: 'none' }}
+                        tabIndex={0}
+                      >
+                        <MapPin size={16} color={designSystem.colors.iconGray} style={{ opacity: 0.7, minWidth: 16, verticalAlign: 'middle' }} />
+                        <span className="min-w-0 break-words group-hover:underline group-focus:underline group-hover:text-primary group-focus:text-primary transition-colors" style={{wordBreak:'break-word'}}>{restaurant.address}</span>
+                      </a>
                     )}
                     {/* Phone */}
                     {restaurant?.phone && (
-                      <span className="flex items-center gap-2 text-xs sm:text-sm truncate min-w-0" style={{ color: designSystem.colors.subtitleGray, maxWidth: '140px' }}>
-                        <Phone size={16} color={designSystem.colors.iconGray} style={{ opacity: 0.6, minWidth: 16, verticalAlign: 'middle' }} />
-                        <span className="truncate min-w-0">{restaurant.phone}</span>
-                      </span>
+                      <a
+                        href={`tel:${restaurant.phone.replace(/[^\d+]/g, '')}`}
+                        className="flex items-center gap-2 text-xs sm:text-sm min-w-0 max-w-[140px] break-words group transition-colors"
+                        style={{ color: designSystem.colors.subtitleGray, cursor: 'pointer', textDecoration: 'none' }}
+                        tabIndex={0}
+                      >
+                        <Phone size={16} color={designSystem.colors.iconGray} style={{ opacity: 0.7, minWidth: 16, verticalAlign: 'middle' }} />
+                        <span className="min-w-0 break-words group-hover:underline group-focus:underline group-hover:text-primary group-focus:text-primary transition-colors" style={{wordBreak:'break-word'}}>{restaurant.phone}</span>
+                      </a>
                     )}
                   </div>
                 </div>
