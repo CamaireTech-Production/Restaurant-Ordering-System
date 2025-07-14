@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect, useMemo } from 'react';
-import { ChefHat, Search, X, ShoppingCart, PlusCircle, MinusCircle, Trash2, AlertCircle } from 'lucide-react';
+import { ChefHat, Search, X, ShoppingCart, PlusCircle, MinusCircle, Trash2, AlertCircle, MapPin, Phone } from 'lucide-react';
 
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import DishDetailModal from '../../pages/client/customer/DishDetailModal';
@@ -19,7 +19,7 @@ interface PublicOrderContentProps {
 }
 
 const PublicOrderContent: React.FC<PublicOrderContentProps> = ({ restaurant, categories, menuItems, loading, createOrder, isDemo }) => {
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const sectionRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
@@ -202,6 +202,20 @@ const PublicOrderContent: React.FC<PublicOrderContentProps> = ({ restaurant, cat
     });
   }, [categories, dishesByCategory, searchQuery]);
 
+  // Add custom scrollbar CSS for category tabs
+  const customScrollbarStyle = `
+    .custom-cat-scrollbar::-webkit-scrollbar {
+      height: 6px;
+    }
+    .custom-cat-scrollbar::-webkit-scrollbar-thumb {
+      background: #E5E7EB;
+      border-radius: 4px;
+    }
+    .custom-cat-scrollbar::-webkit-scrollbar-track {
+      background: transparent;
+    }
+  `;
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col justify-center items-center p-4">
@@ -221,132 +235,170 @@ const PublicOrderContent: React.FC<PublicOrderContentProps> = ({ restaurant, cat
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col sm:px-0">
-      {/* Sticky Header + Category Tabs */}
-      <div className="sticky top-0 z-30 shadow-md" style={{ background: designSystem.colors.primary }}>
-        {/* Header */}
-        <header style={{ color: designSystem.colors.white }}>
-          <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6">
-            <div className="flex flex-col sm:flex-row justify-between items-center py-3">
-              <div className="flex items-center w-full sm:w-auto mb-2 sm:mb-0">
-                <div className="flex items-center">
+    <>
+      <style>{customScrollbarStyle}</style>
+      <div className="min-h-screen bg-gray-50 flex flex-col sm:px-0">
+        {/* Sticky Header + Category Tabs */}
+        <div className="sticky-header-anchor" style={{ height: 0, width: 0, position: 'absolute', top: 0, left: 0 }} />
+        <div className="sticky top-0 z-30" style={{ background: designSystem.colors.white }}>
+          {/* Header - Refined */}
+          <header className="w-full" style={{ background: designSystem.colors.white }}>
+            <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 pt-6 pb-2">
+              <div className="flex flex-row items-center gap-5 min-w-0">
+                {/* Restaurant Icon */}
+                <span className="flex items-center justify-center h-12 w-12 rounded-full flex-shrink-0" style={{ background: designSystem.colors.white }}>
                   {isDemo ? (
-                    <ChefHat size={32} className="drop-shadow mr-2" color={designSystem.colors.accent} />
+                    <ChefHat size={50} color={designSystem.colors.primary} />
                   ) : restaurant?.logo ? (
-                    <div className="h-12 w-12 rounded-full flex items-center justify-center bg-white shadow-lg ring-2" style={{ borderColor: designSystem.colors.accent, marginRight: 12 }}>
-                      <img
-                        src={restaurant.logo}
-                        alt={restaurant.name}
-                        className="h-10 w-10 rounded-full object-contain drop-shadow-md"
-                        style={{ background: 'transparent' }}
-                      />
-                    </div>
+                    <img
+                      src={restaurant.logo}
+                      alt={restaurant.name}
+                      className="h-10 w-10 rounded-full object-contain drop-shadow-md"
+                      style={{ background: 'transparent' }}
+                    />
                   ) : (
-                    <ChefHat size={32} className="drop-shadow mr-2" color={designSystem.colors.accent} />
+                    <ChefHat size={50} color={designSystem.colors.primary} />
                   )}
-                  <div className="flex flex-col">
-                    <h1 className="text-xl font-bold" style={{ color: designSystem.colors.white }}>{restaurant?.name}</h1>
+                </span>
+                {/* Name and Details */}
+                <div className="flex flex-col flex-1 min-w-0">
+                  <h1
+                    className="truncate"
+                    style={{
+                      fontFamily: designSystem.fonts.heading,
+                      fontWeight: 700,
+                      fontSize: '2.1rem',
+                      color: designSystem.colors.primary,
+                      letterSpacing: '-0.5px',
+                      lineHeight: 1.1,
+                    }}
+                  >
+                    {restaurant?.name}
+                  </h1>
+                  <div className="flex flex-row flex-wrap items-center gap-6 mt-2 text-sm min-w-0">
+                    {/* Address */}
+                    {restaurant?.address && (
+                      <span className="flex items-center gap-2 text-xs sm:text-sm truncate min-w-0" style={{ color: designSystem.colors.subtitleGray, maxWidth: '220px' }}>
+                        <MapPin size={16} color={designSystem.colors.iconGray} style={{ opacity: 0.6, minWidth: 16, verticalAlign: 'middle' }} />
+                        <span className="truncate min-w-0">{restaurant.address}</span>
+                      </span>
+                    )}
+                    {/* Phone */}
+                    {restaurant?.phone && (
+                      <span className="flex items-center gap-2 text-xs sm:text-sm truncate min-w-0" style={{ color: designSystem.colors.subtitleGray, maxWidth: '140px' }}>
+                        <Phone size={16} color={designSystem.colors.iconGray} style={{ opacity: 0.6, minWidth: 16, verticalAlign: 'middle' }} />
+                        <span className="truncate min-w-0">{restaurant.phone}</span>
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-        </header>
-        {/* Category Tabs */}
-        <div
-          ref={categoryTabsRef}
-          className="pt-2 pb-2 border-b shadow-sm"
-          style={{ background: designSystem.colors.white, borderColor: designSystem.colors.borderLightGray, WebkitOverflowScrolling: 'touch' }}
-        >
-          <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6">
-            <div className="flex space-x-2 overflow-x-auto no-scrollbar py-2">
-              <button
-                onClick={() => handleCategoryClick('all')}
-                className={`flex-shrink-0 px-5 py-2 rounded-full font-bold text-base sm:text-lg transition`}
-                style={{
-                  background: activeCategory === 'all' ? designSystem.colors.primary : designSystem.colors.white,
-                  color: activeCategory === 'all' ? designSystem.colors.white : designSystem.colors.primary,
-                  border: `1px solid ${designSystem.colors.primary}`,
-                }}
-                onMouseEnter={e => {
-                  if (activeCategory !== 'all') {
-                    e.currentTarget.style.background = designSystem.colors.secondary;
-                    e.currentTarget.style.color = designSystem.colors.primary;
-                    e.currentTarget.style.color = designSystem.colors.secondary;
-
-                  }
-                }}
-                onMouseLeave={e => {
-                  if (activeCategory !== 'all') {
-                    e.currentTarget.style.background = designSystem.colors.white;
-                    e.currentTarget.style.color = designSystem.colors.primary;
-                    e.currentTarget.style.color = designSystem.colors.primary;
-                  }
-                }}
-              >
-                All
-              </button>
-              {categories.map(cat => (
+            {/* Separator */}
+            <div style={{ borderBottom: `1.5px solid ${designSystem.colors.borderLightGray}` }} className="mt-4" />
+          </header>
+          {/* Category Tabs - Improved Hover/Active/Inactive */}
+          <div
+            ref={categoryTabsRef}
+            className="pt-2 pb-2 border-b overflow-x-auto no-scrollbar custom-cat-scrollbar"
+            style={{ background: designSystem.colors.white, borderColor: designSystem.colors.borderLightGray, WebkitOverflowScrolling: 'touch' }}
+          >
+            <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6">
+              <div className="flex space-x-2 py-2" style={{ minHeight: '40px' }}>
                 <button
-                  key={cat.id}
-                  id={`category-tab-${cat.id}`}
-                  onClick={() => handleCategoryClick(cat.id)}
-                  className={`flex-shrink-0 px-5 py-2 rounded-full font-bold text-base sm:text-lg transition`}
+                  onClick={() => handleCategoryClick('all')}
+                  className={`flex-shrink-0 px-5 py-1.5 rounded-full font-medium text-sm sm:text-base transition shadow-none`}
                   style={{
-                    background: activeCategory === cat.id ? designSystem.colors.primary : designSystem.colors.white,
-                    color: activeCategory === cat.id ? designSystem.colors.white : designSystem.colors.primary,
-                    border: `1px solid ${designSystem.colors.primary}`,
+                    background: activeCategory === 'all' ? designSystem.colors.highlightYellow : designSystem.colors.backgroundLight,
+                    color: activeCategory === 'all' ? designSystem.colors.primary : designSystem.colors.primary,
+                    border: `1.5px solid ${designSystem.colors.borderLightGray}`,
+                    fontFamily: designSystem.fonts.heading,
+                    fontWeight: 500,
+                    minWidth: '80px',
                   }}
                   onMouseEnter={e => {
-                    if (activeCategory !== cat.id) {
-                      e.currentTarget.style.background = designSystem.colors.secondary;
-                      e.currentTarget.style.color = designSystem.colors.primary;
+                    if (activeCategory !== 'all') {
+                      e.currentTarget.style.background = designSystem.colors.primary;
+                      e.currentTarget.style.color = designSystem.colors.white;
                     }
                   }}
                   onMouseLeave={e => {
-                    if (activeCategory !== cat.id) {
-                      e.currentTarget.style.background = designSystem.colors.white;
+                    if (activeCategory === 'all') {
+                      e.currentTarget.style.background = designSystem.colors.highlightYellow;
+                      e.currentTarget.style.color = designSystem.colors.primary;
+                    } else {
+                      e.currentTarget.style.background = designSystem.colors.backgroundLight;
                       e.currentTarget.style.color = designSystem.colors.primary;
                     }
                   }}
                 >
-                  {cat.title}
+                  All
                 </button>
-              ))}
+                {categories.map(cat => (
+                  <button
+                    key={cat.id}
+                    id={`category-tab-${cat.id}`}
+                    onClick={() => handleCategoryClick(cat.id)}
+                    className={`flex-shrink-0 px-5 py-1.5 rounded-full font-medium text-sm sm:text-base transition shadow-none`}
+                    style={{
+                      background: activeCategory === cat.id ? designSystem.colors.highlightYellow : designSystem.colors.backgroundLight,
+                      color: activeCategory === cat.id ? designSystem.colors.primary : designSystem.colors.primary,
+                      border: `1.5px solid ${designSystem.colors.borderLightGray}`,
+                      fontFamily: designSystem.fonts.heading,
+                      fontWeight: 500,
+                      minWidth: '80px',
+                    }}
+                    onMouseEnter={e => {
+                      if (activeCategory !== cat.id) {
+                        e.currentTarget.style.background = designSystem.colors.primary;
+                        e.currentTarget.style.color = designSystem.colors.white;
+                      }
+                    }}
+                    onMouseLeave={e => {
+                      if (activeCategory === cat.id) {
+                        e.currentTarget.style.background = designSystem.colors.highlightYellow;
+                        e.currentTarget.style.color = designSystem.colors.primary;
+                      } else {
+                        e.currentTarget.style.background = designSystem.colors.backgroundLight;
+                        e.currentTarget.style.color = designSystem.colors.primary;
+                      }
+                    }}
+                  >
+                    {cat.title}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>
-      </div>
-
-      {/* Search bar */}
-      <div className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 py-2">
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search size={16} className="text-gray-400" />
+        {/* Search bar - Redesigned */}
+        <div className="bg-gray-50" style={{ borderBottom: `1.5px solid ${designSystem.colors.borderLightGray}` }}>
+          <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 py-6">
+            <div className="relative max-w-md mx-auto">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search size={20} className="text-gray-400" />
+              </div>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search dishes..."
+                className="pl-10 p-3 block w-full border border-gray-200 rounded-lg shadow-sm focus:ring-0 focus:border-primary text-base bg-white"
+                style={{ fontFamily: designSystem.fonts.body, fontSize: '1rem', color: designSystem.colors.primary }}
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                >
+                  <X size={18} />
+                </button>
+              )}
             </div>
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search dishes..."
-              className="pl-9 p-2 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-rose focus:border-rose text-xs sm:text-sm"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
-              >
-                <X size={16} />
-              </button>
-            )}
           </div>
         </div>
-      </div>
-
-      {/* Menu Sections */}
-      <main className="flex-1 max-w-7xl mx-auto w-full px-2 sm:px-4 lg:px-6 pt-2 pb-20">
-        {selectedCategory === 'all' ? (
+        {/* Menu Sections - Modern Card Layout */}
+        <main className="flex-1 max-w-7xl mx-auto w-full px-2 sm:px-4 lg:px-6 pt-2 pb-20">
           <div>
             {filteredCategories.map((cat, idx) => (
               <div
@@ -354,8 +406,16 @@ const PublicOrderContent: React.FC<PublicOrderContentProps> = ({ restaurant, cat
                 ref={el => (sectionRefs.current[cat.id] = el)}
                 className={`mb-10 ${idx !== 0 ? 'pt-6' : ''}`}
               >
-                <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4">{cat.title}</h2>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5">
+                <div>
+                  <h2
+                    className="text-xl sm:text-2xl font-bold text-gray-900 mb-2"
+                    style={{ fontFamily: designSystem.fonts.heading }}
+                  >
+                    {cat.title}
+                  </h2>
+                  <div style={{ height: 2, background: designSystem.colors.highlightYellow, width: '100%', borderRadius: 2, marginBottom: 24 }} />
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5 px-2 sm:px-0">
                   {dishesByCategory[cat.id]?.length ? (
                     dishesByCategory[cat.id]
                       .filter(item => {
@@ -380,7 +440,7 @@ const PublicOrderContent: React.FC<PublicOrderContentProps> = ({ restaurant, cat
                               <img
                                 src={item.image}
                                 alt={item.title}
-                                className="w-full h-full object-cover"
+                                className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
                               />
                             </div>
                           ) : (
@@ -397,6 +457,11 @@ const PublicOrderContent: React.FC<PublicOrderContentProps> = ({ restaurant, cat
                               <h3 className="text-base sm:text-lg font-medium text-gray-900 truncate">
                                 {item.title}
                               </h3>
+                              {item.description && (
+                                <div className="text-xs text-gray-500 mt-1 truncate" style={{ maxWidth: '100%' }}>
+                                  {item.description.length > 40 ? item.description.slice(0, 40) + '…' : item.description}
+                                </div>
+                              )}
                             </div>
                             <div className="text-base sm:text-lg font-semibold text-primary mt-2">
                               {item.price.toLocaleString()} FCFA
@@ -434,216 +499,133 @@ const PublicOrderContent: React.FC<PublicOrderContentProps> = ({ restaurant, cat
               </div>
             )}
           </div>
-        ) : (
-          <div>
-            {/* Single Category Section */}
-            <div className="mb-10 pt-6">
-              <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4">
-                {categories.find(c => c.id === selectedCategory)?.title || 'Dishes'}
-              </h2>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5">
-                {dishesByCategory[selectedCategory]?.length ? (
-                  dishesByCategory[selectedCategory]
-                    .filter(item => {
-                      const matchesSearch = searchQuery
-                        ? item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          (item.description && item.description.toLowerCase().includes(searchQuery.toLowerCase()))
-                        : true;
-                      return matchesSearch;
-                    })
-                    .map(item => (
-                      <div
-                        key={item.id}
-                        className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow flex flex-col h-full cursor-pointer group min-h-0 flex-1"
-                        style={{ minHeight: '220px', maxHeight: '370px' }}
-                        onClick={() => {
-                          setSelectedDish(item);
-                          setModalOpen(true);
-                        }}
-                      >
-                        {item.image ? (
-                          <div className="h-28 sm:h-32 w-full overflow-hidden">
-                            <img
-                              src={item.image}
-                              alt={item.title}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                        ) : (
-                          <div className="h-28 sm:h-32 w-full bg-gray-100 flex items-center justify-center">
-                            <img
-                              src="/icons/placeholder.png"
-                              alt="No dish"
-                              className="h-16 w-16 opacity-60"
-                            />
-                          </div>
-                        )}
-                        <div className="p-3 flex-1 flex flex-col">
-                          <div>
-                            <h3 className="text-base sm:text-lg font-medium text-gray-900 truncate">
-                              {item.title}
-                            </h3>
-                          </div>
-                          <div className="text-base sm:text-lg font-semibold text-primary mt-2">
-                            {item.price.toLocaleString()} FCFA
-                          </div>
-                          <div className="mt-auto w-full flex items-center gap-2">
-                            {!cart.find(ci => ci.menuItemId === item.id) ? (
-                              <button
-                                onClick={e => {
-                                  e.stopPropagation();
-                                  addToCart(item);
-                                }}
-                                className="inline-flex justify-center items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-xs sm:text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
-                              >
-                                <PlusCircle size={14} className="mr-2" />
-                                Add to Cart
-                              </button>
-                            ) : (
-                              <div className="flex items-center gap-1">
-                                <button onClick={e => { e.stopPropagation(); decrementItem(cart.find(ci => ci.menuItemId === item.id)!.id); }} className="text-gray-500 hover:text-gray-700"><MinusCircle size={18} /></button>
-                                <span className="mx-1 text-gray-700 font-semibold">{cart.find(ci => ci.menuItemId === item.id)!.quantity}</span>
-                                <button onClick={e => { e.stopPropagation(); incrementItem(cart.find(ci => ci.menuItemId === item.id)!.id); }} className="text-gray-500 hover:text-gray-700"><PlusCircle size={18} /></button>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ))
-                ) : (
-                  <div className="col-span-full text-center py-8">
-                    <p className="text-gray-500">No items found matching your search</p>
+        </main>
+
+        {/* Floating Cart Button */}
+        <button
+          className={`fixed bottom-6 right-6 z-50 bg-primary text-white rounded-full shadow-lg p-4 flex items-center transition-transform ${cartAnim ? 'scale-110' : ''}`}
+          style={{ minWidth: 56, minHeight: 56 }}
+          onClick={() => setShowCart(true)}
+        >
+          <ShoppingCart size={28} />
+          {totalCartItems > 0 && (
+            <span className="ml-2 bg-accent text-white rounded-full px-2 py-1 text-xs font-bold animate-bounce">
+              {totalCartItems}
+            </span>
+          )}
+        </button>
+
+        {/* Cart Modal */}
+        <Modal isOpen={showCart} onClose={() => { setShowCart(false); setShowCheckout(false); }} title="Your Cart" className="max-w-lg">
+          {cart.length === 0 ? (
+            <div className="text-center py-10">
+              <ShoppingCart size={48} className="mx-auto text-gray-400" />
+              <h3 className="mt-2 text-sm font-medium text-gray-900">Your cart is empty</h3>
+              <p className="mt-1 text-sm text-gray-500">Add items from the menu to start your order</p>
+            </div>
+          ) : showCheckout ? (
+            <form onSubmit={e => { e.preventDefault(); handlePlaceOrder(); }}>
+              <button type="button" onClick={() => setShowCheckout(false)} className="mb-4 text-primary hover:underline">&larr; Back to Cart</button>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                <div className="relative">
+                  <div className="flex">
+                    {/* Fixed +237 prefix */}
+                    <div className="flex items-center px-4 py-3 bg-gray-100 border border-r-0 border-gray-300 rounded-l-md text-sm font-medium text-gray-700">
+                      +237
+                    </div>
+                    {/* Phone number input */}
+                    <input
+                      type="tel"
+                      value={checkoutPhone}
+                      onChange={e => setCheckoutPhone(e.target.value.replace(/[^0-9]/g, ''))}
+                      onBlur={() => setPhoneTouched(true)}
+                      className={`flex-1 px-4 py-3 border rounded-r-md shadow-sm focus:ring-primary focus:border-primary text-sm ${
+                        phoneError ? 'border-red-300' : 'border-gray-300'
+                      }`}
+                      placeholder="612345678"
+                      maxLength={9}
+                    />
                   </div>
+                </div>
+                {phoneError && (
+                  <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
+                    <AlertCircle size={14} />
+                    {phoneError}
+                  </p>
+                )}
+                {checkoutPhone && !phoneError && (
+                  <p className="mt-2 text-sm text-gray-500">
+                    {formatCameroonPhone(checkoutPhone)}
+                  </p>
                 )}
               </div>
-            </div>
-          </div>
-        )}
-      </main>
-
-      {/* Floating Cart Button */}
-      <button
-        className={`fixed bottom-6 right-6 z-50 bg-primary text-white rounded-full shadow-lg p-4 flex items-center transition-transform ${cartAnim ? 'scale-110' : ''}`}
-        style={{ minWidth: 56, minHeight: 56 }}
-        onClick={() => setShowCart(true)}
-      >
-        <ShoppingCart size={28} />
-        {totalCartItems > 0 && (
-          <span className="ml-2 bg-accent text-white rounded-full px-2 py-1 text-xs font-bold animate-bounce">
-            {totalCartItems}
-          </span>
-        )}
-      </button>
-
-      {/* Cart Modal */}
-      <Modal isOpen={showCart} onClose={() => { setShowCart(false); setShowCheckout(false); }} title="Your Cart" className="max-w-lg">
-        {cart.length === 0 ? (
-          <div className="text-center py-10">
-            <ShoppingCart size={48} className="mx-auto text-gray-400" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900">Your cart is empty</h3>
-            <p className="mt-1 text-sm text-gray-500">Add items from the menu to start your order</p>
-          </div>
-        ) : showCheckout ? (
-          <form onSubmit={e => { e.preventDefault(); handlePlaceOrder(); }}>
-            <button type="button" onClick={() => setShowCheckout(false)} className="mb-4 text-primary hover:underline">&larr; Back to Cart</button>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
-              <div className="relative">
-                <div className="flex">
-                  {/* Fixed +237 prefix */}
-                  <div className="flex items-center px-4 py-3 bg-gray-100 border border-r-0 border-gray-300 rounded-l-md text-sm font-medium text-gray-700">
-                    +237
-                  </div>
-                  {/* Phone number input */}
-                  <input
-                    type="tel"
-                    value={checkoutPhone}
-                    onChange={e => setCheckoutPhone(e.target.value.replace(/[^0-9]/g, ''))}
-                    onBlur={() => setPhoneTouched(true)}
-                    className={`flex-1 px-4 py-3 border rounded-r-md shadow-sm focus:ring-primary focus:border-primary text-sm ${
-                      phoneError ? 'border-red-300' : 'border-gray-300'
-                    }`}
-                    placeholder="612345678"
-                    maxLength={9}
-                  />
-                </div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Location / Address</label>
+                <input type="text" value={checkoutLocation} onChange={e => setCheckoutLocation(e.target.value)} className="w-full border border-gray-300 rounded-md p-2" required />
               </div>
-              {phoneError && (
-                <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
-                  <AlertCircle size={14} />
-                  {phoneError}
-                </p>
-              )}
-              {checkoutPhone && !phoneError && (
-                <p className="mt-2 text-sm text-gray-500">
-                  {formatCameroonPhone(checkoutPhone)}
-                </p>
-              )}
+              <button type="submit" className="w-full py-2 px-4 rounded-md bg-primary text-white font-semibold hover:bg-primary-dark transition-colors flex items-center justify-center gap-2" disabled={placingOrder}>
+                {placingOrder ? (<><LoadingSpinner size={18} color="#fff" /> Placing Order...</>) : 'Finalize Order'}
+              </button>
+            </form>
+          ) : (
+            <div>
+              <ul className="divide-y divide-gray-200 mb-4">
+                {cart.map(item => (
+                  <li key={item.id} className="py-3 flex items-center justify-between">
+                    <div>
+                      <div className="font-medium text-gray-900">{item.title}</div>
+                      <div className="text-xs text-gray-500">{item.price.toLocaleString()} FCFA each</div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => decrementItem(item.id)} className="text-gray-500 hover:text-gray-700"><MinusCircle size={18} /></button>
+                      <span className="mx-1 text-gray-700 font-semibold">{item.quantity}</span>
+                      <button onClick={() => incrementItem(item.id)} className="text-gray-500 hover:text-gray-700"><PlusCircle size={18} /></button>
+                      <button onClick={() => removeItem(item.id)} className="text-red-500 hover:text-red-700"><Trash2 size={18} /></button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+              <div className="flex justify-between font-bold mb-4">
+                <span>Subtotal:</span>
+                <span>{totalCartAmount.toLocaleString()} FCFA</span>
+              </div>
+              <div className="flex justify-between gap-2">
+                <button onClick={clearCart} className="px-4 py-2 rounded-md bg-gray-100 text-gray-700 font-medium hover:bg-gray-200">Clear Cart</button>
+                <button onClick={() => setShowCheckout(true)} className="px-4 py-2 rounded-md bg-primary text-white font-semibold hover:bg-primary-dark transition-colors">Place Order</button>
+              </div>
             </div>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Location / Address</label>
-              <input type="text" value={checkoutLocation} onChange={e => setCheckoutLocation(e.target.value)} className="w-full border border-gray-300 rounded-md p-2" required />
-            </div>
-            <button type="submit" className="w-full py-2 px-4 rounded-md bg-primary text-white font-semibold hover:bg-primary-dark transition-colors flex items-center justify-center gap-2" disabled={placingOrder}>
-              {placingOrder ? (<><LoadingSpinner size={18} color="#fff" /> Placing Order...</>) : 'Finalize Order'}
-            </button>
-          </form>
-        ) : (
-          <div>
-            <ul className="divide-y divide-gray-200 mb-4">
-              {cart.map(item => (
-                <li key={item.id} className="py-3 flex items-center justify-between">
-                  <div>
-                    <div className="font-medium text-gray-900">{item.title}</div>
-                    <div className="text-xs text-gray-500">{item.price.toLocaleString()} FCFA each</div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button onClick={() => decrementItem(item.id)} className="text-gray-500 hover:text-gray-700"><MinusCircle size={18} /></button>
-                    <span className="mx-1 text-gray-700 font-semibold">{item.quantity}</span>
-                    <button onClick={() => incrementItem(item.id)} className="text-gray-500 hover:text-gray-700"><PlusCircle size={18} /></button>
-                    <button onClick={() => removeItem(item.id)} className="text-red-500 hover:text-red-700"><Trash2 size={18} /></button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-            <div className="flex justify-between font-bold mb-4">
-              <span>Subtotal:</span>
-              <span>{totalCartAmount.toLocaleString()} FCFA</span>
-            </div>
-            <div className="flex justify-between gap-2">
-              <button onClick={clearCart} className="px-4 py-2 rounded-md bg-gray-100 text-gray-700 font-medium hover:bg-gray-200">Clear Cart</button>
-              <button onClick={() => setShowCheckout(true)} className="px-4 py-2 rounded-md bg-primary text-white font-semibold hover:bg-primary-dark transition-colors">Place Order</button>
-            </div>
-          </div>
-        )}
-      </Modal>
+          )}
+        </Modal>
 
-      {/* Sticky Footer */}
-      <footer className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-sm border-t border-gray-200 py-2 px-4 text-center z-40">
-        <p className="text-xs text-gray-500">
-          Powered by{' '}
-          <a 
-            href="https://camairetech.com" 
-            target="_blank" 
-            rel="noopener noreferrer" 
-            className="font-medium text-primary hover:text-primary/80 transition-colors"
-          >
-            Camairetech
-          </a>
-        </p>
-      </footer>
+        {/* Sticky Footer */}
+        <footer className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-sm border-t border-gray-200 py-2 px-4 text-center z-40">
+          <p className="text-xs text-gray-500">
+            Powered by{' '}
+            <a 
+              href="https://camairetech.com" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="font-medium text-primary hover:text-primary/80 transition-colors"
+            >
+              Camairetech
+            </a>
+          </p>
+        </footer>
 
-      {/* Dish Detail Modal (with add to cart) */}
-      <DishDetailModal
-        isOpen={isModalOpen}
-        dish={selectedDish}
-        onClose={() => setModalOpen(false)}
-        addToCart={addToCart}
-        inCart={cart.find(ci => ci.menuItemId === selectedDish?.id)}
-        incrementItem={incrementItem}
-        decrementItem={decrementItem}
-      />
-    </div>
+        {/* Dish Detail Modal (with add to cart) */}
+        <DishDetailModal
+          isOpen={isModalOpen}
+          dish={selectedDish}
+          onClose={() => setModalOpen(false)}
+          addToCart={addToCart}
+          inCart={cart.find(ci => ci.menuItemId === selectedDish?.id)}
+          incrementItem={incrementItem}
+          decrementItem={decrementItem}
+          categoryName={selectedDish ? (categories.find(cat => cat.id === selectedDish.categoryId)?.title || '') : ''}
+        />
+      </div>
+    </>
   );
 };
 
