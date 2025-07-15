@@ -8,7 +8,7 @@ import { useAdminAuth } from '../../contexts/AdminAuthContext';
 import { logActivity } from '../../services/activityLogService';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import designSystem from '../../designSystem';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const TABS = [
   { key: 'regular', label: 'Regular Restaurants' },
@@ -24,6 +24,17 @@ const AdminRestaurants: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'regular' | 'demo'>('regular');
   const [confirmAction, setConfirmAction] = useState<null | { type: string; restaurant: any }>(null);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Set activeTab from query param on mount or when location.search changes
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tab = params.get('tab');
+    if (tab === 'demo' || tab === 'regular') {
+      setActiveTab(tab);
+    }
+    // eslint-disable-next-line
+  }, [location.search]);
 
   const fetchRestaurants = async () => {
     setLoading(true);
@@ -138,7 +149,11 @@ const AdminRestaurants: React.FC = () => {
 
   const handleRowClick = (r: any) => {
     if (!r.isDeleted) {
-      navigate(`/admin/restaurants/${r.id}`);
+      if (activeTab === 'demo') {
+        navigate(`/admin/demo-restaurants/${r.id}`);
+      } else {
+        navigate(`/admin/restaurants/${r.id}`);
+      }
     }
   };
 

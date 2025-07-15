@@ -8,7 +8,7 @@ import toast from 'react-hot-toast';
 import { Trash2, RotateCcw, ArrowLeft, Eye, Pencil, EyeOff } from 'lucide-react';
 import { logActivity } from '../../services/activityLogService';
 import { Switch } from '@headlessui/react';
-import { Dish, Category, Table } from '../../types';
+import { Dish, Category } from '../../types';
 import { useAdminAuth } from '../../contexts/AdminAuthContext';
 import ColorPicker from '../../components/ui/ColorPicker';
 import PaymentSetup from '../../components/payment/PaymentSetup';
@@ -17,7 +17,6 @@ import Papa from 'papaparse';
 const TABS = [
   { key: 'dishes', label: 'Dishes' },
   { key: 'categories', label: 'Categories' },
-  { key: 'tables', label: 'Tables' },
   { key: 'orders', label: 'Orders' },
   { key: 'settings', label: 'Settings' },
 ];
@@ -29,23 +28,21 @@ const Card = ({ title, value }: { title: string; value: number | string }) => (
   </div>
 );
 
-const RestaurantDetail: React.FC = () => {
+const DemoRestaurantDetail: React.FC = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const db = getFirestore();
   const [restaurant, setRestaurant] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('dishes');
-  const [counts, setCounts] = useState({ dishes: 0, categories: 0, tables: 0, orders: 0 });
+  const [counts, setCounts] = useState({ dishes: 0, categories: 0, orders: 0 });
   const [dishes, setDishes] = useState<any[]>([]);
   const [dishesLoading, setDishesLoading] = useState(false);
   const [confirmAction, setConfirmAction] = useState<null | { type: string; dish: any }>(null);
   const [categories, setCategories] = useState<any[]>([]);
   const [categoriesLoading, setCategoriesLoading] = useState(false);
   const [confirmCategoryAction, setConfirmCategoryAction] = useState<null | { type: 'delete' | 'restore'; category: any }>(null);
-  // Change showCategoryModal type to only allow 'add' | 'edit'
   const [showCategoryModal, setShowCategoryModal] = useState<null | { mode: 'add' | 'edit', category?: any }>(null);
-  const [tables, setTables] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [confirmOrderAction, setConfirmOrderAction] = useState<null | { type: 'delete' | 'restore'; order: any }>(null);
@@ -59,12 +56,6 @@ const RestaurantDetail: React.FC = () => {
     publicMenuLink: false,
     publicOrderLink: false,
   });
-  // Add modal state for add/edit/details
-  const [showAddEditModal, setShowAddEditModal] = useState<null | { mode: 'add' | 'edit' | 'details', dish?: any }>(null);
-  const [tablesLoading, setTablesLoading] = useState(false);
-  const [confirmTableAction, setConfirmTableAction] = useState<null | { type: 'delete' | 'restore'; table: any }>(null);
-  const [showTableModal, setShowTableModal] = useState<null | { mode: 'add' | 'edit', table?: any }>(null);
-  const { currentAdmin } = useAdminAuth();
   const [profileForm, setProfileForm] = useState({
     name: '',
     address: '',
@@ -92,24 +83,15 @@ const RestaurantDetail: React.FC = () => {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  // In state, add deleted items arrays for each entity
   const [deletedDishes, setDeletedDishes] = useState<any[]>([]);
   const [deletedCategories, setDeletedCategories] = useState<any[]>([]);
-  const [deletedTables, setDeletedTables] = useState<any[]>([]);
   const [deletedOrders, setDeletedOrders] = useState<any[]>([]);
-  // Add at the top of RestaurantDetail component state
   const [dishPage, setDishPage] = useState(1);
   const [dishItemsPerPage, setDishItemsPerPage] = useState(10);
-  // Add at the top of RestaurantDetail component state
   const [categoryPage, setCategoryPage] = useState(1);
   const [categoryItemsPerPage, setCategoryItemsPerPage] = useState(10);
-  // Add at the top of RestaurantDetail component state
-  const [tablePage, setTablePage] = useState(1);
-  const [tableItemsPerPage, setTableItemsPerPage] = useState(10);
-  // Add at the top of RestaurantDetail component state
   const [orderPage, setOrderPage] = useState(1);
   const [orderItemsPerPage, setOrderItemsPerPage] = useState(10);
-  // --- Deleted Dishes Pagination State and Logic ---
   const [deletedDishPage, setDeletedDishPage] = useState(1);
   const [deletedDishItemsPerPage, setDeletedDishItemsPerPage] = useState(10);
   const deletedDishTotalPages = Math.ceil(deletedDishes.length / deletedDishItemsPerPage);
@@ -148,8 +130,6 @@ const RestaurantDetail: React.FC = () => {
     );
     return pages;
   };
-
-  // --- Deleted Categories Pagination State and Logic ---
   const [deletedCategoryPage, setDeletedCategoryPage] = useState(1);
   const [deletedCategoryItemsPerPage, setDeletedCategoryItemsPerPage] = useState(10);
   const deletedCategoryTotalPages = Math.ceil(deletedCategories.length / deletedCategoryItemsPerPage);
@@ -188,48 +168,6 @@ const RestaurantDetail: React.FC = () => {
     );
     return pages;
   };
-
-  // --- Deleted Tables Pagination State and Logic ---
-  const [deletedTablePage, setDeletedTablePage] = useState(1);
-  const [deletedTableItemsPerPage, setDeletedTableItemsPerPage] = useState(10);
-  const deletedTableTotalPages = Math.ceil(deletedTables.length / deletedTableItemsPerPage);
-  const deletedTableStartIndex = (deletedTablePage - 1) * deletedTableItemsPerPage;
-  const deletedTableEndIndex = deletedTableStartIndex + deletedTableItemsPerPage;
-  const paginatedDeletedTables = deletedTables.slice(deletedTableStartIndex, deletedTableEndIndex);
-  const handleDeletedTablePageChange = (page: number) => setDeletedTablePage(page);
-  const handleDeletedTableItemsPerPageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setDeletedTableItemsPerPage(Number(e.target.value));
-    setDeletedTablePage(1);
-  };
-  const renderDeletedTablePagination = () => {
-    const pages = [];
-    const maxVisiblePages = 5;
-    let startPage = Math.max(1, deletedTablePage - Math.floor(maxVisiblePages / 2));
-    let endPage = Math.min(deletedTableTotalPages, startPage + maxVisiblePages - 1);
-    if (endPage - startPage + 1 < maxVisiblePages) {
-      startPage = Math.max(1, endPage - maxVisiblePages + 1);
-    }
-    pages.push(
-      <button key="prev" onClick={() => handleDeletedTablePageChange(deletedTablePage - 1)} disabled={deletedTablePage === 1} className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">{'<'}</button>
-    );
-    if (startPage > 1) {
-      pages.push(<button key={1} onClick={() => handleDeletedTablePageChange(1)} className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">1</button>);
-      if (startPage > 2) pages.push(<span key="start-ellipsis" className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">...</span>);
-    }
-    for (let i = startPage; i <= endPage; i++) {
-      pages.push(<button key={i} onClick={() => handleDeletedTablePageChange(i)} className={`relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium ${deletedTablePage === i ? 'bg-primary text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}>{i}</button>);
-    }
-    if (endPage < deletedTableTotalPages) {
-      if (endPage < deletedTableTotalPages - 1) pages.push(<span key="end-ellipsis" className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">...</span>);
-      pages.push(<button key={deletedTableTotalPages} onClick={() => handleDeletedTablePageChange(deletedTableTotalPages)} className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">{deletedTableTotalPages}</button>);
-    }
-    pages.push(
-      <button key="next" onClick={() => handleDeletedTablePageChange(deletedTablePage + 1)} disabled={deletedTablePage === deletedTableTotalPages} className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">{'>'}</button>
-    );
-    return pages;
-  };
-
-  // --- Deleted Orders Pagination State and Logic ---
   const [deletedOrderPage, setDeletedOrderPage] = useState(1);
   const [deletedOrderItemsPerPage, setDeletedOrderItemsPerPage] = useState(10);
   const deletedOrderTotalPages = Math.ceil(deletedOrders.length / deletedOrderItemsPerPage);
@@ -268,26 +206,40 @@ const RestaurantDetail: React.FC = () => {
     );
     return pages;
   };
-
-  // Sync form state with restaurant data
   useEffect(() => {
-    if (restaurant) {
-      setProfileForm({
-        name: restaurant.name || '',
-        address: restaurant.address || '',
-        phone: restaurant.phone || '',
-        description: restaurant.description || '',
-        logo: restaurant.logo || '',
-        logoFile: null,
-        logoPreview: restaurant.logo || '',
-        primaryColor: restaurant.colorPalette?.primary || designSystem.colors.primary,
-        secondaryColor: restaurant.colorPalette?.secondary || designSystem.colors.secondary,
-        paymentInfo: restaurant.paymentInfo || {},
-      });
-      setEmail(restaurant.email || '');
-    }
-  }, [restaurant]);
-
+    const fetchAll = async () => {
+      setLoading(true);
+      try {
+        // Fetch demo account
+        const ref = doc(db, 'demoAccounts', id!);
+        const snap = await getDoc(ref);
+        setRestaurant(snap.exists() ? { id: snap.id, ...snap.data() } : null);
+        // Fetch entities from demo subcollections
+        const [dishesSnap, categoriesSnap, ordersSnap] = await Promise.all([
+          getDocs(query(collection(db, 'demoAccounts', id!, 'menuItems'))),
+          getDocs(query(collection(db, 'demoAccounts', id!, 'categories'))),
+          getDocs(query(collection(db, 'demoAccounts', id!, 'orders'))),
+        ]);
+        const dishesData = dishesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        setDishes(dishesData.filter((d: any) => !d.deleted));
+        setDeletedDishes(dishesData.filter((d: any) => d.deleted));
+        const categoriesData = categoriesSnap.docs.map(c => ({ id: c.id, ...c.data() }));
+        setCategories(categoriesData.filter((c: any) => !c.deleted));
+        setDeletedCategories(categoriesData.filter((c: any) => c.deleted));
+        const ordersData = ordersSnap.docs.map(o => ({ id: o.id, ...o.data() }));
+        setOrders(ordersData.filter((o: any) => !o.deleted));
+        setDeletedOrders(ordersData.filter((o: any) => o.deleted));
+        setCounts({
+          dishes: dishesData.length,
+          categories: categoriesData.length,
+          orders: ordersData.length,
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAll();
+  }, [db, id]);
   const handleProfileInput = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setProfileForm(prev => ({ ...prev, [name]: value }));
@@ -346,8 +298,6 @@ const RestaurantDetail: React.FC = () => {
       setProfileLoading(false);
     }
   };
-
-  // Move handleOrderAction here so it is defined before usage in JSX
   const handleOrderAction = async (type: 'delete' | 'restore', order: any) => {
     setOrdersLoading(true);
     try {
@@ -408,60 +358,6 @@ const RestaurantDetail: React.FC = () => {
       setConfirmOrderAction(null);
     }
   };
-
-  useEffect(() => {
-    const fetchAll = async () => {
-      setLoading(true);
-      try {
-        // Fetch restaurant
-        const ref = doc(db, 'restaurants', id!);
-        const snap = await getDoc(ref);
-        setRestaurant(snap.exists() ? { id: snap.id, ...snap.data() } : null);
-        // Fetch settings from restaurant doc
-        if (snap.exists()) {
-          const data = snap.data();
-          setSettings({
-            orderManagement: !!data.orderManagement,
-            tableManagement: !!data.tableManagement,
-            paymentInfo: !!data.paymentInfo,
-            colorCustomization: !!data.colorCustomization,
-            publicMenuLink: !!data.publicMenuLink,
-            publicOrderLink: !!data.publicOrderLink,
-          });
-        }
-        // Fetch entities
-        const [dishesSnap, categoriesSnap, tablesSnap, ordersSnap] = await Promise.all([
-          getDocs(query(collection(db, 'menuItems'), where('restaurantId', '==', id))),
-          getDocs(query(collection(db, 'categories'), where('restaurantId', '==', id))),
-          getDocs(query(collection(db, 'tables'), where('restaurantId', '==', id))),
-          getDocs(query(collection(db, 'orders'), where('restaurantId', '==', id), where('deleted', '!=', true))),
-        ]);
-        const dishesData = dishesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-        setDishes(dishesData.filter((d: any) => !d.deleted));
-        setDeletedDishes(dishesData.filter((d: any) => d.deleted));
-        const categoriesData = categoriesSnap.docs.map(c => ({ id: c.id, ...c.data() }));
-        setCategories(categoriesData.filter((c: any) => !c.deleted));
-        setDeletedCategories(categoriesData.filter((c: any) => c.deleted));
-        const tablesData = tablesSnap.docs.map(t => ({ id: t.id, ...t.data() }));
-        setTables(tablesData.filter((t: any) => !t.deleted));
-        setDeletedTables(tablesData.filter((t: any) => t.deleted));
-        const ordersData = ordersSnap.docs.map(o => ({ id: o.id, ...o.data() }));
-        setOrders(ordersData.filter((o: any) => !o.deleted));
-        setDeletedOrders(ordersData.filter((o: any) => o.deleted));
-        setCounts({
-          dishes: dishesData.length,
-          categories: categoriesData.length,
-          tables: tablesData.length, // TODO: add deleted filter if needed
-          orders: ordersData.length,
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchAll();
-  }, [db, id]);
-
-  // Dishes tab: soft delete/restore
   const handleDishAction = async (type: 'delete' | 'restore', dish: any) => {
     setDishesLoading(true);
     try {
@@ -522,39 +418,6 @@ const RestaurantDetail: React.FC = () => {
       setConfirmAction(null);
     }
   };
-
-  const handleToggleSetting = async (key: keyof typeof settings) => {
-    if (!restaurant) return;
-    setSettingsLoading(true);
-    try {
-      const ref = doc(db, 'restaurants', restaurant.id);
-      const newValue = !settings[key];
-      await updateDoc(ref, { [key]: newValue, updatedAt: serverTimestamp() });
-      setSettings(prev => ({ ...prev, [key]: newValue }));
-      toast(`${key.replace(/([A-Z])/g, ' $1')} ${newValue ? 'enabled' : 'disabled'}.`, {
-        style: {
-          background: designSystem.colors.white,
-          color: designSystem.colors.primary,
-          border: `1px solid ${newValue ? designSystem.colors.success : designSystem.colors.error}`,
-          fontWeight: 500,
-        },
-        icon: newValue ? '✅' : '❌',
-      });
-    } catch (err) {
-      toast('Failed to update setting.', {
-        style: {
-          background: designSystem.colors.white,
-          color: designSystem.colors.primary,
-          border: `1px solid ${designSystem.colors.error}`,
-          fontWeight: 500,
-        },
-        icon: '❌',
-      });
-    } finally {
-      setSettingsLoading(false);
-    }
-  };
-
   const handleCategoryAction = async (type: 'delete' | 'restore', category: any) => {
     setCategoriesLoading(true);
     try {
@@ -615,7 +478,6 @@ const RestaurantDetail: React.FC = () => {
       setConfirmCategoryAction(null);
     }
   };
-
   const handleCategorySave = async (mode: 'add' | 'edit', categoryData: Partial<Category>, editingCategory?: any) => {
     setCategoriesLoading(true);
     try {
@@ -661,20 +523,15 @@ const RestaurantDetail: React.FC = () => {
       setCategoriesLoading(false);
     }
   };
-
   const getCategoryName = (categoryId: string) => {
     if (!categoryId) return '—';
     const cat = categories.find((c: any) => c.id === categoryId);
     return cat ? cat.title : '—';
   };
-
-  // Compute paginated dishes
   const dishTotalPages = Math.ceil(dishes.length / dishItemsPerPage);
   const dishStartIndex = (dishPage - 1) * dishItemsPerPage;
   const dishEndIndex = dishStartIndex + dishItemsPerPage;
   const paginatedDishes = dishes.slice(dishStartIndex, dishEndIndex);
-
-  // Pagination controls
   const handleDishPageChange = (page: number) => setDishPage(page);
   const handleDishItemsPerPageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setDishItemsPerPage(Number(e.target.value));
@@ -688,7 +545,6 @@ const RestaurantDetail: React.FC = () => {
     if (endPage - startPage + 1 < maxVisiblePages) {
       startPage = Math.max(1, endPage - maxVisiblePages + 1);
     }
-    // Previous
     pages.push(
       <button
         key="prev"
@@ -742,13 +598,11 @@ const RestaurantDetail: React.FC = () => {
     );
     return pages;
   };
-
-  // In renderDishesTable, replace dishes.map with paginatedDishes.map, and add controls above and below
   const renderDishesTable = () => (
     <div className="overflow-x-auto">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg font-semibold">Dishes</h2>
-        <div className="flex gap-2"> {/* Group the buttons together */}
+        <div className="flex gap-2">
         <button
           className="px-4 py-2 bg-primary text-white rounded hover:bg-primary-dark transition"
           onClick={() => setShowAddEditModal({ mode: 'add' })}
@@ -763,7 +617,6 @@ const RestaurantDetail: React.FC = () => {
         </button>
         </div>
       </div>
-      {/* Pagination controls (top) */}
       <div className="bg-white px-4 py-3 flex items-center justify-between border-b border-gray-200">
         <div className="flex-1 flex items-center justify-between">
           <div className="flex items-center space-x-4">
@@ -846,7 +699,6 @@ const RestaurantDetail: React.FC = () => {
           )}
         </tbody>
       </table>
-      {/* Pagination controls (bottom) */}
       <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200">
         <div className="flex-1 flex items-center justify-between">
           <div className="flex items-center space-x-4">
@@ -879,7 +731,6 @@ const RestaurantDetail: React.FC = () => {
         </div>
       </div>
       {dishesLoading && <div className="flex justify-center items-center py-4"><LoadingSpinner size={32} color={designSystem.colors.primary} /></div>}
-      {/* Deleted Dishes Table */}
       {deletedDishes.length > 0 && (
         <div className="mt-8">
           <h3 className="text-base font-semibold mb-2 text-red-600">Deleted Dishes</h3>
@@ -924,14 +775,10 @@ const RestaurantDetail: React.FC = () => {
       )}
     </div>
   );
-
-  // Compute paginated categories
   const categoryTotalPages = Math.ceil(categories.length / categoryItemsPerPage);
   const categoryStartIndex = (categoryPage - 1) * categoryItemsPerPage;
   const categoryEndIndex = categoryStartIndex + categoryItemsPerPage;
   const paginatedCategories = categories.slice(categoryStartIndex, categoryEndIndex);
-
-  // Pagination controls
   const handleCategoryPageChange = (page: number) => setCategoryPage(page);
   const handleCategoryItemsPerPageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setCategoryItemsPerPage(Number(e.target.value));
@@ -945,7 +792,6 @@ const RestaurantDetail: React.FC = () => {
     if (endPage - startPage + 1 < maxVisiblePages) {
       startPage = Math.max(1, endPage - maxVisiblePages + 1);
     }
-    // Previous
     pages.push(
       <button
         key="prev"
@@ -999,8 +845,6 @@ const RestaurantDetail: React.FC = () => {
     );
     return pages;
   };
-
-  // In renderCategoriesTable, replace categories.map with paginatedCategories.map, and add controls above and below
   const renderCategoriesTable = () => (
     <div className="overflow-x-auto">
       <div className="flex justify-between items-center mb-4">
@@ -1012,7 +856,6 @@ const RestaurantDetail: React.FC = () => {
           + Add Category
         </button>
       </div>
-      {/* Pagination controls (top) */}
       <div className="bg-white px-4 py-3 flex items-center justify-between border-b border-gray-200">
         <div className="flex-1 flex items-center justify-between">
           <div className="flex items-center space-x-4">
@@ -1082,7 +925,6 @@ const RestaurantDetail: React.FC = () => {
           )}
         </tbody>
       </table>
-      {/* Pagination controls (bottom) */}
       <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200">
         <div className="flex-1 flex items-center justify-between">
           <div className="flex items-center space-x-4">
@@ -1115,7 +957,6 @@ const RestaurantDetail: React.FC = () => {
         </div>
       </div>
       {categoriesLoading && <div className="flex justify-center items-center py-4"><LoadingSpinner size={32} color={designSystem.colors.primary} /></div>}
-      {/* Deleted Categories Table */}
       {deletedCategories.length > 0 && (
         <div className="mt-8">
           <h3 className="text-base font-semibold mb-2 text-red-600">Deleted Categories</h3>
@@ -1149,239 +990,10 @@ const RestaurantDetail: React.FC = () => {
       )}
     </div>
   );
-
-  // Compute paginated tables
-  const tableTotalPages = Math.ceil(tables.length / tableItemsPerPage);
-  const tableStartIndex = (tablePage - 1) * tableItemsPerPage;
-  const tableEndIndex = tableStartIndex + tableItemsPerPage;
-  const paginatedTables = tables.slice(tableStartIndex, tableEndIndex);
-
-  // Pagination controls
-  const handleTablePageChange = (page: number) => setTablePage(page);
-  const handleTableItemsPerPageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setTableItemsPerPage(Number(e.target.value));
-    setTablePage(1);
-  };
-  const renderTablePagination = () => {
-    const pages = [];
-    const maxVisiblePages = 5;
-    let startPage = Math.max(1, tablePage - Math.floor(maxVisiblePages / 2));
-    let endPage = Math.min(tableTotalPages, startPage + maxVisiblePages - 1);
-    if (endPage - startPage + 1 < maxVisiblePages) {
-      startPage = Math.max(1, endPage - maxVisiblePages + 1);
-    }
-    // Previous
-    pages.push(
-      <button
-        key="prev"
-        onClick={() => handleTablePageChange(tablePage - 1)}
-        disabled={tablePage === 1}
-        className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        {'<'}
-      </button>
-    );
-    if (startPage > 1) {
-      pages.push(
-        <button key={1} onClick={() => handleTablePageChange(1)} className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">1</button>
-      );
-      if (startPage > 2) {
-        pages.push(
-          <span key="start-ellipsis" className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">...</span>
-        );
-      }
-    }
-    for (let i = startPage; i <= endPage; i++) {
-      pages.push(
-        <button
-          key={i}
-          onClick={() => handleTablePageChange(i)}
-          className={`relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium ${tablePage === i ? 'bg-primary text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}
-        >
-          {i}
-        </button>
-      );
-    }
-    if (endPage < tableTotalPages) {
-      if (endPage < tableTotalPages - 1) {
-        pages.push(
-          <span key="end-ellipsis" className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">...</span>
-        );
-      }
-      pages.push(
-        <button key={tableTotalPages} onClick={() => handleTablePageChange(tableTotalPages)} className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">{tableTotalPages}</button>
-      );
-    }
-    pages.push(
-      <button
-        key="next"
-        onClick={() => handleTablePageChange(tablePage + 1)}
-        disabled={tablePage === tableTotalPages}
-        className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        {'>'}
-      </button>
-    );
-    return pages;
-  };
-
-  // In renderTablesTable, replace tables.map with paginatedTables.map, and add controls above and below
-  const renderTablesTable = () => (
-    <div className="overflow-x-auto">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-lg font-semibold">Tables</h2>
-        <button
-          className="px-4 py-2 bg-primary text-white rounded hover:bg-primary-dark transition"
-          onClick={() => setShowTableModal({ mode: 'add' })}
-        >
-          + Add Table
-        </button>
-      </div>
-      {/* Pagination controls (top) */}
-      <div className="bg-white px-4 py-3 flex items-center justify-between border-b border-gray-200">
-        <div className="flex-1 flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <p className="text-sm text-gray-700">
-              Showing <span className="font-medium">{tableStartIndex + 1}</span> to{' '}
-              <span className="font-medium">{Math.min(tableEndIndex, tables.length)}</span>{' '}
-              of <span className="font-medium">{tables.length}</span> results
-            </p>
-            <div className="flex items-center space-x-2">
-              <label htmlFor="tableItemsPerPage" className="text-sm text-gray-700">Items per page:</label>
-              <select
-                id="tableItemsPerPage"
-                value={tableItemsPerPage}
-                onChange={handleTableItemsPerPageChange}
-                className="block w-20 py-1 px-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
-              >
-                <option value="5">5</option>
-                <option value="10">10</option>
-                <option value="20">20</option>
-                <option value="50">50</option>
-                <option value="100">100</option>
-              </select>
-            </div>
-          </div>
-          <div>
-            <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-              {renderTablePagination()}
-            </nav>
-          </div>
-        </div>
-      </div>
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50">
-          <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Number</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-          </tr>
-        </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
-          {tables.length === 0 ? (
-            <tr>
-              <td colSpan={4} className="px-6 py-10 text-center text-gray-500">No tables found.</td>
-            </tr>
-          ) : (
-            paginatedTables.map((table) => (
-              <tr key={table.id} className={`hover:bg-gray-50 transition ${table.deleted ? 'opacity-60' : ''}`}>
-                <td className="px-6 py-4 whitespace-nowrap font-medium text-primary">{table.number}</td>
-                <td className="px-6 py-4 whitespace-nowrap">{table.name || '—'}</td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${table.status === 'available' ? 'bg-green-100 text-green-800' : table.status === 'occupied' ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800'}`}>{table.status}</span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right">
-                  <div className="flex justify-end space-x-2">
-                    <button title="Edit" onClick={() => setShowTableModal({ mode: 'edit', table })} className="p-2 rounded hover:bg-green-100 transition text-green-600"><Pencil size={18} /></button>
-                    {!table.deleted && (
-                      <button title="Delete" onClick={() => setConfirmTableAction({ type: 'delete', table })} className="p-2 rounded hover:bg-red-100 transition"><Trash2 size={18} className="text-red-600" /></button>
-                    )}
-                    {table.deleted && (
-                      <button title="Restore" onClick={() => setConfirmTableAction({ type: 'restore', table })} className="p-2 rounded hover:bg-blue-100 transition"><RotateCcw size={18} className="text-blue-600" /></button>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            ))
-          )}
-        </tbody>
-      </table>
-      {/* Pagination controls (bottom) */}
-      <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200">
-        <div className="flex-1 flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <p className="text-sm text-gray-700">
-              Showing <span className="font-medium">{tableStartIndex + 1}</span> to{' '}
-              <span className="font-medium">{Math.min(tableEndIndex, tables.length)}</span>{' '}
-              of <span className="font-medium">{tables.length}</span> results
-            </p>
-            <div className="flex items-center space-x-2">
-              <label htmlFor="tableItemsPerPageBottom" className="text-sm text-gray-700">Items per page:</label>
-              <select
-                id="tableItemsPerPageBottom"
-                value={tableItemsPerPage}
-                onChange={handleTableItemsPerPageChange}
-                className="block w-20 py-1 px-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
-              >
-                <option value="5">5</option>
-                <option value="10">10</option>
-                <option value="20">20</option>
-                <option value="50">50</option>
-                <option value="100">100</option>
-              </select>
-            </div>
-          </div>
-          <div>
-            <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-              {renderTablePagination()}
-            </nav>
-          </div>
-        </div>
-      </div>
-      {tablesLoading && <div className="flex justify-center items-center py-4"><LoadingSpinner size={32} color={designSystem.colors.primary} /></div>}
-      {/* Deleted Tables Table */}
-      {deletedTables.length > 0 && (
-        <div className="mt-8">
-          <h3 className="text-base font-semibold mb-2 text-red-600">Deleted Tables</h3>
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Number</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {deletedTables.map((table) => (
-                <tr key={table.id} className="opacity-60">
-                  <td className="px-6 py-4 whitespace-nowrap font-medium text-primary">{table.number}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">{table.name || '—'}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Deleted</span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right">
-                    <div className="flex justify-end space-x-2">
-                      <button title="Restore" onClick={() => setConfirmTableAction({ type: 'restore', table })} className="p-2 rounded hover:bg-blue-100 transition"><RotateCcw size={18} className="text-blue-600" /></button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
-  );
-
-  // Compute paginated orders
   const orderTotalPages = Math.ceil(orders.length / orderItemsPerPage);
   const orderStartIndex = (orderPage - 1) * orderItemsPerPage;
   const orderEndIndex = orderStartIndex + orderItemsPerPage;
   const paginatedOrders = orders.slice(orderStartIndex, orderEndIndex);
-
-  // Pagination controls
   const handleOrderPageChange = (page: number) => setOrderPage(page);
   const handleOrderItemsPerPageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setOrderItemsPerPage(Number(e.target.value));
@@ -1395,7 +1007,6 @@ const RestaurantDetail: React.FC = () => {
     if (endPage - startPage + 1 < maxVisiblePages) {
       startPage = Math.max(1, endPage - maxVisiblePages + 1);
     }
-    // Previous
     pages.push(
       <button
         key="prev"
@@ -1449,14 +1060,11 @@ const RestaurantDetail: React.FC = () => {
     );
     return pages;
   };
-
-  // In renderOrdersTable, replace orders.map with paginatedOrders.map, and add controls above and below
   const renderOrdersTable = () => (
     <div className="overflow-x-auto">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg font-semibold">Orders</h2>
       </div>
-      {/* Pagination controls (top) */}
       <div className="bg-white px-4 py-3 flex items-center justify-between border-b border-gray-200">
         <div className="flex-1 flex items-center justify-between">
           <div className="flex items-center space-x-4">
@@ -1528,7 +1136,6 @@ const RestaurantDetail: React.FC = () => {
           )}
         </tbody>
       </table>
-      {/* Pagination controls (bottom) */}
       <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200">
         <div className="flex-1 flex items-center justify-between">
           <div className="flex items-center space-x-4">
@@ -1561,7 +1168,6 @@ const RestaurantDetail: React.FC = () => {
         </div>
       </div>
       {ordersLoading && <div className="flex justify-center items-center py-4"><LoadingSpinner size={32} color={designSystem.colors.primary} /></div>}
-      {/* Deleted Orders Table */}
       {deletedOrders.length > 0 && (
         <div className="mt-8">
           <h3 className="text-base font-semibold mb-2 text-red-600">Deleted Orders</h3>
@@ -1597,16 +1203,14 @@ const RestaurantDetail: React.FC = () => {
       )}
     </div>
   );
-
   const renderSettingsTab = () => (
     <div className="w-full max-w-5xl mx-auto">
       <div className="grid grid-cols-1 md:grid-cols-10 gap-8">
         {/* Profile Form Left (70%) */}
         <div className="md:col-span-7 bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold mb-4">Restaurant Profile</h2>
+          <h2 className="text-xl font-semibold mb-4">Demo Restaurant Profile</h2>
           <form onSubmit={handleProfileSave} className="space-y-6">
             {profileError && <div className="mb-2 text-red-600 text-sm">{profileError}</div>}
-            {/* Logo upload */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Logo</label>
               <div className="flex items-center gap-6 flex-wrap">
@@ -1643,7 +1247,6 @@ const RestaurantDetail: React.FC = () => {
                 )}
               </div>
             </div>
-            {/* Name */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
               <input
@@ -1655,7 +1258,6 @@ const RestaurantDetail: React.FC = () => {
                 required
               />
             </div>
-            {/* Address */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
               <input
@@ -1666,7 +1268,6 @@ const RestaurantDetail: React.FC = () => {
                 onChange={handleProfileInput}
               />
             </div>
-            {/* Phone */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
               <input
@@ -1677,7 +1278,6 @@ const RestaurantDetail: React.FC = () => {
                 onChange={handleProfileInput}
               />
             </div>
-            {/* Description */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
               <textarea
@@ -1688,7 +1288,6 @@ const RestaurantDetail: React.FC = () => {
                 rows={3}
               />
             </div>
-            {/* Color Picker */}
             {settings.colorCustomization && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Colors</label>
@@ -1699,7 +1298,6 @@ const RestaurantDetail: React.FC = () => {
                 />
               </div>
             )}
-            {/* Payment Info */}
             {settings.paymentInfo && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Payment Info</label>
@@ -1710,7 +1308,6 @@ const RestaurantDetail: React.FC = () => {
                 />
               </div>
             )}
-            {/* Email Edit */}
             <div className="border-t pt-6 mt-6">
               <h3 className="text-lg font-semibold mb-2">Change Email</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1754,8 +1351,6 @@ const RestaurantDetail: React.FC = () => {
                     setEmailError('');
                     setIsEmailLoading(true);
                     try {
-                      // Implement email update logic here (see ProfileSetup.tsx for reference)
-                      // ...
                       toast.success('Email updated successfully!');
                       setEmail(newEmail);
                       setNewEmail('');
@@ -1772,7 +1367,6 @@ const RestaurantDetail: React.FC = () => {
                 </button>
               </div>
             </div>
-            {/* Password Edit */}
             <div className="border-t pt-6 mt-6">
               <h3 className="text-lg font-semibold mb-2">Change Password</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1847,8 +1441,6 @@ const RestaurantDetail: React.FC = () => {
                     setPasswordError('');
                     setIsPasswordLoading(true);
                     try {
-                      // Implement password update logic here (see ProfileSetup.tsx for reference)
-                      // ...
                       toast.success('Password updated successfully!');
                       setCurrentPassword('');
                       setNewPassword('');
@@ -1872,147 +1464,12 @@ const RestaurantDetail: React.FC = () => {
             </div>
           </form>
         </div>
-        {/* Feature Toggles Right (30%) */}
-        <div className="md:col-span-3 bg-white rounded-lg shadow p-6 h-fit">
-          <h2 className="text-xl font-semibold mb-4">Feature Toggles</h2>
-          {Object.entries({
-            orderManagement: 'Order Management',
-            tableManagement: 'Table Management',
-            paymentInfo: 'Payment Info',
-            colorCustomization: 'Color Customization',
-            publicMenuLink: 'Public Menu Link',
-            publicOrderLink: 'Public Order Link',
-          }).map(([key, label]) => (
-            <div key={key} className="flex items-center justify-between py-3 border-b">
-              <span className="text-gray-700 font-medium">{label}</span>
-              <Switch
-                checked={settings[key as keyof typeof settings]}
-                onChange={() => handleToggleSetting(key as keyof typeof settings)}
-                className={`${settings[key as keyof typeof settings] ? 'bg-primary' : 'bg-gray-200'} relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none`}
-                disabled={settingsLoading}
-              >
-                <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${settings[key as keyof typeof settings] ? 'translate-x-6' : 'translate-x-1'}`}
-                />
-              </Switch>
-            </div>
-          ))}
-          {settingsLoading && <div className="flex justify-center items-center py-2"><LoadingSpinner size={24} color={designSystem.colors.primary} /></div>}
-        </div>
       </div>
     </div>
   );
-
-  // Restore handleTableAction function
-  const handleTableAction = async (type: 'delete' | 'restore', table: any) => {
-    setTablesLoading(true);
-    try {
-      const ref = doc(db, 'tables', table.id);
-      if (type === 'delete') {
-        await updateDoc(ref, { deleted: true, updatedAt: serverTimestamp() });
-        setTables(prev => prev.map(t => t.id === table.id ? { ...t, deleted: true } : t));
-        await logActivity({
-          userId: currentAdmin?.id,
-          userEmail: currentAdmin?.email,
-          action: 'admin_delete_table',
-          entityType: 'table',
-          entityId: table.id,
-          details: { number: table.number, name: table.name, role: 'admin' },
-        });
-        toast('Table deleted.', {
-          style: {
-            background: designSystem.colors.white,
-            color: designSystem.colors.primary,
-            border: `1px solid ${designSystem.colors.error}`,
-            fontWeight: 500,
-          },
-          icon: '❌',
-        });
-      } else if (type === 'restore') {
-        await updateDoc(ref, { deleted: false, updatedAt: serverTimestamp() });
-        setTables(prev => prev.map(t => t.id === table.id ? { ...t, deleted: false } : t));
-        await logActivity({
-          userId: currentAdmin?.id,
-          userEmail: currentAdmin?.email,
-          action: 'admin_restore_table',
-          entityType: 'table',
-          entityId: table.id,
-          details: { number: table.number, name: table.name, role: 'admin' },
-        });
-        toast('Table restored.', {
-          style: {
-            background: designSystem.colors.white,
-            color: designSystem.colors.primary,
-            border: `1px solid ${designSystem.colors.success}`,
-            fontWeight: 500,
-          },
-          icon: '✅',
-        });
-      }
-    } catch (err) {
-      toast('Action failed. Please try again.', {
-        style: {
-          background: designSystem.colors.white,
-          color: designSystem.colors.primary,
-          border: `1px solid ${designSystem.colors.error}`,
-          fontWeight: 500,
-        },
-        icon: '❌',
-      });
-    } finally {
-      setTablesLoading(false);
-      setConfirmTableAction(null);
-    }
-  };
-
-  // Restore handleTableSave function
-  const handleTableSave = async (mode: 'add' | 'edit', tableData: Partial<Table>, editingTable?: any) => {
-    setTablesLoading(true);
-    try {
-      if (mode === 'add') {
-        const ref = await addDoc(collection(db, 'tables'), {
-          ...tableData,
-          restaurantId: restaurant.id,
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
-          deleted: false,
-        });
-        setTables(prev => [...prev, { id: ref.id, ...tableData, deleted: false }]);
-        await logActivity({
-          userId: currentAdmin?.id,
-          userEmail: currentAdmin?.email,
-          action: 'admin_add_table',
-          entityType: 'table',
-          entityId: ref.id,
-          details: { ...tableData, role: 'admin' },
-        });
-        toast.success('Table added!');
-      } else if (mode === 'edit' && editingTable) {
-        const ref = doc(db, 'tables', editingTable.id);
-        await updateDoc(ref, {
-          ...tableData,
-          updatedAt: serverTimestamp(),
-        });
-        setTables(prev => prev.map(t => t.id === editingTable.id ? { ...t, ...tableData } : t));
-        await logActivity({
-          userId: currentAdmin?.id,
-          userEmail: currentAdmin?.email,
-          action: 'admin_edit_table',
-          entityType: 'table',
-          entityId: editingTable.id,
-          details: { ...tableData, role: 'admin' },
-        });
-        toast.success('Table updated!');
-      }
-      setShowTableModal(null);
-    } catch (err) {
-      toast.error('Failed to save table.');
-    } finally {
-      setTablesLoading(false);
-    }
-  };
-
-  // --- CSV Import State for Dishes ---
+  const { currentAdmin } = useAdminAuth();
+  const [showAddEditModal, setShowAddEditModal] = useState<null | { mode: 'add' | 'edit' | 'details'; dish?: any }>(null);
+  // Restore CSV import modal logic and all related state and handlers for dish import
   const [isCSVModalOpen, setIsCSVModalOpen] = useState(false);
   const [csvFile, setCSVFile] = useState<File | null>(null);
   const [csvHeaders, setCSVHeaders] = useState<string[]>([]);
@@ -2030,7 +1487,6 @@ const RestaurantDetail: React.FC = () => {
     { key: 'status', label: 'Status (active/inactive)' },
     { key: 'image', label: 'Image URL' },
   ];
-
   const openCSVModal = () => {
     setIsCSVModalOpen(true);
     setCSVFile(null);
@@ -2083,7 +1539,6 @@ const RestaurantDetail: React.FC = () => {
     setImportSummary({ total: csvRows.length, success: 0, failed: 0, errors: [] });
     let createdCategories: { [name: string]: string } = {};
     let updatedCategories = [...categories];
-    // 1. Create categories if not found (in Firestore)
     const uniqueCategoryNames = Array.from(new Set(csvRows.map(row => row[csvMapping['category']]).filter(Boolean)));
     let totalSteps = uniqueCategoryNames.length + csvRows.length;
     let currentStep = 0;
@@ -2121,7 +1576,6 @@ const RestaurantDetail: React.FC = () => {
       currentStep++;
       setCSVProgress(Math.round((currentStep / totalSteps) * 100));
     }
-    // 2. Import dishes
     let success = 0;
     let failed = 0;
     let errors: string[] = [];
@@ -2154,7 +1608,6 @@ const RestaurantDetail: React.FC = () => {
         createdAt: new Date().toISOString(),
       };
       try {
-        // Add to Firestore
         const docRef = await addDoc(collection(db, 'menuItems'), {
           ...dish,
           createdAt: serverTimestamp(),
@@ -2173,11 +1626,28 @@ const RestaurantDetail: React.FC = () => {
     setImportSummary({ total: csvRows.length, success, failed, errors });
     setCSVStep('done');
   };
-
+  // 1. Sync profile form with restaurant data for settings tab
+  useEffect(() => {
+    if (restaurant) {
+      setProfileForm({
+        name: restaurant.name || '',
+        address: restaurant.address || '',
+        phone: restaurant.phone || '',
+        description: restaurant.description || '',
+        logo: restaurant.logo || '',
+        logoFile: null,
+        logoPreview: restaurant.logo || '',
+        primaryColor: restaurant.colorPalette?.primary || designSystem.colors.primary,
+        secondaryColor: restaurant.colorPalette?.secondary || designSystem.colors.secondary,
+        paymentInfo: restaurant.paymentInfo || {},
+      });
+      setEmail(restaurant.email || '');
+    }
+  }, [restaurant]);
   return (
     <AdminDashboardLayout>
       <div className="mb-4 flex items-center gap-4">
-        <button onClick={() => navigate(-1)} className="px-3 py-1 rounded bg-gray-100 text-gray-700 hover:bg-gray-200 flex items-center gap-2">
+        <button onClick={() => navigate('/admin/restaurants?tab=demo')} className="px-3 py-1 rounded bg-gray-100 text-gray-700 hover:bg-gray-200 flex items-center gap-2">
           <ArrowLeft size={18} /> Back
         </button>
         <h1 className="text-2xl font-bold">{restaurant?.name || 'Restaurant'}</h1>
@@ -2187,14 +1657,11 @@ const RestaurantDetail: React.FC = () => {
           </span>
         )}
       </div>
-      {/* Entity Count Cards */}
       <div className="flex gap-4 mb-6">
         <Card title="Dishes" value={counts.dishes} />
         <Card title="Categories" value={counts.categories} />
-        <Card title="Tables" value={counts.tables} />
         <Card title="Orders" value={counts.orders} />
       </div>
-      {/* Tabs */}
       <div className="mb-4 flex gap-2 border-b">
         {TABS.map(tab => (
           <button
@@ -2206,7 +1673,6 @@ const RestaurantDetail: React.FC = () => {
           </button>
         ))}
       </div>
-      {/* Tab Content */}
       <div className="bg-white rounded-lg shadow p-6 min-h-[300px]">
         {loading ? (
           <div className="flex justify-center items-center h-32"><LoadingSpinner size={48} color={designSystem.colors.primary} /></div>
@@ -2214,8 +1680,6 @@ const RestaurantDetail: React.FC = () => {
           renderDishesTable()
         ) : activeTab === 'categories' ? (
           renderCategoriesTable()
-        ) : activeTab === 'tables' ? (
-          renderTablesTable()
         ) : activeTab === 'orders' ? (
           renderOrdersTable()
         ) : activeTab === 'settings' ? (
@@ -2224,7 +1688,6 @@ const RestaurantDetail: React.FC = () => {
           <div className="text-gray-400">Coming soon...</div>
         )}
       </div>
-      {/* Confirmation Modal for Dishes */}
       {confirmAction && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
           <div className="bg-white rounded shadow-lg p-6 w-full max-w-sm">
@@ -2237,7 +1700,6 @@ const RestaurantDetail: React.FC = () => {
           </div>
         </div>
       )}
-      {/* Confirmation Modal for Categories */}
       {confirmCategoryAction && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
           <div className="bg-white rounded shadow-lg p-6 w-full max-w-sm">
@@ -2250,7 +1712,6 @@ const RestaurantDetail: React.FC = () => {
           </div>
         </div>
       )}
-      {/* Add/Edit Modal for Categories */}
       {showCategoryModal && (showCategoryModal.mode === 'add' || showCategoryModal.mode === 'edit') && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50" onClick={e => { if (e.target === e.currentTarget) setShowCategoryModal(null); }}>
           <div className="bg-white rounded shadow-lg p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
@@ -2266,11 +1727,9 @@ const RestaurantDetail: React.FC = () => {
           </div>
         </div>
       )}
-      {/* Add/Edit/Details Modal (filled) */}
       {showAddEditModal && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50" onClick={e => { if (e.target === e.currentTarget) setShowAddEditModal(null); }}>
           <div className="bg-white rounded shadow-lg p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-            {/* Modal content based on mode: add, edit, details */}
             <h2 className="text-lg font-bold mb-4">
               {showAddEditModal.mode === 'add' ? 'Add Dish' : showAddEditModal.mode === 'edit' ? 'Edit Dish' : 'Dish Details'}
             </h2>
@@ -2329,61 +1788,9 @@ const RestaurantDetail: React.FC = () => {
           </div>
         </div>
       )}
-      {/* Confirmation Modal for Tables */}
-      {confirmTableAction && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
-          <div className="bg-white rounded shadow-lg p-6 w-full max-w-sm">
-            <h2 className="text-lg font-bold mb-2">Confirm {confirmTableAction.type === 'delete' ? 'Delete' : 'Restore'}</h2>
-            <p className="mb-4">Are you sure you want to {confirmTableAction.type} <span className="font-semibold">Table {confirmTableAction.table.number}</span>?</p>
-            <div className="flex justify-end gap-2">
-              <button className="px-4 py-2 bg-gray-200 rounded" onClick={() => setConfirmTableAction(null)}>Cancel</button>
-              <button className="px-4 py-2 bg-primary text-white rounded" onClick={() => handleTableAction(confirmTableAction.type, confirmTableAction.table)}>Confirm</button>
-            </div>
-          </div>
-        </div>
-      )}
-      {/* Add/Edit Modal for Tables */}
-      {showTableModal && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50" onClick={e => { if (e.target === e.currentTarget) setShowTableModal(null); }}>
-          <div className="bg-white rounded shadow-lg p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-            <h2 className="text-lg font-bold mb-4">
-              {showTableModal.mode === 'add' ? 'Add Table' : 'Edit Table'}
-            </h2>
-            <TableModalContent
-              mode={showTableModal.mode}
-              table={showTableModal.table}
-              onClose={() => setShowTableModal(null)}
-              onSave={data => handleTableSave(showTableModal.mode, data, showTableModal.table)}
-            />
-          </div>
-        </div>
-      )}
-      {/* Confirmation Modal for Orders */}
-      {confirmOrderAction && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
-          <div className="bg-white rounded shadow-lg p-6 w-full max-w-sm">
-            <h2 className="text-lg font-bold mb-2">Confirm {confirmOrderAction.type === 'delete' ? 'Delete' : 'Restore'}</h2>
-            <p className="mb-4">Are you sure you want to {confirmOrderAction.type} <span className="font-semibold">Order {confirmOrderAction.order.id}</span>?</p>
-            <div className="flex justify-end gap-2">
-              <button className="px-4 py-2 bg-gray-200 rounded" onClick={() => setConfirmOrderAction(null)}>Cancel</button>
-              <button className="px-4 py-2 bg-primary text-white rounded" onClick={() => handleOrderAction(confirmOrderAction.type, confirmOrderAction.order)}>Confirm</button>
-            </div>
-          </div>
-        </div>
-      )}
-      {/* Details Modal for Orders */}
-      {showOrderDetails && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50" onClick={e => { if (e.target === e.currentTarget) setShowOrderDetails(null); }}>
-          <div className="bg-white rounded shadow-lg p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-            <h2 className="text-lg font-bold mb-4">Order Details</h2>
-            <OrderDetailsModalContent order={showOrderDetails} onClose={() => setShowOrderDetails(null)} />
-          </div>
-        </div>
-      )}
       {isCSVModalOpen && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50" onClick={closeCSVModal}>
           <div className="bg-white rounded shadow-lg p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto relative" onClick={e => e.stopPropagation()}>
-            {/* Close icon top right */}
             <button
               className="absolute top-2 right-2 text-gray-400 hover:text-gray-700 text-2xl font-bold focus:outline-none"
               onClick={closeCSVModal}
@@ -2393,7 +1800,6 @@ const RestaurantDetail: React.FC = () => {
               ×
             </button>
             <h2 className="text-lg font-bold mb-4">Import Dishes from CSV</h2>
-            {/* CSV Modal Steps */}
             {csvStep === 'upload' && (
               <div className="space-y-4">
                 <div className="flex flex-col items-center justify-center border-2 border-dashed border-blue-400 rounded-lg p-6 bg-blue-50 hover:bg-blue-100 transition-colors cursor-pointer relative w-full max-w-md mx-auto"
@@ -2496,7 +1902,7 @@ const RestaurantDetail: React.FC = () => {
   );
 };
 
-export default RestaurantDetail;
+export default DemoRestaurantDetail;
 
 // DishModalContent component (to be placed at the end of the file)
 interface DishModalContentProps {
@@ -2554,7 +1960,6 @@ function DishModalContent({ mode, dish, categories, restaurantId, onClose, onSav
     <form onSubmit={e => { e.preventDefault(); if (!isDetails) handleSave(); }}>
       {error && <div className="mb-2 text-red-600 text-sm">{error}</div>}
       <div className="flex flex-col gap-4">
-        {/* Image upload/preview styled like dashboard */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Image</label>
           <div className="flex items-center gap-6 flex-wrap">
@@ -2595,7 +2000,6 @@ function DishModalContent({ mode, dish, categories, restaurantId, onClose, onSav
             )}
           </div>
         </div>
-        {/* Title */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
           <input
@@ -2607,7 +2011,6 @@ function DishModalContent({ mode, dish, categories, restaurantId, onClose, onSav
             required
           />
         </div>
-        {/* Price */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Price (FCFA)</label>
           <input
@@ -2620,7 +2023,6 @@ function DishModalContent({ mode, dish, categories, restaurantId, onClose, onSav
             min={0}
           />
         </div>
-        {/* Category */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
           <select
@@ -2635,7 +2037,6 @@ function DishModalContent({ mode, dish, categories, restaurantId, onClose, onSav
             ))}
           </select>
         </div>
-        {/* Status */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
           <select
@@ -2648,7 +2049,6 @@ function DishModalContent({ mode, dish, categories, restaurantId, onClose, onSav
             <option value="inactive">Inactive</option>
           </select>
         </div>
-        {/* Description */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
           <textarea
@@ -2730,68 +2130,6 @@ function CategoryModalContent({ mode, category, onClose, onSave }: { mode: 'add'
   );
 }
 
-// Table Modal Component
-function TableModalContent({ mode, table, onClose, onSave }: { mode: 'add' | 'edit'; table?: any; onClose: () => void; onSave: (data: Partial<Table>) => void }) {
-  const [number, setNumber] = useState<number>(table?.number || 1);
-  const [name, setName] = useState<string>(table?.name || '');
-  const [status, setStatus] = useState<'available' | 'occupied' | 'reserved'>(table?.status || 'available');
-  const [error, setError] = useState<string>('');
-
-  const handleSave = () => {
-    setError('');
-    if (!number || number <= 0) {
-      setError('Table number is required and must be greater than 0.');
-      return;
-    }
-    onSave({ number, name, status });
-  };
-
-  return (
-    <form onSubmit={e => { e.preventDefault(); handleSave(); }}>
-      {error && <div className="mb-2 text-red-600 text-sm">{error}</div>}
-      <div className="flex flex-col gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Table Number</label>
-          <input
-            type="number"
-            className="w-full border rounded px-3 py-2"
-            value={number}
-            onChange={e => setNumber(Number(e.target.value))}
-            min={1}
-            required
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Table Name (optional)</label>
-          <input
-            type="text"
-            className="w-full border rounded px-3 py-2"
-            value={name}
-            onChange={e => setName(e.target.value)}
-            placeholder={`Table ${number}`}
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-          <select
-            className="w-full border rounded px-3 py-2"
-            value={status}
-            onChange={e => setStatus(e.target.value as 'available' | 'occupied' | 'reserved')}
-          >
-            <option value="available">Available</option>
-            <option value="reserved">Reserved</option>
-            <option value="occupied">Occupied</option>
-          </select>
-        </div>
-      </div>
-      <div className="flex justify-end gap-2 mt-6">
-        <button type="button" className="px-4 py-2 bg-gray-200 rounded" onClick={onClose}>Close</button>
-        <button type="submit" className="px-4 py-2 bg-primary text-white rounded">Save</button>
-      </div>
-    </form>
-  );
-}
-
 // Enhanced Order Details Modal Component
 function OrderDetailsModalContent({ order, onClose }: { order: any; onClose: () => void }) {
   const statusColors: Record<string, string> = {
@@ -2807,7 +2145,6 @@ function OrderDetailsModalContent({ order, onClose }: { order: any; onClose: () 
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
         <div>
           <div className="font-semibold text-primary text-lg flex items-center gap-2">
@@ -2819,9 +2156,7 @@ function OrderDetailsModalContent({ order, onClose }: { order: any; onClose: () 
         </div>
         <button className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded text-gray-700 font-medium transition" onClick={onClose}>Close</button>
       </div>
-      {/* Divider */}
       <div className="border-b" />
-      {/* Items Table */}
       <div>
         <h3 className="font-semibold mb-3 text-gray-800">Ordered Items</h3>
         <div className="overflow-x-auto rounded-lg border border-gray-100 bg-gray-50">
@@ -2858,9 +2193,7 @@ function OrderDetailsModalContent({ order, onClose }: { order: any; onClose: () 
           </table>
         </div>
       </div>
-      {/* Divider */}
       <div className="border-b" />
-      {/* Summary Section */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
         <div className="space-y-1">
           <div className="text-gray-500">Created:</div>
