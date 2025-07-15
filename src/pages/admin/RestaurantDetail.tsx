@@ -96,6 +96,9 @@ const RestaurantDetail: React.FC = () => {
   const [deletedCategories, setDeletedCategories] = useState<any[]>([]);
   const [deletedTables, setDeletedTables] = useState<any[]>([]);
   const [deletedOrders, setDeletedOrders] = useState<any[]>([]);
+  // Add at the top of RestaurantDetail component state
+  const [dishPage, setDishPage] = useState(1);
+  const [dishItemsPerPage, setDishItemsPerPage] = useState(10);
 
   // Sync form state with restaurant data
   useEffect(() => {
@@ -496,6 +499,82 @@ const RestaurantDetail: React.FC = () => {
     return cat ? cat.title : '—';
   };
 
+  // Compute paginated dishes
+  const dishTotalPages = Math.ceil(dishes.length / dishItemsPerPage);
+  const dishStartIndex = (dishPage - 1) * dishItemsPerPage;
+  const dishEndIndex = dishStartIndex + dishItemsPerPage;
+  const paginatedDishes = dishes.slice(dishStartIndex, dishEndIndex);
+
+  // Pagination controls
+  const handleDishPageChange = (page: number) => setDishPage(page);
+  const handleDishItemsPerPageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setDishItemsPerPage(Number(e.target.value));
+    setDishPage(1);
+  };
+  const renderDishPagination = () => {
+    const pages = [];
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, dishPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(dishTotalPages, startPage + maxVisiblePages - 1);
+    if (endPage - startPage + 1 < maxVisiblePages) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+    // Previous
+    pages.push(
+      <button
+        key="prev"
+        onClick={() => handleDishPageChange(dishPage - 1)}
+        disabled={dishPage === 1}
+        className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {'<'}
+      </button>
+    );
+    if (startPage > 1) {
+      pages.push(
+        <button key={1} onClick={() => handleDishPageChange(1)} className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">1</button>
+      );
+      if (startPage > 2) {
+        pages.push(
+          <span key="start-ellipsis" className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">...</span>
+        );
+      }
+    }
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(
+        <button
+          key={i}
+          onClick={() => handleDishPageChange(i)}
+          className={`relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium ${dishPage === i ? 'bg-primary text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}
+        >
+          {i}
+        </button>
+      );
+    }
+    if (endPage < dishTotalPages) {
+      if (endPage < dishTotalPages - 1) {
+        pages.push(
+          <span key="end-ellipsis" className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">...</span>
+        );
+      }
+      pages.push(
+        <button key={dishTotalPages} onClick={() => handleDishPageChange(dishTotalPages)} className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">{dishTotalPages}</button>
+      );
+    }
+    pages.push(
+      <button
+        key="next"
+        onClick={() => handleDishPageChange(dishPage + 1)}
+        disabled={dishPage === dishTotalPages}
+        className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {'>'}
+      </button>
+    );
+    return pages;
+  };
+
+  // In renderDishesTable, replace dishes.map with paginatedDishes.map, and add controls above and below
   const renderDishesTable = () => (
     <div className="overflow-x-auto">
       <div className="flex justify-between items-center mb-4">
@@ -506,6 +585,38 @@ const RestaurantDetail: React.FC = () => {
         >
           + Add Dish
         </button>
+      </div>
+      {/* Pagination controls (top) */}
+      <div className="bg-white px-4 py-3 flex items-center justify-between border-b border-gray-200">
+        <div className="flex-1 flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <p className="text-sm text-gray-700">
+              Showing <span className="font-medium">{dishStartIndex + 1}</span> to{' '}
+              <span className="font-medium">{Math.min(dishEndIndex, dishes.length)}</span>{' '}
+              of <span className="font-medium">{dishes.length}</span> results
+            </p>
+            <div className="flex items-center space-x-2">
+              <label htmlFor="dishItemsPerPage" className="text-sm text-gray-700">Items per page:</label>
+              <select
+                id="dishItemsPerPage"
+                value={dishItemsPerPage}
+                onChange={handleDishItemsPerPageChange}
+                className="block w-20 py-1 px-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
+              >
+                <option value="5">5</option>
+                <option value="10">10</option>
+                <option value="20">20</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+              {renderDishPagination()}
+            </nav>
+          </div>
+        </div>
       </div>
       <table className="min-w-full divide-y divide-gray-200">
         <thead className="bg-gray-50">
@@ -524,7 +635,7 @@ const RestaurantDetail: React.FC = () => {
               <td colSpan={6} className="px-6 py-10 text-center text-gray-500">No dishes found.</td>
             </tr>
           ) : (
-            dishes.map((dish) => (
+            paginatedDishes.map((dish) => (
               <tr key={dish.id} className={`hover:bg-gray-50 transition ${dish.deleted ? 'opacity-60' : ''}`}>
                 <td className="px-6 py-4 whitespace-nowrap">
                   {dish.image ? (
@@ -558,6 +669,38 @@ const RestaurantDetail: React.FC = () => {
           )}
         </tbody>
       </table>
+      {/* Pagination controls (bottom) */}
+      <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200">
+        <div className="flex-1 flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <p className="text-sm text-gray-700">
+              Showing <span className="font-medium">{dishStartIndex + 1}</span> to{' '}
+              <span className="font-medium">{Math.min(dishEndIndex, dishes.length)}</span>{' '}
+              of <span className="font-medium">{dishes.length}</span> results
+            </p>
+            <div className="flex items-center space-x-2">
+              <label htmlFor="dishItemsPerPageBottom" className="text-sm text-gray-700">Items per page:</label>
+              <select
+                id="dishItemsPerPageBottom"
+                value={dishItemsPerPage}
+                onChange={handleDishItemsPerPageChange}
+                className="block w-20 py-1 px-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
+              >
+                <option value="5">5</option>
+                <option value="10">10</option>
+                <option value="20">20</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+              {renderDishPagination()}
+            </nav>
+          </div>
+        </div>
+      </div>
       {dishesLoading && <div className="flex justify-center items-center py-4"><LoadingSpinner size={32} color={designSystem.colors.primary} /></div>}
       {/* Deleted Dishes Table */}
       {deletedDishes.length > 0 && (
