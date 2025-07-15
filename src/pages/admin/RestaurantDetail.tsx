@@ -12,6 +12,7 @@ import { Dish, Category, Table } from '../../types';
 import { useAdminAuth } from '../../contexts/AdminAuthContext';
 import ColorPicker from '../../components/ui/ColorPicker';
 import PaymentSetup from '../../components/payment/PaymentSetup';
+import Papa from 'papaparse';
 
 const TABS = [
   { key: 'dishes', label: 'Dishes' },
@@ -108,6 +109,165 @@ const RestaurantDetail: React.FC = () => {
   // Add at the top of RestaurantDetail component state
   const [orderPage, setOrderPage] = useState(1);
   const [orderItemsPerPage, setOrderItemsPerPage] = useState(10);
+  // --- Deleted Dishes Pagination State and Logic ---
+  const [deletedDishPage, setDeletedDishPage] = useState(1);
+  const [deletedDishItemsPerPage, setDeletedDishItemsPerPage] = useState(10);
+  const deletedDishTotalPages = Math.ceil(deletedDishes.length / deletedDishItemsPerPage);
+  const deletedDishStartIndex = (deletedDishPage - 1) * deletedDishItemsPerPage;
+  const deletedDishEndIndex = deletedDishStartIndex + deletedDishItemsPerPage;
+  const paginatedDeletedDishes = deletedDishes.slice(deletedDishStartIndex, deletedDishEndIndex);
+  const handleDeletedDishPageChange = (page: number) => setDeletedDishPage(page);
+  const handleDeletedDishItemsPerPageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setDeletedDishItemsPerPage(Number(e.target.value));
+    setDeletedDishPage(1);
+  };
+  const renderDeletedDishPagination = () => {
+    const pages = [];
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, deletedDishPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(deletedDishTotalPages, startPage + maxVisiblePages - 1);
+    if (endPage - startPage + 1 < maxVisiblePages) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+    pages.push(
+      <button key="prev" onClick={() => handleDeletedDishPageChange(deletedDishPage - 1)} disabled={deletedDishPage === 1} className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">{'<'}</button>
+    );
+    if (startPage > 1) {
+      pages.push(<button key={1} onClick={() => handleDeletedDishPageChange(1)} className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">1</button>);
+      if (startPage > 2) pages.push(<span key="start-ellipsis" className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">...</span>);
+    }
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(<button key={i} onClick={() => handleDeletedDishPageChange(i)} className={`relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium ${deletedDishPage === i ? 'bg-primary text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}>{i}</button>);
+    }
+    if (endPage < deletedDishTotalPages) {
+      if (endPage < deletedDishTotalPages - 1) pages.push(<span key="end-ellipsis" className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">...</span>);
+      pages.push(<button key={deletedDishTotalPages} onClick={() => handleDeletedDishPageChange(deletedDishTotalPages)} className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">{deletedDishTotalPages}</button>);
+    }
+    pages.push(
+      <button key="next" onClick={() => handleDeletedDishPageChange(deletedDishPage + 1)} disabled={deletedDishPage === deletedDishTotalPages} className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">{'>'}</button>
+    );
+    return pages;
+  };
+
+  // --- Deleted Categories Pagination State and Logic ---
+  const [deletedCategoryPage, setDeletedCategoryPage] = useState(1);
+  const [deletedCategoryItemsPerPage, setDeletedCategoryItemsPerPage] = useState(10);
+  const deletedCategoryTotalPages = Math.ceil(deletedCategories.length / deletedCategoryItemsPerPage);
+  const deletedCategoryStartIndex = (deletedCategoryPage - 1) * deletedCategoryItemsPerPage;
+  const deletedCategoryEndIndex = deletedCategoryStartIndex + deletedCategoryItemsPerPage;
+  const paginatedDeletedCategories = deletedCategories.slice(deletedCategoryStartIndex, deletedCategoryEndIndex);
+  const handleDeletedCategoryPageChange = (page: number) => setDeletedCategoryPage(page);
+  const handleDeletedCategoryItemsPerPageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setDeletedCategoryItemsPerPage(Number(e.target.value));
+    setDeletedCategoryPage(1);
+  };
+  const renderDeletedCategoryPagination = () => {
+    const pages = [];
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, deletedCategoryPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(deletedCategoryTotalPages, startPage + maxVisiblePages - 1);
+    if (endPage - startPage + 1 < maxVisiblePages) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+    pages.push(
+      <button key="prev" onClick={() => handleDeletedCategoryPageChange(deletedCategoryPage - 1)} disabled={deletedCategoryPage === 1} className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">{'<'}</button>
+    );
+    if (startPage > 1) {
+      pages.push(<button key={1} onClick={() => handleDeletedCategoryPageChange(1)} className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">1</button>);
+      if (startPage > 2) pages.push(<span key="start-ellipsis" className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">...</span>);
+    }
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(<button key={i} onClick={() => handleDeletedCategoryPageChange(i)} className={`relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium ${deletedCategoryPage === i ? 'bg-primary text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}>{i}</button>);
+    }
+    if (endPage < deletedCategoryTotalPages) {
+      if (endPage < deletedCategoryTotalPages - 1) pages.push(<span key="end-ellipsis" className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">...</span>);
+      pages.push(<button key={deletedCategoryTotalPages} onClick={() => handleDeletedCategoryPageChange(deletedCategoryTotalPages)} className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">{deletedCategoryTotalPages}</button>);
+    }
+    pages.push(
+      <button key="next" onClick={() => handleDeletedCategoryPageChange(deletedCategoryPage + 1)} disabled={deletedCategoryPage === deletedCategoryTotalPages} className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">{'>'}</button>
+    );
+    return pages;
+  };
+
+  // --- Deleted Tables Pagination State and Logic ---
+  const [deletedTablePage, setDeletedTablePage] = useState(1);
+  const [deletedTableItemsPerPage, setDeletedTableItemsPerPage] = useState(10);
+  const deletedTableTotalPages = Math.ceil(deletedTables.length / deletedTableItemsPerPage);
+  const deletedTableStartIndex = (deletedTablePage - 1) * deletedTableItemsPerPage;
+  const deletedTableEndIndex = deletedTableStartIndex + deletedTableItemsPerPage;
+  const paginatedDeletedTables = deletedTables.slice(deletedTableStartIndex, deletedTableEndIndex);
+  const handleDeletedTablePageChange = (page: number) => setDeletedTablePage(page);
+  const handleDeletedTableItemsPerPageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setDeletedTableItemsPerPage(Number(e.target.value));
+    setDeletedTablePage(1);
+  };
+  const renderDeletedTablePagination = () => {
+    const pages = [];
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, deletedTablePage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(deletedTableTotalPages, startPage + maxVisiblePages - 1);
+    if (endPage - startPage + 1 < maxVisiblePages) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+    pages.push(
+      <button key="prev" onClick={() => handleDeletedTablePageChange(deletedTablePage - 1)} disabled={deletedTablePage === 1} className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">{'<'}</button>
+    );
+    if (startPage > 1) {
+      pages.push(<button key={1} onClick={() => handleDeletedTablePageChange(1)} className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">1</button>);
+      if (startPage > 2) pages.push(<span key="start-ellipsis" className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">...</span>);
+    }
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(<button key={i} onClick={() => handleDeletedTablePageChange(i)} className={`relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium ${deletedTablePage === i ? 'bg-primary text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}>{i}</button>);
+    }
+    if (endPage < deletedTableTotalPages) {
+      if (endPage < deletedTableTotalPages - 1) pages.push(<span key="end-ellipsis" className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">...</span>);
+      pages.push(<button key={deletedTableTotalPages} onClick={() => handleDeletedTablePageChange(deletedTableTotalPages)} className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">{deletedTableTotalPages}</button>);
+    }
+    pages.push(
+      <button key="next" onClick={() => handleDeletedTablePageChange(deletedTablePage + 1)} disabled={deletedTablePage === deletedTableTotalPages} className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">{'>'}</button>
+    );
+    return pages;
+  };
+
+  // --- Deleted Orders Pagination State and Logic ---
+  const [deletedOrderPage, setDeletedOrderPage] = useState(1);
+  const [deletedOrderItemsPerPage, setDeletedOrderItemsPerPage] = useState(10);
+  const deletedOrderTotalPages = Math.ceil(deletedOrders.length / deletedOrderItemsPerPage);
+  const deletedOrderStartIndex = (deletedOrderPage - 1) * deletedOrderItemsPerPage;
+  const deletedOrderEndIndex = deletedOrderStartIndex + deletedOrderItemsPerPage;
+  const paginatedDeletedOrders = deletedOrders.slice(deletedOrderStartIndex, deletedOrderEndIndex);
+  const handleDeletedOrderPageChange = (page: number) => setDeletedOrderPage(page);
+  const handleDeletedOrderItemsPerPageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setDeletedOrderItemsPerPage(Number(e.target.value));
+    setDeletedOrderPage(1);
+  };
+  const renderDeletedOrderPagination = () => {
+    const pages = [];
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, deletedOrderPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(deletedOrderTotalPages, startPage + maxVisiblePages - 1);
+    if (endPage - startPage + 1 < maxVisiblePages) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+    pages.push(
+      <button key="prev" onClick={() => handleDeletedOrderPageChange(deletedOrderPage - 1)} disabled={deletedOrderPage === 1} className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">{'<'}</button>
+    );
+    if (startPage > 1) {
+      pages.push(<button key={1} onClick={() => handleDeletedOrderPageChange(1)} className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">1</button>);
+      if (startPage > 2) pages.push(<span key="start-ellipsis" className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">...</span>);
+    }
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(<button key={i} onClick={() => handleDeletedOrderPageChange(i)} className={`relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium ${deletedOrderPage === i ? 'bg-primary text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}>{i}</button>);
+    }
+    if (endPage < deletedOrderTotalPages) {
+      if (endPage < deletedOrderTotalPages - 1) pages.push(<span key="end-ellipsis" className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">...</span>);
+      pages.push(<button key={deletedOrderTotalPages} onClick={() => handleDeletedOrderPageChange(deletedOrderTotalPages)} className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">{deletedOrderTotalPages}</button>);
+    }
+    pages.push(
+      <button key="next" onClick={() => handleDeletedOrderPageChange(deletedOrderPage + 1)} disabled={deletedOrderPage === deletedOrderTotalPages} className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">{'>'}</button>
+    );
+    return pages;
+  };
 
   // Sync form state with restaurant data
   useEffect(() => {
@@ -588,12 +748,20 @@ const RestaurantDetail: React.FC = () => {
     <div className="overflow-x-auto">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg font-semibold">Dishes</h2>
-        <button
-          className="px-4 py-2 bg-primary text-white rounded hover:bg-primary-dark transition"
-          onClick={() => setShowAddEditModal({ mode: 'add' })}
-        >
-          + Add Dish
-        </button>
+        <div className="flex gap-2"> {/* Group the buttons together */}
+          <button
+            className="px-4 py-2 bg-primary text-white rounded hover:bg-primary-dark transition"
+            onClick={() => setShowAddEditModal({ mode: 'add' })}
+          >
+            + Add Dish
+          </button>
+          <button
+            className="px-4 py-2 bg-primary text-white rounded hover:bg-primary-dark transition"
+            onClick={openCSVModal}
+          >
+            Import CSV
+          </button>
+        </div>
       </div>
       {/* Pagination controls (top) */}
       <div className="bg-white px-4 py-3 flex items-center justify-between border-b border-gray-200">
@@ -1844,6 +2012,168 @@ const RestaurantDetail: React.FC = () => {
     }
   };
 
+  // --- CSV Import State for Dishes ---
+  const [isCSVModalOpen, setIsCSVModalOpen] = useState(false);
+  const [csvFile, setCSVFile] = useState<File | null>(null);
+  const [csvHeaders, setCSVHeaders] = useState<string[]>([]);
+  const [csvRows, setCSVRows] = useState<any[]>([]);
+  const [csvMapping, setCSVMapping] = useState<{ [key: string]: string }>({});
+  const [csvStep, setCSVStep] = useState<'upload' | 'mapping' | 'importing' | 'done'>('upload');
+  const [csvProgress, setCSVProgress] = useState(0);
+  const [csvError, setCSVError] = useState<string | null>(null);
+  const [importSummary, setImportSummary] = useState<{ total: number; success: number; failed: number; errors: string[] }>({ total: 0, success: 0, failed: 0, errors: [] });
+  const dishFields = [
+    { key: 'title', label: 'Title*' },
+    { key: 'price', label: 'Price*' },
+    { key: 'description', label: 'Description' },
+    { key: 'category', label: 'Category*' },
+    { key: 'status', label: 'Status (active/inactive)' },
+    { key: 'image', label: 'Image URL' },
+  ];
+
+  const openCSVModal = () => {
+    setIsCSVModalOpen(true);
+    setCSVFile(null);
+    setCSVHeaders([]);
+    setCSVRows([]);
+    setCSVMapping({});
+    setCSVStep('upload');
+    setCSVProgress(0);
+    setCSVError(null);
+    setImportSummary({ total: 0, success: 0, failed: 0, errors: [] });
+  };
+  const closeCSVModal = () => {
+    setIsCSVModalOpen(false);
+    setCSVFile(null);
+    setCSVHeaders([]);
+    setCSVRows([]);
+    setCSVMapping({});
+    setCSVStep('upload');
+    setCSVProgress(0);
+    setCSVError(null);
+    setImportSummary({ total: 0, success: 0, failed: 0, errors: [] });
+  };
+  const handleCSVFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setCSVFile(e.target.files[0]);
+      Papa.parse(e.target.files[0], {
+        header: true,
+        skipEmptyLines: true,
+        complete: (results: any) => {
+          if (results.errors.length) {
+            setCSVError('CSV parsing error. Please check your file.');
+            return;
+          }
+          const headers = results.meta.fields || [];
+          setCSVHeaders(headers);
+          setCSVRows(results.data as any[]);
+          setCSVStep('mapping');
+        },
+        error: () => setCSVError('CSV parsing error. Please check your file.'),
+      });
+    }
+  };
+  const handleCSVMappingChange = (field: string, header: string) => {
+    setCSVMapping(prev => ({ ...prev, [field]: header }));
+  };
+  const handleCSVImport = async () => {
+    setCSVStep('importing');
+    setCSVProgress(0);
+    setCSVError(null);
+    setImportSummary({ total: csvRows.length, success: 0, failed: 0, errors: [] });
+    let createdCategories: { [name: string]: string } = {};
+    let updatedCategories = [...categories];
+    // 1. Create categories if not found (in Firestore)
+    const uniqueCategoryNames = Array.from(new Set(csvRows.map(row => row[csvMapping['category']]).filter(Boolean)));
+    let totalSteps = uniqueCategoryNames.length + csvRows.length;
+    let currentStep = 0;
+    for (const categoryName of uniqueCategoryNames) {
+      const normalizedCategoryName = categoryName.trim().toLowerCase();
+      const existingCategory = updatedCategories.find(c => c.title.trim().toLowerCase() === normalizedCategoryName);
+      if (categoryName && !existingCategory && !createdCategories[normalizedCategoryName]) {
+        try {
+          const docRef = await addDoc(collection(db, 'categories'), {
+            title: categoryName,
+            status: 'active',
+            restaurantId: restaurant.id,
+            order: 0,
+            createdAt: serverTimestamp(),
+            deleted: false,
+          });
+          createdCategories[normalizedCategoryName] = docRef.id;
+          const newCat = {
+            id: docRef.id,
+            title: categoryName,
+            status: 'active',
+            restaurantId: restaurant.id,
+            order: 0,
+            createdAt: new Date().toISOString(),
+          };
+          updatedCategories.push(newCat);
+          setCategories(prev => [...prev, newCat]);
+        } catch (err) {
+          setCSVError('Failed to create category: ' + categoryName);
+          setCSVStep('mapping');
+          setImportSummary(prev => ({ ...prev, failed: prev.failed + 1, errors: [...prev.errors, `Category: ${categoryName}`] }));
+          return;
+        }
+      }
+      currentStep++;
+      setCSVProgress(Math.round((currentStep / totalSteps) * 100));
+    }
+    // 2. Import dishes
+    let success = 0;
+    let failed = 0;
+    let errors: string[] = [];
+    const existingDishTitles = dishes.map(d => d.title.trim().toLowerCase());
+    const newDishes: any[] = [];
+    for (let i = 0; i < csvRows.length; i++) {
+      const row = csvRows[i];
+      const dishTitle = row[csvMapping['title']]?.trim().toLowerCase() || '';
+      if (existingDishTitles.includes(dishTitle) || newDishes.some(d => d.title.trim().toLowerCase() === dishTitle)) {
+        failed++;
+        errors.push(`Duplicate dish skipped: ${row[csvMapping['title']]}`);
+        currentStep++;
+        setCSVProgress(Math.round((currentStep / totalSteps) * 100));
+        continue;
+      }
+      const categoryName = row[csvMapping['category']];
+      const normalizedCategoryName = categoryName ? categoryName.trim().toLowerCase() : '';
+      const categoryId = createdCategories[normalizedCategoryName] || (updatedCategories.find(c => c.title.trim().toLowerCase() === normalizedCategoryName)?.id ?? '');
+      const rawStatus = (row[csvMapping['status']] || 'active').toString().trim().toLowerCase();
+      const status: 'active' | 'inactive' = rawStatus === 'inactive' ? 'inactive' : 'active';
+      const dish = {
+        title: row[csvMapping['title']] || '',
+        price: parseFloat(row[csvMapping['price']] || '0'),
+        description: row[csvMapping['description']] || '',
+        categoryId,
+        status,
+        image: row[csvMapping['image']] || '/icons/placeholder.jpg',
+        restaurantId: restaurant.id,
+        deleted: false,
+        createdAt: new Date().toISOString(),
+      };
+      try {
+        // Add to Firestore
+        const docRef = await addDoc(collection(db, 'menuItems'), {
+          ...dish,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        });
+        setDishes(prev => [...prev, { ...dish, id: docRef.id }]);
+        success++;
+        newDishes.push(dish);
+      } catch (err) {
+        failed++;
+        errors.push(`Failed to import dish: ${dish.title}`);
+      }
+      currentStep++;
+      setCSVProgress(Math.round((currentStep / totalSteps) * 100));
+    }
+    setImportSummary({ total: csvRows.length, success, failed, errors });
+    setCSVStep('done');
+  };
+
   return (
     <AdminDashboardLayout>
       <div className="mb-4 flex items-center gap-4">
@@ -2047,6 +2377,118 @@ const RestaurantDetail: React.FC = () => {
           <div className="bg-white rounded shadow-lg p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <h2 className="text-lg font-bold mb-4">Order Details</h2>
             <OrderDetailsModalContent order={showOrderDetails} onClose={() => setShowOrderDetails(null)} />
+          </div>
+        </div>
+      )}
+      {isCSVModalOpen && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50" onClick={closeCSVModal}>
+          <div className="bg-white rounded shadow-lg p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto relative" onClick={e => e.stopPropagation()}>
+            {/* Close icon top right */}
+            <button
+              className="absolute top-2 right-2 text-gray-400 hover:text-gray-700 text-2xl font-bold focus:outline-none"
+              onClick={closeCSVModal}
+              aria-label="Close"
+              type="button"
+            >
+              ×
+            </button>
+            <h2 className="text-lg font-bold mb-4">Import Dishes from CSV</h2>
+            {/* CSV Modal Steps */}
+            {csvStep === 'upload' && (
+              <div className="space-y-4">
+                <div className="flex flex-col items-center justify-center border-2 border-dashed border-blue-400 rounded-lg p-6 bg-blue-50 hover:bg-blue-100 transition-colors cursor-pointer relative w-full max-w-md mx-auto"
+                  onClick={() => document.getElementById('csv-upload-input')?.click()}
+                  tabIndex={0}
+                  onKeyPress={e => { if (e.key === 'Enter') document.getElementById('csv-upload-input')?.click(); }}
+                  role="button"
+                  aria-label="Upload CSV file"
+                >
+                  <span className="text-base font-medium text-blue-700">Click or drag CSV file to upload</span>
+                  <span className="text-xs text-blue-500 mt-1">Only .csv files are supported</span>
+                  <input
+                    id="csv-upload-input"
+                    type="file"
+                    accept=".csv"
+                    onChange={handleCSVFileChange}
+                    className="hidden"
+                  />
+                  {csvFile && (
+                    <div className="mt-4 flex items-center gap-2 bg-white px-3 py-2 rounded shadow border border-gray-200">
+                      <span className="text-sm text-gray-700">{csvFile.name}</span>
+                      <button
+                        type="button"
+                        onClick={e => { e.stopPropagation(); setCSVFile(null); setCSVHeaders([]); setCSVRows([]); setCSVMapping({}); setCSVStep('upload'); }}
+                        className="ml-2 text-red-500 hover:text-red-700"
+                        aria-label="Remove file"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  )}
+                </div>
+                {csvError && <div className="text-red-500 text-sm text-center">{csvError}</div>}
+              </div>
+            )}
+            {csvStep === 'mapping' && (
+              <div className="space-y-4">
+                <div className="text-sm text-gray-700">Map CSV columns to dish fields:</div>
+                {dishFields.map(field => (
+                  <div key={field.key} className="flex items-center gap-2">
+                    <label className="w-40 text-gray-700">{field.label}</label>
+                    <select
+                      value={csvMapping[field.key] || ''}
+                      onChange={e => handleCSVMappingChange(field.key, e.target.value)}
+                      className="block w-60 py-2 px-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
+                    >
+                      <option value="">-- Not mapped --</option>
+                      {csvHeaders.map(header => (
+                        <option key={header} value={header}>{header}</option>
+                      ))}
+                    </select>
+                  </div>
+                ))}
+                <button
+                  onClick={handleCSVImport}
+                  className="mt-4 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium bg-green-600 text-white hover:bg-green-700"
+                  disabled={!csvMapping['title'] || !csvMapping['price'] || !csvMapping['category']}
+                >
+                  Start Import
+                </button>
+              </div>
+            )}
+            {csvStep === 'importing' && (
+              <div className="space-y-4">
+                <div className="text-sm text-gray-700">Importing dishes... Please wait.</div>
+                <div className="w-full bg-gray-200 rounded-full h-4">
+                  <div
+                    className="bg-blue-600 h-4 rounded-full transition-all duration-300"
+                    style={{ width: `${csvProgress}%` }}
+                  ></div>
+                </div>
+                <div className="text-xs text-gray-500">{csvProgress}% complete</div>
+              </div>
+            )}
+            {csvStep === 'done' && (
+              <div className="space-y-4">
+                <div className="text-green-600 text-sm font-medium">Import complete!</div>
+                <div className="text-sm text-gray-700">
+                  <div>Total rows processed: <b>{importSummary.total}</b></div>
+                  <div>Successfully imported: <b>{importSummary.success}</b></div>
+                  <div>Skipped/Failed: <b>{importSummary.failed}</b></div>
+                  {importSummary.errors.length > 0 && (
+                    <ul className="mt-2 text-xs text-red-500 list-disc list-inside">
+                      {importSummary.errors.map((err, idx) => <li key={idx}>{err}</li>)}
+                    </ul>
+                  )}
+                </div>
+                <button
+                  onClick={closeCSVModal}
+                  className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium bg-primary text-white hover:bg-primary-dark"
+                >
+                  Close
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
