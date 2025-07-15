@@ -99,6 +99,15 @@ const RestaurantDetail: React.FC = () => {
   // Add at the top of RestaurantDetail component state
   const [dishPage, setDishPage] = useState(1);
   const [dishItemsPerPage, setDishItemsPerPage] = useState(10);
+  // Add at the top of RestaurantDetail component state
+  const [categoryPage, setCategoryPage] = useState(1);
+  const [categoryItemsPerPage, setCategoryItemsPerPage] = useState(10);
+  // Add at the top of RestaurantDetail component state
+  const [tablePage, setTablePage] = useState(1);
+  const [tableItemsPerPage, setTableItemsPerPage] = useState(10);
+  // Add at the top of RestaurantDetail component state
+  const [orderPage, setOrderPage] = useState(1);
+  const [orderItemsPerPage, setOrderItemsPerPage] = useState(10);
 
   // Sync form state with restaurant data
   useEffect(() => {
@@ -748,6 +757,82 @@ const RestaurantDetail: React.FC = () => {
     </div>
   );
 
+  // Compute paginated categories
+  const categoryTotalPages = Math.ceil(categories.length / categoryItemsPerPage);
+  const categoryStartIndex = (categoryPage - 1) * categoryItemsPerPage;
+  const categoryEndIndex = categoryStartIndex + categoryItemsPerPage;
+  const paginatedCategories = categories.slice(categoryStartIndex, categoryEndIndex);
+
+  // Pagination controls
+  const handleCategoryPageChange = (page: number) => setCategoryPage(page);
+  const handleCategoryItemsPerPageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setCategoryItemsPerPage(Number(e.target.value));
+    setCategoryPage(1);
+  };
+  const renderCategoryPagination = () => {
+    const pages = [];
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, categoryPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(categoryTotalPages, startPage + maxVisiblePages - 1);
+    if (endPage - startPage + 1 < maxVisiblePages) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+    // Previous
+    pages.push(
+      <button
+        key="prev"
+        onClick={() => handleCategoryPageChange(categoryPage - 1)}
+        disabled={categoryPage === 1}
+        className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {'<'}
+      </button>
+    );
+    if (startPage > 1) {
+      pages.push(
+        <button key={1} onClick={() => handleCategoryPageChange(1)} className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">1</button>
+      );
+      if (startPage > 2) {
+        pages.push(
+          <span key="start-ellipsis" className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">...</span>
+        );
+      }
+    }
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(
+        <button
+          key={i}
+          onClick={() => handleCategoryPageChange(i)}
+          className={`relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium ${categoryPage === i ? 'bg-primary text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}
+        >
+          {i}
+        </button>
+      );
+    }
+    if (endPage < categoryTotalPages) {
+      if (endPage < categoryTotalPages - 1) {
+        pages.push(
+          <span key="end-ellipsis" className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">...</span>
+        );
+      }
+      pages.push(
+        <button key={categoryTotalPages} onClick={() => handleCategoryPageChange(categoryTotalPages)} className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">{categoryTotalPages}</button>
+      );
+    }
+    pages.push(
+      <button
+        key="next"
+        onClick={() => handleCategoryPageChange(categoryPage + 1)}
+        disabled={categoryPage === categoryTotalPages}
+        className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {'>'}
+      </button>
+    );
+    return pages;
+  };
+
+  // In renderCategoriesTable, replace categories.map with paginatedCategories.map, and add controls above and below
   const renderCategoriesTable = () => (
     <div className="overflow-x-auto">
       <div className="flex justify-between items-center mb-4">
@@ -758,6 +843,38 @@ const RestaurantDetail: React.FC = () => {
         >
           + Add Category
         </button>
+      </div>
+      {/* Pagination controls (top) */}
+      <div className="bg-white px-4 py-3 flex items-center justify-between border-b border-gray-200">
+        <div className="flex-1 flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <p className="text-sm text-gray-700">
+              Showing <span className="font-medium">{categoryStartIndex + 1}</span> to{' '}
+              <span className="font-medium">{Math.min(categoryEndIndex, categories.length)}</span>{' '}
+              of <span className="font-medium">{categories.length}</span> results
+            </p>
+            <div className="flex items-center space-x-2">
+              <label htmlFor="categoryItemsPerPage" className="text-sm text-gray-700">Items per page:</label>
+              <select
+                id="categoryItemsPerPage"
+                value={categoryItemsPerPage}
+                onChange={handleCategoryItemsPerPageChange}
+                className="block w-20 py-1 px-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
+              >
+                <option value="5">5</option>
+                <option value="10">10</option>
+                <option value="20">20</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+              {renderCategoryPagination()}
+            </nav>
+          </div>
+        </div>
       </div>
       <table className="min-w-full divide-y divide-gray-200">
         <thead className="bg-gray-50">
@@ -774,7 +891,7 @@ const RestaurantDetail: React.FC = () => {
               <td colSpan={4} className="px-6 py-10 text-center text-gray-500">No categories found.</td>
             </tr>
           ) : (
-            categories.map((cat) => (
+            paginatedCategories.map((cat) => (
               <tr key={cat.id} className={`hover:bg-gray-50 transition ${cat.deleted ? 'opacity-60' : ''}`}>
                 <td className="px-6 py-4 whitespace-nowrap font-medium text-primary">{cat.title}</td>
                 <td className="px-6 py-4 whitespace-nowrap">
@@ -797,6 +914,38 @@ const RestaurantDetail: React.FC = () => {
           )}
         </tbody>
       </table>
+      {/* Pagination controls (bottom) */}
+      <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200">
+        <div className="flex-1 flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <p className="text-sm text-gray-700">
+              Showing <span className="font-medium">{categoryStartIndex + 1}</span> to{' '}
+              <span className="font-medium">{Math.min(categoryEndIndex, categories.length)}</span>{' '}
+              of <span className="font-medium">{categories.length}</span> results
+            </p>
+            <div className="flex items-center space-x-2">
+              <label htmlFor="categoryItemsPerPageBottom" className="text-sm text-gray-700">Items per page:</label>
+              <select
+                id="categoryItemsPerPageBottom"
+                value={categoryItemsPerPage}
+                onChange={handleCategoryItemsPerPageChange}
+                className="block w-20 py-1 px-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
+              >
+                <option value="5">5</option>
+                <option value="10">10</option>
+                <option value="20">20</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+              {renderCategoryPagination()}
+            </nav>
+          </div>
+        </div>
+      </div>
       {categoriesLoading && <div className="flex justify-center items-center py-4"><LoadingSpinner size={32} color={designSystem.colors.primary} /></div>}
       {/* Deleted Categories Table */}
       {deletedCategories.length > 0 && (
@@ -833,113 +982,82 @@ const RestaurantDetail: React.FC = () => {
     </div>
   );
 
-  const handleTableAction = async (type: 'delete' | 'restore', table: any) => {
-    setTablesLoading(true);
-    try {
-      const ref = doc(db, 'tables', table.id);
-      if (type === 'delete') {
-        await updateDoc(ref, { deleted: true, updatedAt: serverTimestamp() });
-        setTables(prev => prev.map(t => t.id === table.id ? { ...t, deleted: true } : t));
-        await logActivity({
-          userId: currentAdmin?.id,
-          userEmail: currentAdmin?.email,
-          action: 'admin_delete_table',
-          entityType: 'table',
-          entityId: table.id,
-          details: { number: table.number, name: table.name, role: 'admin' },
-        });
-        toast('Table deleted.', {
-          style: {
-            background: designSystem.colors.white,
-            color: designSystem.colors.primary,
-            border: `1px solid ${designSystem.colors.error}`,
-            fontWeight: 500,
-          },
-          icon: '❌',
-        });
-      } else if (type === 'restore') {
-        await updateDoc(ref, { deleted: false, updatedAt: serverTimestamp() });
-        setTables(prev => prev.map(t => t.id === table.id ? { ...t, deleted: false } : t));
-        await logActivity({
-          userId: currentAdmin?.id,
-          userEmail: currentAdmin?.email,
-          action: 'admin_restore_table',
-          entityType: 'table',
-          entityId: table.id,
-          details: { number: table.number, name: table.name, role: 'admin' },
-        });
-        toast('Table restored.', {
-          style: {
-            background: designSystem.colors.white,
-            color: designSystem.colors.primary,
-            border: `1px solid ${designSystem.colors.success}`,
-            fontWeight: 500,
-          },
-          icon: '✅',
-        });
-      }
-    } catch (err) {
-      toast('Action failed. Please try again.', {
-        style: {
-          background: designSystem.colors.white,
-          color: designSystem.colors.primary,
-          border: `1px solid ${designSystem.colors.error}`,
-          fontWeight: 500,
-        },
-        icon: '❌',
-      });
-    } finally {
-      setTablesLoading(false);
-      setConfirmTableAction(null);
+  // Compute paginated tables
+  const tableTotalPages = Math.ceil(tables.length / tableItemsPerPage);
+  const tableStartIndex = (tablePage - 1) * tableItemsPerPage;
+  const tableEndIndex = tableStartIndex + tableItemsPerPage;
+  const paginatedTables = tables.slice(tableStartIndex, tableEndIndex);
+
+  // Pagination controls
+  const handleTablePageChange = (page: number) => setTablePage(page);
+  const handleTableItemsPerPageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setTableItemsPerPage(Number(e.target.value));
+    setTablePage(1);
+  };
+  const renderTablePagination = () => {
+    const pages = [];
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, tablePage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(tableTotalPages, startPage + maxVisiblePages - 1);
+    if (endPage - startPage + 1 < maxVisiblePages) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
     }
+    // Previous
+    pages.push(
+      <button
+        key="prev"
+        onClick={() => handleTablePageChange(tablePage - 1)}
+        disabled={tablePage === 1}
+        className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {'<'}
+      </button>
+    );
+    if (startPage > 1) {
+      pages.push(
+        <button key={1} onClick={() => handleTablePageChange(1)} className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">1</button>
+      );
+      if (startPage > 2) {
+        pages.push(
+          <span key="start-ellipsis" className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">...</span>
+        );
+      }
+    }
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(
+        <button
+          key={i}
+          onClick={() => handleTablePageChange(i)}
+          className={`relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium ${tablePage === i ? 'bg-primary text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}
+        >
+          {i}
+        </button>
+      );
+    }
+    if (endPage < tableTotalPages) {
+      if (endPage < tableTotalPages - 1) {
+        pages.push(
+          <span key="end-ellipsis" className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">...</span>
+        );
+      }
+      pages.push(
+        <button key={tableTotalPages} onClick={() => handleTablePageChange(tableTotalPages)} className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">{tableTotalPages}</button>
+      );
+    }
+    pages.push(
+      <button
+        key="next"
+        onClick={() => handleTablePageChange(tablePage + 1)}
+        disabled={tablePage === tableTotalPages}
+        className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {'>'}
+      </button>
+    );
+    return pages;
   };
 
-  const handleTableSave = async (mode: 'add' | 'edit', tableData: Partial<Table>, editingTable?: any) => {
-    setTablesLoading(true);
-    try {
-      if (mode === 'add') {
-        const ref = await addDoc(collection(db, 'tables'), {
-          ...tableData,
-          restaurantId: restaurant.id,
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
-          deleted: false,
-        });
-        setTables(prev => [...prev, { id: ref.id, ...tableData, deleted: false }]);
-        await logActivity({
-          userId: currentAdmin?.id,
-          userEmail: currentAdmin?.email,
-          action: 'admin_add_table',
-          entityType: 'table',
-          entityId: ref.id,
-          details: { ...tableData, role: 'admin' },
-        });
-        toast.success('Table added!');
-      } else if (mode === 'edit' && editingTable) {
-        const ref = doc(db, 'tables', editingTable.id);
-        await updateDoc(ref, {
-          ...tableData,
-          updatedAt: serverTimestamp(),
-        });
-        setTables(prev => prev.map(t => t.id === editingTable.id ? { ...t, ...tableData } : t));
-        await logActivity({
-          userId: currentAdmin?.id,
-          userEmail: currentAdmin?.email,
-          action: 'admin_edit_table',
-          entityType: 'table',
-          entityId: editingTable.id,
-          details: { ...tableData, role: 'admin' },
-        });
-        toast.success('Table updated!');
-      }
-      setShowTableModal(null);
-    } catch (err) {
-      toast.error('Failed to save table.');
-    } finally {
-      setTablesLoading(false);
-    }
-  };
-
+  // In renderTablesTable, replace tables.map with paginatedTables.map, and add controls above and below
   const renderTablesTable = () => (
     <div className="overflow-x-auto">
       <div className="flex justify-between items-center mb-4">
@@ -950,6 +1068,38 @@ const RestaurantDetail: React.FC = () => {
         >
           + Add Table
         </button>
+      </div>
+      {/* Pagination controls (top) */}
+      <div className="bg-white px-4 py-3 flex items-center justify-between border-b border-gray-200">
+        <div className="flex-1 flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <p className="text-sm text-gray-700">
+              Showing <span className="font-medium">{tableStartIndex + 1}</span> to{' '}
+              <span className="font-medium">{Math.min(tableEndIndex, tables.length)}</span>{' '}
+              of <span className="font-medium">{tables.length}</span> results
+            </p>
+            <div className="flex items-center space-x-2">
+              <label htmlFor="tableItemsPerPage" className="text-sm text-gray-700">Items per page:</label>
+              <select
+                id="tableItemsPerPage"
+                value={tableItemsPerPage}
+                onChange={handleTableItemsPerPageChange}
+                className="block w-20 py-1 px-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
+              >
+                <option value="5">5</option>
+                <option value="10">10</option>
+                <option value="20">20</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+              {renderTablePagination()}
+            </nav>
+          </div>
+        </div>
       </div>
       <table className="min-w-full divide-y divide-gray-200">
         <thead className="bg-gray-50">
@@ -966,7 +1116,7 @@ const RestaurantDetail: React.FC = () => {
               <td colSpan={4} className="px-6 py-10 text-center text-gray-500">No tables found.</td>
             </tr>
           ) : (
-            tables.map((table) => (
+            paginatedTables.map((table) => (
               <tr key={table.id} className={`hover:bg-gray-50 transition ${table.deleted ? 'opacity-60' : ''}`}>
                 <td className="px-6 py-4 whitespace-nowrap font-medium text-primary">{table.number}</td>
                 <td className="px-6 py-4 whitespace-nowrap">{table.name || '—'}</td>
@@ -989,6 +1139,38 @@ const RestaurantDetail: React.FC = () => {
           )}
         </tbody>
       </table>
+      {/* Pagination controls (bottom) */}
+      <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200">
+        <div className="flex-1 flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <p className="text-sm text-gray-700">
+              Showing <span className="font-medium">{tableStartIndex + 1}</span> to{' '}
+              <span className="font-medium">{Math.min(tableEndIndex, tables.length)}</span>{' '}
+              of <span className="font-medium">{tables.length}</span> results
+            </p>
+            <div className="flex items-center space-x-2">
+              <label htmlFor="tableItemsPerPageBottom" className="text-sm text-gray-700">Items per page:</label>
+              <select
+                id="tableItemsPerPageBottom"
+                value={tableItemsPerPage}
+                onChange={handleTableItemsPerPageChange}
+                className="block w-20 py-1 px-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
+              >
+                <option value="5">5</option>
+                <option value="10">10</option>
+                <option value="20">20</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+              {renderTablePagination()}
+            </nav>
+          </div>
+        </div>
+      </div>
       {tablesLoading && <div className="flex justify-center items-center py-4"><LoadingSpinner size={32} color={designSystem.colors.primary} /></div>}
       {/* Deleted Tables Table */}
       {deletedTables.length > 0 && (
@@ -1025,10 +1207,118 @@ const RestaurantDetail: React.FC = () => {
     </div>
   );
 
+  // Compute paginated orders
+  const orderTotalPages = Math.ceil(orders.length / orderItemsPerPage);
+  const orderStartIndex = (orderPage - 1) * orderItemsPerPage;
+  const orderEndIndex = orderStartIndex + orderItemsPerPage;
+  const paginatedOrders = orders.slice(orderStartIndex, orderEndIndex);
+
+  // Pagination controls
+  const handleOrderPageChange = (page: number) => setOrderPage(page);
+  const handleOrderItemsPerPageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setOrderItemsPerPage(Number(e.target.value));
+    setOrderPage(1);
+  };
+  const renderOrderPagination = () => {
+    const pages = [];
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, orderPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(orderTotalPages, startPage + maxVisiblePages - 1);
+    if (endPage - startPage + 1 < maxVisiblePages) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+    // Previous
+    pages.push(
+      <button
+        key="prev"
+        onClick={() => handleOrderPageChange(orderPage - 1)}
+        disabled={orderPage === 1}
+        className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {'<'}
+      </button>
+    );
+    if (startPage > 1) {
+      pages.push(
+        <button key={1} onClick={() => handleOrderPageChange(1)} className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">1</button>
+      );
+      if (startPage > 2) {
+        pages.push(
+          <span key="start-ellipsis" className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">...</span>
+        );
+      }
+    }
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(
+        <button
+          key={i}
+          onClick={() => handleOrderPageChange(i)}
+          className={`relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium ${orderPage === i ? 'bg-primary text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}
+        >
+          {i}
+        </button>
+      );
+    }
+    if (endPage < orderTotalPages) {
+      if (endPage < orderTotalPages - 1) {
+        pages.push(
+          <span key="end-ellipsis" className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">...</span>
+        );
+      }
+      pages.push(
+        <button key={orderTotalPages} onClick={() => handleOrderPageChange(orderTotalPages)} className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">{orderTotalPages}</button>
+      );
+    }
+    pages.push(
+      <button
+        key="next"
+        onClick={() => handleOrderPageChange(orderPage + 1)}
+        disabled={orderPage === orderTotalPages}
+        className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {'>'}
+      </button>
+    );
+    return pages;
+  };
+
+  // In renderOrdersTable, replace orders.map with paginatedOrders.map, and add controls above and below
   const renderOrdersTable = () => (
     <div className="overflow-x-auto">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg font-semibold">Orders</h2>
+      </div>
+      {/* Pagination controls (top) */}
+      <div className="bg-white px-4 py-3 flex items-center justify-between border-b border-gray-200">
+        <div className="flex-1 flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <p className="text-sm text-gray-700">
+              Showing <span className="font-medium">{orderStartIndex + 1}</span> to{' '}
+              <span className="font-medium">{Math.min(orderEndIndex, orders.length)}</span>{' '}
+              of <span className="font-medium">{orders.length}</span> results
+            </p>
+            <div className="flex items-center space-x-2">
+              <label htmlFor="orderItemsPerPage" className="text-sm text-gray-700">Items per page:</label>
+              <select
+                id="orderItemsPerPage"
+                value={orderItemsPerPage}
+                onChange={handleOrderItemsPerPageChange}
+                className="block w-20 py-1 px-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
+              >
+                <option value="5">5</option>
+                <option value="10">10</option>
+                <option value="20">20</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+              {renderOrderPagination()}
+            </nav>
+          </div>
+        </div>
       </div>
       <table className="min-w-full divide-y divide-gray-200">
         <thead className="bg-gray-50">
@@ -1046,7 +1336,7 @@ const RestaurantDetail: React.FC = () => {
               <td colSpan={5} className="px-6 py-10 text-center text-gray-500">No orders found.</td>
             </tr>
           ) : (
-            orders.map((order) => (
+            paginatedOrders.map((order) => (
               <tr key={order.id} className={`hover:bg-gray-50 transition ${order.deleted ? 'opacity-60' : ''}`}>
                 <td className="px-6 py-4 whitespace-nowrap font-medium text-primary">{order.id}</td>
                 <td className="px-6 py-4 whitespace-nowrap">{order.tableNumber ?? '—'}</td>
@@ -1070,6 +1360,38 @@ const RestaurantDetail: React.FC = () => {
           )}
         </tbody>
       </table>
+      {/* Pagination controls (bottom) */}
+      <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200">
+        <div className="flex-1 flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <p className="text-sm text-gray-700">
+              Showing <span className="font-medium">{orderStartIndex + 1}</span> to{' '}
+              <span className="font-medium">{Math.min(orderEndIndex, orders.length)}</span>{' '}
+              of <span className="font-medium">{orders.length}</span> results
+            </p>
+            <div className="flex items-center space-x-2">
+              <label htmlFor="orderItemsPerPageBottom" className="text-sm text-gray-700">Items per page:</label>
+              <select
+                id="orderItemsPerPageBottom"
+                value={orderItemsPerPage}
+                onChange={handleOrderItemsPerPageChange}
+                className="block w-20 py-1 px-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
+              >
+                <option value="5">5</option>
+                <option value="10">10</option>
+                <option value="20">20</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+              {renderOrderPagination()}
+            </nav>
+          </div>
+        </div>
+      </div>
       {ordersLoading && <div className="flex justify-center items-center py-4"><LoadingSpinner size={32} color={designSystem.colors.primary} /></div>}
       {/* Deleted Orders Table */}
       {deletedOrders.length > 0 && (
@@ -1412,6 +1734,115 @@ const RestaurantDetail: React.FC = () => {
       </div>
     </div>
   );
+
+  // Restore handleTableAction function
+  const handleTableAction = async (type: 'delete' | 'restore', table: any) => {
+    setTablesLoading(true);
+    try {
+      const ref = doc(db, 'tables', table.id);
+      if (type === 'delete') {
+        await updateDoc(ref, { deleted: true, updatedAt: serverTimestamp() });
+        setTables(prev => prev.map(t => t.id === table.id ? { ...t, deleted: true } : t));
+        await logActivity({
+          userId: currentAdmin?.id,
+          userEmail: currentAdmin?.email,
+          action: 'admin_delete_table',
+          entityType: 'table',
+          entityId: table.id,
+          details: { number: table.number, name: table.name, role: 'admin' },
+        });
+        toast('Table deleted.', {
+          style: {
+            background: designSystem.colors.white,
+            color: designSystem.colors.primary,
+            border: `1px solid ${designSystem.colors.error}`,
+            fontWeight: 500,
+          },
+          icon: '❌',
+        });
+      } else if (type === 'restore') {
+        await updateDoc(ref, { deleted: false, updatedAt: serverTimestamp() });
+        setTables(prev => prev.map(t => t.id === table.id ? { ...t, deleted: false } : t));
+        await logActivity({
+          userId: currentAdmin?.id,
+          userEmail: currentAdmin?.email,
+          action: 'admin_restore_table',
+          entityType: 'table',
+          entityId: table.id,
+          details: { number: table.number, name: table.name, role: 'admin' },
+        });
+        toast('Table restored.', {
+          style: {
+            background: designSystem.colors.white,
+            color: designSystem.colors.primary,
+            border: `1px solid ${designSystem.colors.success}`,
+            fontWeight: 500,
+          },
+          icon: '✅',
+        });
+      }
+    } catch (err) {
+      toast('Action failed. Please try again.', {
+        style: {
+          background: designSystem.colors.white,
+          color: designSystem.colors.primary,
+          border: `1px solid ${designSystem.colors.error}`,
+          fontWeight: 500,
+        },
+        icon: '❌',
+      });
+    } finally {
+      setTablesLoading(false);
+      setConfirmTableAction(null);
+    }
+  };
+
+  // Restore handleTableSave function
+  const handleTableSave = async (mode: 'add' | 'edit', tableData: Partial<Table>, editingTable?: any) => {
+    setTablesLoading(true);
+    try {
+      if (mode === 'add') {
+        const ref = await addDoc(collection(db, 'tables'), {
+          ...tableData,
+          restaurantId: restaurant.id,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+          deleted: false,
+        });
+        setTables(prev => [...prev, { id: ref.id, ...tableData, deleted: false }]);
+        await logActivity({
+          userId: currentAdmin?.id,
+          userEmail: currentAdmin?.email,
+          action: 'admin_add_table',
+          entityType: 'table',
+          entityId: ref.id,
+          details: { ...tableData, role: 'admin' },
+        });
+        toast.success('Table added!');
+      } else if (mode === 'edit' && editingTable) {
+        const ref = doc(db, 'tables', editingTable.id);
+        await updateDoc(ref, {
+          ...tableData,
+          updatedAt: serverTimestamp(),
+        });
+        setTables(prev => prev.map(t => t.id === editingTable.id ? { ...t, ...tableData } : t));
+        await logActivity({
+          userId: currentAdmin?.id,
+          userEmail: currentAdmin?.email,
+          action: 'admin_edit_table',
+          entityType: 'table',
+          entityId: editingTable.id,
+          details: { ...tableData, role: 'admin' },
+        });
+        toast.success('Table updated!');
+      }
+      setShowTableModal(null);
+    } catch (err) {
+      toast.error('Failed to save table.');
+    } finally {
+      setTablesLoading(false);
+    }
+  };
 
   return (
     <AdminDashboardLayout>
