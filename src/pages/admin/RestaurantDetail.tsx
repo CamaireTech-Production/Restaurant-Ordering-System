@@ -749,12 +749,12 @@ const RestaurantDetail: React.FC = () => {
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg font-semibold">Dishes</h2>
         <div className="flex gap-2"> {/* Group the buttons together */}
-          <button
-            className="px-4 py-2 bg-primary text-white rounded hover:bg-primary-dark transition"
-            onClick={() => setShowAddEditModal({ mode: 'add' })}
-          >
-            + Add Dish
-          </button>
+        <button
+          className="px-4 py-2 bg-primary text-white rounded hover:bg-primary-dark transition"
+          onClick={() => setShowAddEditModal({ mode: 'add' })}
+        >
+          + Add Dish
+        </button>
           <button
             className="px-4 py-2 bg-primary text-white rounded hover:bg-primary-dark transition"
             onClick={openCSVModal}
