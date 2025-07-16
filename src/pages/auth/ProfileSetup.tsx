@@ -13,11 +13,14 @@ import PaymentSetup from '../../components/payment/PaymentSetup';
 import { PaymentInfo } from '../../types';
 import { updateEmail, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
 import { auth } from '../../firebase/config';
+import { t } from '../../utils/i18n';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 const ProfileSetup: React.FC = () => {
   const location = useLocation();
   const { restaurant, updateRestaurantProfile } = useAuth();
   const navigate = useNavigate();
+  const { language } = useLanguage();
   
   const [name, setName] = useState(restaurant?.name || '');
   const [address, setAddress] = useState(restaurant?.address || '');
@@ -104,8 +107,8 @@ const ProfileSetup: React.FC = () => {
     e.preventDefault();
     setError('');
     if (!name.trim()) {
-      setError('Restaurant name is required');
-      toast.error('Restaurant name is required');
+      setError(t('restaurant_name_required_profile', language));
+      toast.error(t('restaurant_name_required_profile', language));
       return;
     }
     setIsLoading(true);
@@ -124,7 +127,7 @@ const ProfileSetup: React.FC = () => {
         } as any, // allow extra property for Firestore
         paymentInfo,
       });
-      toast.success('Profile updated successfully!', {
+      toast.success(t('profile_updated_success_profile', language), {
         style: {
           background: designSystem.colors.success,
           color: designSystem.colors.textInverse,
@@ -136,8 +139,8 @@ const ProfileSetup: React.FC = () => {
       // If showSidebar, do not redirect
     } catch (error: any) {
       console.error('Error updating profile:', error);
-      setError('Failed to update profile');
-      toast.error('Failed to update profile', {
+      setError(t('failed_update_profile', language));
+      toast.error(t('failed_update_profile', language), {
         style: {
           background: designSystem.colors.error,
           color: designSystem.colors.textInverse,
@@ -161,10 +164,10 @@ const ProfileSetup: React.FC = () => {
         <div className="text-center mb-8">
           <ChefHat size={48} className="mx-auto text-primary" />
           <h1 className="mt-6 text-3xl font-extrabold text-gray-900">
-            Set up your restaurant profile
+            {t('setup_profile_title_profile', language)}
           </h1>
           <p className="mt-2 text-gray-600">
-            Provide information about your restaurant to get started
+            {t('setup_profile_desc_profile', language)}
           </p>
         </div>
 
@@ -177,7 +180,7 @@ const ProfileSetup: React.FC = () => {
             )}
 
             <div className="mb-8">
-              <label className="block text-sm font-medium text-gray-700 mb-3">Restaurant Logo & Colors</label>
+              <label className="block text-sm font-medium text-gray-700 mb-3">{t('logo_colors_label_profile', language)}</label>
               <div className="flex items-center gap-10 flex-wrap">
                 {/* Logo upload */}
                 {logoPreview ? (
@@ -201,7 +204,7 @@ const ProfileSetup: React.FC = () => {
                     className="cursor-pointer flex flex-col items-center justify-center w-24 h-24 border-2 border-dashed border-gray-300 rounded-lg hover:border-[#8B0000] transition-colors"
                   >
                     <Upload size={24} className="text-gray-400" />
-                    <span className="mt-2 text-xs text-gray-500">Upload logo</span>
+                    <span className="mt-2 text-xs text-gray-500">{t('upload_logo_profile', language)}</span>
                   </label>
                 )}
                 <input
@@ -228,7 +231,7 @@ const ProfileSetup: React.FC = () => {
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
               <div>
                 <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                  Restaurant Name*
+                  {t('restaurant_name_label_profile', language)}*
                 </label>
                 <div className="mt-1 relative rounded-md shadow-sm">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -242,14 +245,14 @@ const ProfileSetup: React.FC = () => {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     className="pl-10 block w-full py-3 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
-                    placeholder="Restaurant name"
+                    placeholder={t('restaurant_name_placeholder_profile', language)}
                   />
                 </div>
               </div>
 
               <div>
                 <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-                  Phone Number
+                  {t('phone_label_profile', language)}
                 </label>
                 <div className="mt-1 relative rounded-md shadow-sm flex">
                   <select
@@ -266,15 +269,15 @@ const ProfileSetup: React.FC = () => {
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     className="block w-full py-3 border-t border-b border-r border-gray-300 rounded-r-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm px-3"
-                    placeholder="6 XX XX XX XX"
+                    placeholder={t('phone_placeholder_profile', language)}
                   />
                 </div>
-                <p className="text-xs text-gray-500 mt-1">Cameroon format: 6 XX XX XX XX</p>
+                <p className="text-xs text-gray-500 mt-1">{t('phone_hint_profile', language)}</p>
               </div>
 
               <div className="sm:col-span-2">
                 <label htmlFor="address" className="block text-sm font-medium text-gray-700">
-                  Address
+                  {t('address_label_profile', language)}
                 </label>
                 <div className="mt-1 relative rounded-md shadow-sm">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -287,14 +290,14 @@ const ProfileSetup: React.FC = () => {
                     value={address}
                     onChange={(e) => setAddress(e.target.value)}
                     className="pl-10 block w-full py-3 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
-                    placeholder="123 Main St, City, State, ZIP"
+                    placeholder={t('address_placeholder_profile', language)}
                   />
                 </div>
               </div>
 
               <div className="sm:col-span-2">
                 <label htmlFor="description" className="block text-sm font-medium text-gray-700">
-                  Restaurant Description
+                  {t('description_label_profile', language)}
                 </label>
                 <div className="mt-1 relative rounded-md shadow-sm">
                   <div className="absolute top-3 left-3 pointer-events-none">
@@ -307,7 +310,7 @@ const ProfileSetup: React.FC = () => {
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     className="pl-10 block w-full py-3 border border-gray-300 rounded-md shadow-sm focus:ring-rose focus:border-rose sm:text-sm"
-                    placeholder="Describe your restaurant, cuisine type, specialties, etc."
+                    placeholder={t('description_placeholder_profile', language)}
                   />
                 </div>
               </div>
@@ -325,10 +328,10 @@ const ProfileSetup: React.FC = () => {
               <>
                 {/* Change Email */}
                 <div className="mt-12 border-t border-gray-200 pt-8">
-                  <h2 className="text-lg font-semibold text-gray-900 mb-4">Change Email Address</h2>
+                  <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('change_email_title_profile', language)}</h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Current Email</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">{t('current_email_label_profile', language)}</label>
                       <input
                         type="email"
                         value={email}
@@ -337,24 +340,24 @@ const ProfileSetup: React.FC = () => {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">New Email</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">{t('new_email_label_profile', language)}</label>
                       <input
                         type="email"
                         value={newEmail}
                         onChange={e => setNewEmail(e.target.value)}
                         className="w-full px-3 py-3 border border-gray-300 rounded-md"
-                        placeholder="Enter new email"
+                        placeholder={t('new_email_placeholder_profile', language)}
                       />
                     </div>
                   </div>
                   <div className="mt-4 md:w-1/2">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Current Password (for security)</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">{t('current_password_label_profile', language)}</label>
                     <input
                       type="password"
                       value={emailPassword}
                       onChange={e => setEmailPassword(e.target.value)}
                       className="w-full px-3 py-3 border border-gray-300 rounded-md"
-                      placeholder="Current password"
+                      placeholder={t('current_password_placeholder_profile', language)}
                     />
                   </div>
                   {emailError && <div className="mt-2 text-red-600 text-sm">{emailError}</div>}
@@ -374,32 +377,32 @@ const ProfileSetup: React.FC = () => {
                           setEmail(newEmail);
                           setNewEmail('');
                           setEmailPassword('');
-                          toast.success('Email updated successfully!');
+                          toast.success(t('email_updated_success_profile', language));
                         } catch (err: any) {
-                          setEmailError(err.message || 'Failed to update email');
-                          toast.error(err.message || 'Failed to update email');
+                          setEmailError(err.message || t('failed_update_email_profile', language));
+                          toast.error(err.message || t('failed_update_email_profile', language));
                         } finally {
                           setIsEmailLoading(false);
                         }
                       }}
                     >
-                      {isEmailLoading ? 'Updating...' : 'Update Email'}
+                      {isEmailLoading ? t('updating_profile', language) : t('update_email_profile', language)}
                     </button>
                   </div>
                 </div>
                 {/* Change Password */}
                 <div className="mt-12 border-t border-gray-200 pt-8">
-                  <h2 className="text-lg font-semibold text-gray-900 mb-4">Change Password</h2>
+                  <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('change_password_title_profile', language)}</h2>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Current Password</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">{t('current_password_label_profile', language)}</label>
                       <div className="relative">
                         <input
                           type={showCurrentPassword ? 'text' : 'password'}
                           value={currentPassword}
                           onChange={e => setCurrentPassword(e.target.value)}
                           className="w-full px-3 py-3 border border-gray-300 rounded-md"
-                          placeholder="Current password"
+                          placeholder={t('current_password_placeholder_profile', language)}
                         />
                         <button
                           type="button"
@@ -412,14 +415,14 @@ const ProfileSetup: React.FC = () => {
                       </div>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">New Password</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">{t('new_password_label_profile', language)}</label>
                       <div className="relative">
                         <input
                           type={showNewPassword ? 'text' : 'password'}
                           value={newPassword}
                           onChange={e => setNewPassword(e.target.value)}
                           className="w-full px-3 py-3 border border-gray-300 rounded-md"
-                          placeholder="New password"
+                          placeholder={t('new_password_placeholder_profile', language)}
                         />
                         <button
                           type="button"
@@ -432,14 +435,14 @@ const ProfileSetup: React.FC = () => {
                       </div>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Confirm New Password</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">{t('confirm_new_password_label_profile', language)}</label>
                       <div className="relative">
                         <input
                           type={showConfirmPassword ? 'text' : 'password'}
                           value={confirmPassword}
                           onChange={e => setConfirmPassword(e.target.value)}
                           className="w-full px-3 py-3 border border-gray-300 rounded-md"
-                          placeholder="Confirm new password"
+                          placeholder={t('confirm_new_password_placeholder_profile', language)}
                         />
                         <button
                           type="button"
@@ -471,16 +474,16 @@ const ProfileSetup: React.FC = () => {
                           setCurrentPassword('');
                           setNewPassword('');
                           setConfirmPassword('');
-                          toast.success('Password updated successfully!');
+                          toast.success(t('password_updated_success_profile', language));
                         } catch (err: any) {
-                          setPasswordError(err.message || 'Failed to update password');
-                          toast.error(err.message || 'Failed to update password');
+                          setPasswordError(err.message || t('failed_update_password_profile', language));
+                          toast.error(err.message || t('failed_update_password_profile', language));
                         } finally {
                           setIsPasswordLoading(false);
                         }
                       }}
                     >
-                      {isPasswordLoading ? 'Updating...' : 'Update Password'}
+                      {isPasswordLoading ? t('updating_profile', language) : t('update_password_profile', language)}
                     </button>
                   </div>
                 </div>
@@ -493,7 +496,7 @@ const ProfileSetup: React.FC = () => {
                 disabled={isLoading}
                 className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                {isLoading ? 'Saving...' : showSidebar ? 'Save changes' : 'Save and Continue'}
+                {isLoading ? t('saving_profile', language) : showSidebar ? t('save_changes_profile', language) : t('save_continue_profile', language)}
               </button>
             </div>
           </form>
