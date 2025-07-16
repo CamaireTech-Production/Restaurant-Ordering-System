@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { ClipboardList, Clock, CheckCircle2, ChefHat, XCircle, Filter, Table, Trash2, Eye } from 'lucide-react';
+import { ClipboardList, Clock, CheckCircle2, ChefHat, XCircle, Filter, Table, Trash2, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import Modal from '../components/ui/Modal';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import designSystem from '../designSystem';
-import { OrderItem, Order } from '../types';
+import { Order } from '../types';
+import { t } from '../utils/i18n';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface OrderManagementContentProps {
   orders: Order[];
@@ -55,26 +57,80 @@ const OrderManagementContent: React.FC<OrderManagementContentProps> = ({
   const [viewOrder, setViewOrder] = useState<Order | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [orderToDelete, setOrderToDelete] = useState<Order | null>(null);
+  const { language } = useLanguage();
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
   // Filter orders based on status
   let filteredOrders = statusFilter === 'all'
     ? orders
     : orders.filter(order => order.status === statusFilter);
 
-  // Sort orders by createdAt descending (newest first)
+  // Sort orders by createdAt (toggle asc/desc)
   filteredOrders = filteredOrders.slice().sort((a, b) => {
     const aTime = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : new Date(a.createdAt).getTime();
     const bTime = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : new Date(b.createdAt).getTime();
-    return bTime - aTime;
+    return sortDirection === 'asc' ? aTime - bTime : bTime - aTime;
   });
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentItems = filteredOrders.slice(startIndex, endIndex);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+  const handleItemsPerPageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setItemsPerPage(Number(e.target.value));
+    setCurrentPage(1);
+  };
+  const handleSortDate = () => {
+    setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+  };
+  const renderPagination = () => {
+    const pages = [];
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+    if (endPage - startPage + 1 < maxVisiblePages) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+    pages.push(
+      <button key="prev" onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1} className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">&lt;</button>
+    );
+    if (startPage > 1) {
+      pages.push(<button key={1} onClick={() => handlePageChange(1)} className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">1</button>);
+      if (startPage > 2) {
+        pages.push(<span key="start-ellipsis" className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">...</span>);
+      }
+    }
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(
+        <button key={i} onClick={() => handlePageChange(i)} className={`relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium ${currentPage === i ? 'bg-primary text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}>{i}</button>
+      );
+    }
+    if (endPage < totalPages) {
+      if (endPage < totalPages - 1) {
+        pages.push(<span key="end-ellipsis" className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">...</span>);
+      }
+      pages.push(<button key={totalPages} onClick={() => handlePageChange(totalPages)} className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">{totalPages}</button>);
+    }
+    pages.push(
+      <button key="next" onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages} className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">&gt;</button>
+    );
+    return pages;
+  };
 
   return (
     <div className="shadow rounded-lg overflow-hidden" style={{ background: designSystem.colors.white }}>
       <div className="p-4 sm:p-6 border-b" style={{ borderColor: designSystem.colors.borderLightGray }}>
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h2 className="text-xl font-semibold" style={{ color: designSystem.colors.primary }}>Order Management</h2>
-            <p className="text-sm" style={{ color: designSystem.colors.text }}>Manage and track customer orders</p>
+            <h2 className="text-xl font-semibold" style={{ color: designSystem.colors.primary }}>{t('order_management', language)}</h2>
+            <p className="text-sm" style={{ color: designSystem.colors.text }}>{t('manage_and_track_orders', language)}</p>
           </div>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -86,12 +142,12 @@ const OrderManagementContent: React.FC<OrderManagementContentProps> = ({
               className="pl-10 block w-full py-3 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
               style={{ color: designSystem.colors.text }}
             >
-              <option value="all">All Orders</option>
-              <option value="pending">Pending</option>
-              <option value="preparing">Preparing</option>
-              <option value="ready">Ready</option>
-              <option value="completed">Completed</option>
-              <option value="cancelled">Cancelled</option>
+              <option value="all">{t('all_orders', language)}</option>
+              <option value="pending">{t('pending', language)}</option>
+              <option value="preparing">{t('preparing', language)}</option>
+              <option value="ready">{t('ready', language)}</option>
+              <option value="completed">{t('completed', language)}</option>
+              <option value="cancelled">{t('cancelled', language)}</option>
             </select>
           </div>
         </div>
@@ -103,172 +159,243 @@ const OrderManagementContent: React.FC<OrderManagementContentProps> = ({
       ) : filteredOrders.length === 0 ? (
         <div className="text-center py-10">
           <ClipboardList size={48} className="mx-auto" style={{ color: designSystem.colors.secondary }} />
-          <h3 className="mt-2 text-sm font-medium" style={{ color: designSystem.colors.primary }}>No orders</h3>
+          <h3 className="mt-2 text-sm font-medium" style={{ color: designSystem.colors.primary }}>{t('no_orders', language)}</h3>
           <p className="mt-1 text-sm" style={{ color: designSystem.colors.text }}>
-            {orders.length === 0 ? "No orders have been placed yet" : "No orders match the selected filter"}
+            {orders.length === 0 ? t('no_orders_placed', language) : t('no_orders_match_filter', language)}
           </p>
         </div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead style={{ background: designSystem.colors.statusDefaultBg }}>
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: designSystem.colors.text }}>Order Details</th>
-                {!isDemoUser && (
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: designSystem.colors.text }}>Table</th>
-                )}
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: designSystem.colors.text }}>Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: designSystem.colors.text }}>Total</th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: designSystem.colors.text }}>Date</th>
-                <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: designSystem.colors.text }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody style={{ background: designSystem.colors.white }}>
-              {filteredOrders.map((order) => (
-                <tr key={order.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">
-                      Order #{order.id.slice(-6)}
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      {order.items.length} item(s)
-                    </div>
-                  </td>
+        <>
+          {/* Top Pagination Controls */}
+          <div className="bg-white px-4 py-3 flex items-center justify-between border-b border-gray-200">
+            <div className="flex-1 flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <p className="text-sm text-gray-700">
+                  {t('showing_results', language)} <span className="font-medium">{startIndex + 1}</span> to{' '}
+                  <span className="font-medium">{Math.min(endIndex, filteredOrders.length)}</span>{' '}
+                  {t('of_results', language)} <span className="font-medium">{filteredOrders.length}</span>
+                </p>
+                <div className="flex items-center space-x-2">
+                  <label htmlFor="itemsPerPage" className="text-sm text-gray-700">{t('items_per_page', language)}</label>
+                  <select
+                    id="itemsPerPage"
+                    value={itemsPerPage}
+                    onChange={handleItemsPerPageChange}
+                    className="block w-20 py-1 px-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
+                  >
+                    <option value="5">5</option>
+                    <option value="10">10</option>
+                    <option value="20">20</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                  {renderPagination()}
+                </nav>
+              </div>
+            </div>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead style={{ background: designSystem.colors.statusDefaultBg }}>
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: designSystem.colors.text }}>{t('order_details_order', language)}</th>
                   {!isDemoUser && (
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: designSystem.colors.text }}>{t('table_order', language)}</th>
+                  )}
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: designSystem.colors.text }}>{t('status_order', language)}</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: designSystem.colors.text }}>{t('total_order', language)}</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer select-none" style={{ color: designSystem.colors.text }} onClick={handleSortDate}>
+                    {t('date_order', language)}
+                    <span className="ml-1 align-middle">
+                      {sortDirection === 'asc' ? <ArrowUp size={14} style={{ display: 'inline' }} /> : sortDirection === 'desc' ? <ArrowDown size={14} style={{ display: 'inline' }} /> : <ArrowUpDown size={14} style={{ display: 'inline' }} />}
+                    </span>
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: designSystem.colors.text }}>{t('actions_order', language)}</th>
+                </tr>
+              </thead>
+              <tbody style={{ background: designSystem.colors.white }}>
+                {currentItems.map((order) => (
+                  <tr key={order.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <Table size={16} className="mr-1" style={{ color: designSystem.colors.secondary }} />
-                        <span className="text-sm" style={{ color: designSystem.colors.primary }}>
-                          #{order.tableNumber}
-                        </span>
+                      <div className="text-sm font-medium text-gray-900">
+                        {t('order_order', language)} #{order.id.slice(-6)}
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        {order.items.length} {t('items_order', language)}
                       </div>
                     </td>
-                  )}
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span
-                      className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
-                      style={{
-                        background: order.status === 'pending' ? designSystem.colors.statusPendingBg
-                          : order.status === 'preparing' ? designSystem.colors.statusPreparingBg
-                          : order.status === 'ready' ? designSystem.colors.statusReadyBg
-                          : order.status === 'completed' ? designSystem.colors.statusCompletedBg
-                          : designSystem.colors.statusCancelledBg,
-                        color: order.status === 'pending' ? designSystem.colors.statusPendingText
-                          : order.status === 'preparing' ? designSystem.colors.statusPreparingText
-                          : order.status === 'ready' ? designSystem.colors.statusReadyText
-                          : order.status === 'completed' ? designSystem.colors.statusCompletedText
-                          : designSystem.colors.statusCancelledText,
-                      }}
-                    >
-                      <span className="mr-1.5">{getStatusIcon(order.status)}</span>
-                      {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm" style={{ color: designSystem.colors.primary }}>
-                      {order.totalAmount.toLocaleString()} FCFA
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm" style={{ color: designSystem.colors.primary }}>
-                      {formatDate(order.createdAt)}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    {updatingOrderId === order.id ? (
-                      <LoadingSpinner size={20} />
-                    ) : (
-                      <div className="flex items-center justify-end space-x-2">
-                        {order.status === 'pending' && (
+                    {!isDemoUser && (
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <Table size={16} className="mr-1" style={{ color: designSystem.colors.secondary }} />
+                          <span className="text-sm" style={{ color: designSystem.colors.primary }}>
+                            #{order.tableNumber}
+                          </span>
+                        </div>
+                      </td>
+                    )}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span
+                        className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                        style={{
+                          background: order.status === 'pending' ? designSystem.colors.statusPendingBg
+                            : order.status === 'preparing' ? designSystem.colors.statusPreparingBg
+                            : order.status === 'ready' ? designSystem.colors.statusReadyBg
+                            : order.status === 'completed' ? designSystem.colors.statusCompletedBg
+                            : designSystem.colors.statusCancelledBg,
+                          color: order.status === 'pending' ? designSystem.colors.statusPendingText
+                            : order.status === 'preparing' ? designSystem.colors.statusPreparingText
+                            : order.status === 'ready' ? designSystem.colors.statusReadyText
+                            : order.status === 'completed' ? designSystem.colors.statusCompletedText
+                            : designSystem.colors.statusCancelledText,
+                        }}
+                      >
+                        <span className="mr-1.5">{getStatusIcon(order.status)}</span>
+                        {t(order.status, language)}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm" style={{ color: designSystem.colors.primary }}>
+                        {order.totalAmount.toLocaleString()} FCFA
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm" style={{ color: designSystem.colors.primary }}>
+                        {formatDate(order.createdAt)}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      {updatingOrderId === order.id ? (
+                        <LoadingSpinner size={20} />
+                      ) : (
+                        <div className="flex items-center justify-end space-x-2">
+                          {order.status === 'pending' && (
+                            <button
+                              onClick={() => onStatusChange(order.id, 'preparing')}
+                              className="px-2 py-1 text-xs rounded-md border"
+                              style={{
+                                color: designSystem.colors.statusPreparingText,
+                                borderColor: designSystem.colors.statusPreparingText,
+                              }}
+                            >
+                              {t('start_preparing_order', language)}
+                            </button>
+                          )}
+                          {order.status === 'preparing' && (
+                            <button
+                              onClick={() => onStatusChange(order.id, 'ready')}
+                              className="px-2 py-1 text-xs rounded-md border"
+                              style={{
+                                color: designSystem.colors.statusReadyText,
+                                borderColor: designSystem.colors.statusReadyText,
+                              }}
+                            >
+                              {t('mark_ready_order', language)}
+                            </button>
+                          )}
+                          {order.status === 'ready' && (
+                            <button
+                              onClick={() => onStatusChange(order.id, 'completed')}
+                              className="px-2 py-1 text-xs rounded-md border"
+                              style={{
+                                color: designSystem.colors.statusCompletedText,
+                                borderColor: designSystem.colors.statusCompletedText,
+                              }}
+                            >
+                              {t('complete_order', language)}
+                            </button>
+                          )}
+                          {(order.status === 'pending' || order.status === 'preparing') && (
+                            <button
+                              onClick={() => onStatusChange(order.id, 'cancelled')}
+                              className="px-2 py-1 text-xs rounded-md border"
+                              style={{
+                                color: designSystem.colors.statusCancelledText,
+                                borderColor: designSystem.colors.statusCancelledText,
+                              }}
+                            >
+                              {t('cancel_order', language)}
+                            </button>
+                          )}
+                          {!isDemoUser && (
+                            <button
+                              onClick={() => setViewOrder(order)}
+                              className="px-2 py-1 text-xs rounded-md border"
+                              style={{
+                                color: designSystem.colors.secondary,
+                                borderColor: designSystem.colors.secondary,
+                              }}
+                            >
+                              {t('view_items_order', language)}
+                            </button>
+                          )}
                           <button
-                            onClick={() => onStatusChange(order.id, 'preparing')}
-                            className="px-2 py-1 text-xs rounded-md border"
-                            style={{
-                              color: designSystem.colors.statusPreparingText,
-                              borderColor: designSystem.colors.statusPreparingText,
-                            }}
-                          >
-                            Start Preparing
-                          </button>
-                        )}
-                        {order.status === 'preparing' && (
-                          <button
-                            onClick={() => onStatusChange(order.id, 'ready')}
-                            className="px-2 py-1 text-xs rounded-md border"
-                            style={{
-                              color: designSystem.colors.statusReadyText,
-                              borderColor: designSystem.colors.statusReadyText,
-                            }}
-                          >
-                            Mark Ready
-                          </button>
-                        )}
-                        {order.status === 'ready' && (
-                          <button
-                            onClick={() => onStatusChange(order.id, 'completed')}
-                            className="px-2 py-1 text-xs rounded-md border"
-                            style={{
-                              color: designSystem.colors.statusCompletedText,
-                              borderColor: designSystem.colors.statusCompletedText,
-                            }}
-                          >
-                            Complete
-                          </button>
-                        )}
-                        {(order.status === 'pending' || order.status === 'preparing') && (
-                          <button
-                            onClick={() => onStatusChange(order.id, 'cancelled')}
+                            onClick={() => { setOrderToDelete(order); setDeleteConfirmOpen(true); }}
                             className="px-2 py-1 text-xs rounded-md border"
                             style={{
                               color: designSystem.colors.statusCancelledText,
                               borderColor: designSystem.colors.statusCancelledText,
                             }}
                           >
-                            Cancel
+                            <Trash2 size={16} />
                           </button>
-                        )}
-                        {!isDemoUser && (
-                          <button
-                            onClick={() => setViewOrder(order)}
-                            className="px-2 py-1 text-xs rounded-md border"
-                            style={{
-                              color: designSystem.colors.secondary,
-                              borderColor: designSystem.colors.secondary,
-                            }}
-                          >
-                            View Items
-                          </button>
-                        )}
-                        <button
-                          onClick={() => { setOrderToDelete(order); setDeleteConfirmOpen(true); }}
-                          className="px-2 py-1 text-xs rounded-md border"
-                          style={{
-                            color: designSystem.colors.statusCancelledText,
-                            borderColor: designSystem.colors.statusCancelledText,
-                          }}
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {/* Bottom Pagination Controls */}
+          <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200">
+            <div className="flex-1 flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <p className="text-sm text-gray-700">
+                  {t('showing_results', language)} <span className="font-medium">{startIndex + 1}</span> to{' '}
+                  <span className="font-medium">{Math.min(endIndex, filteredOrders.length)}</span>{' '}
+                  {t('of_results', language)} <span className="font-medium">{filteredOrders.length}</span>
+                </p>
+                <div className="flex items-center space-x-2">
+                  <label htmlFor="itemsPerPageBottom" className="text-sm text-gray-700">{t('items_per_page', language)}</label>
+                  <select
+                    id="itemsPerPageBottom"
+                    value={itemsPerPage}
+                    onChange={handleItemsPerPageChange}
+                    className="block w-20 py-1 px-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
+                  >
+                    <option value="5">5</option>
+                    <option value="10">10</option>
+                    <option value="20">20</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                  {renderPagination()}
+                </nav>
+              </div>
+            </div>
+          </div>
+        </>
       )}
       {/* View Items Modal */}
-      <Modal isOpen={!!viewOrder} onClose={() => setViewOrder(null)} title={viewOrder ? `Order #${viewOrder.id.slice(-6)} Items` : ''}>
+      <Modal isOpen={!!viewOrder} onClose={() => setViewOrder(null)} title={viewOrder ? `${t('order_order', language)} #${viewOrder.id.slice(-6)} ${t('items_order', language)}` : ''}>
         {viewOrder && (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead style={{ background: designSystem.colors.statusDefaultBg }}>
                 <tr>
-                  <th className="px-4 py-2 text-left text-xs font-medium uppercase" style={{ color: designSystem.colors.text }}>Dish</th>
-                  <th className="px-4 py-2 text-center text-xs font-medium uppercase" style={{ color: designSystem.colors.text }}>Qty</th>
-                  <th className="px-4 py-2 text-right text-xs font-medium uppercase" style={{ color: designSystem.colors.text }}>Price</th>
-                  <th className="px-4 py-2 text-right text-xs font-medium uppercase" style={{ color: designSystem.colors.text }}>Subtotal</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium uppercase" style={{ color: designSystem.colors.text }}>{t('dish_order', language)}</th>
+                  <th className="px-4 py-2 text-center text-xs font-medium uppercase" style={{ color: designSystem.colors.text }}>{t('qty_order', language)}</th>
+                  <th className="px-4 py-2 text-right text-xs font-medium uppercase" style={{ color: designSystem.colors.text }}>{t('price_order', language)}</th>
+                  <th className="px-4 py-2 text-right text-xs font-medium uppercase" style={{ color: designSystem.colors.text }}>{t('subtotal_order', language)}</th>
                 </tr>
               </thead>
               <tbody style={{ background: designSystem.colors.white }}>
@@ -288,7 +415,7 @@ const OrderManagementContent: React.FC<OrderManagementContentProps> = ({
               </tbody>
               <tfoot>
                 <tr>
-                  <td colSpan={3} className="px-4 py-2 text-right font-bold" style={{ color: designSystem.colors.primary }}>Total</td>
+                  <td colSpan={3} className="px-4 py-2 text-right font-bold" style={{ color: designSystem.colors.primary }}>{t('total_order', language)}</td>
                   <td className="px-4 py-2 text-right font-bold" style={{ color: designSystem.colors.primary }}>{viewOrder.totalAmount.toLocaleString()} FCFA</td>
                 </tr>
               </tfoot>
@@ -297,23 +424,23 @@ const OrderManagementContent: React.FC<OrderManagementContentProps> = ({
         )}
       </Modal>
       {/* Delete Confirmation Modal */}
-      <Modal isOpen={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)} title="Delete Order" >
+      <Modal isOpen={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)} title={t('delete_order_order', language)} >
         <div className="p-4">
-          <p className="text-gray-800 text-base mb-4">Are you sure you want to delete this order? This action cannot be undone.</p>
+          <p className="text-gray-800 text-base mb-4">{t('delete_order_confirm_order', language)}</p>
           <div className="flex justify-end gap-2">
             <button
               type="button"
               onClick={() => setDeleteConfirmOpen(false)}
               className="inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary sm:w-auto sm:text-sm"
             >
-              Cancel
+              {t('cancel_order', language)}
             </button>
             <button
               type="button"
               onClick={() => { if (orderToDelete) { onDelete(orderToDelete.id); setDeleteConfirmOpen(false); setOrderToDelete(null); } }}
               className="inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:w-auto sm:text-sm"
             >
-              Delete
+              {t('delete', language)}
             </button>
           </div>
         </div>
