@@ -9,6 +9,8 @@ import type { ParseResult } from 'papaparse';
 import { db } from '../firebase/config';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import imageCompression from 'browser-image-compression';
+import { useLanguage } from '../contexts/LanguageContext';
+import { t } from '../utils/i18n';
 
 type MenuItem = Dish & {
   deleted: boolean;
@@ -77,17 +79,18 @@ const MenuManagementContent: React.FC<MenuManagementContentProps> = ({
   const [localMenuItems, setLocalMenuItems] = useState<MenuItem[]>(menuItems);
   const [isImageUploading, setIsImageUploading] = useState(false);
   const [imageError, setImageError] = useState<string | null>(null);
+  const { language } = useLanguage();
 
   useEffect(() => { setLocalCategories(categories); }, [categories]);
   useEffect(() => { setLocalMenuItems(menuItems); }, [menuItems]);
 
   const dishFields = [
-    { key: 'title', label: 'Title*' },
-    { key: 'price', label: 'Price*' },
-    { key: 'description', label: 'Description' },
-    { key: 'category', label: 'Category*' },
-    { key: 'status', label: 'Status (active/inactive)' },
-    { key: 'image', label: 'Image URL' },
+    { key: 'title', label: t('dish_title', language) + '*' },
+    { key: 'price', label: t('dish_price', language) + '*' },
+    { key: 'description', label: t('dish_description', language) },
+    { key: 'category', label: t('dish_category', language) + '*' },
+    { key: 'status', label: t('dish_status', language) + ' (active/inactive)' },
+    { key: 'image', label: t('dish_image_url', language) },
   ];
 
   // Filter out deleted menu items for admin view
@@ -494,8 +497,8 @@ const MenuManagementContent: React.FC<MenuManagementContentProps> = ({
     <div className="shadow rounded-lg overflow-hidden" style={{ background: designSystem.colors.white }}>
       <div className="p-4 sm:p-6 border-b flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4" style={{ borderColor: designSystem.colors.borderLightGray }}>
         <div>
-          <h2 className="text-xl font-semibold" style={{ color: designSystem.colors.primary }}>Dishes</h2>
-          <p className="text-sm" style={{ color: designSystem.colors.text }}>Manage your restaurant dishes</p>
+          <h2 className="text-xl font-semibold" style={{ color: designSystem.colors.primary }}>{t('dishes', language)}</h2>
+          <p className="text-sm" style={{ color: designSystem.colors.text }}>{t('manage_your_dishes', language)}</p>
         </div>
         <div className="flex flex-row gap-2 items-center">
           <button
@@ -503,13 +506,13 @@ const MenuManagementContent: React.FC<MenuManagementContentProps> = ({
             className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium"
             style={{ background: designSystem.colors.primary, color: designSystem.colors.white }}
           >
-            <PlusCircle size={16} className="mr-2" /> Add Dish
+            <PlusCircle size={16} className="mr-2" /> {t('add_dish', language)}
           </button>
           <button
             onClick={openCSVModal}
             className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium bg-blue-600 text-white hover:bg-blue-700"
           >
-            <Upload size={16} className="mr-2" /> Import CSV
+            <Upload size={16} className="mr-2" /> {t('import_csv', language)}
           </button>
         </div>
       </div>
@@ -523,7 +526,7 @@ const MenuManagementContent: React.FC<MenuManagementContentProps> = ({
             type="text"
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            placeholder="Search dishes..."
+            placeholder={t('search_dishes', language)}
             className="pl-10 block w-full py-3 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
           />
           {searchQuery && (
@@ -545,7 +548,7 @@ const MenuManagementContent: React.FC<MenuManagementContentProps> = ({
             onChange={e => setFilterCategory(e.target.value)}
             className="pl-10 block w-full py-3 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
           >
-            <option value="">All Categories</option>
+            <option value="">{t('all_categories', language)}</option>
             {localCategories.map(category => (
               <option key={category.id} value={category.id}>{category.title}</option>
             ))}
@@ -556,7 +559,7 @@ const MenuManagementContent: React.FC<MenuManagementContentProps> = ({
       {selectedItems.length > 0 && (
         <div className="mt-4 p-3 bg-gray-50 rounded-md flex items-center justify-between">
           <div className="text-sm font-medium text-gray-700">
-            {selectedItems.length} items selected
+            {selectedItems.length} {t('items_selected', language)}
           </div>
           <div className="flex gap-2">
             <button
@@ -564,27 +567,27 @@ const MenuManagementContent: React.FC<MenuManagementContentProps> = ({
               className="inline-flex items-center px-3 py-1 text-xs font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
               disabled={isDeleting}
             >
-              <Eye size={14} className="mr-1" /> Activate
+              <Eye size={14} className="mr-1" /> {t('activate', language)}
             </button>
             <button
               onClick={() => handleBulkAction('deactivate')}
               className="inline-flex items-center px-3 py-1 text-xs font-medium rounded-md text-white bg-yellow-600 hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 disabled:opacity-50"
               disabled={isDeleting}
             >
-              <EyeOff size={14} className="mr-1" /> Deactivate
+              <EyeOff size={14} className="mr-1" /> {t('deactivate', language)}
             </button>
             <button
               onClick={() => handleBulkAction('delete')}
               className="inline-flex items-center px-3 py-1 text-xs font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50"
               disabled={isDeleting}
             >
-              <Trash2 size={14} className="mr-1" /> Delete
+              <Trash2 size={14} className="mr-1" /> {t('delete', language)}
             </button>
       {/* Bulk Delete Confirmation Modal */}
-      <Modal isOpen={bulkDeleteConfirmOpen} onClose={() => setBulkDeleteConfirmOpen(false)} title="Delete Dishes">
+      <Modal isOpen={bulkDeleteConfirmOpen} onClose={() => setBulkDeleteConfirmOpen(false)} title={t('delete_dishes', language)}>
         <div className="p-4">
           <p className="text-gray-800 text-base mb-4">
-            Are you sure you want to delete <span className="font-semibold">{selectedItems.length}</span> selected dish{selectedItems.length > 1 ? 'es' : ''}? This action cannot be undone.
+            {t('delete_dishes_confirm', language)}
           </p>
           <div className="flex justify-end gap-2">
             <button
@@ -592,7 +595,7 @@ const MenuManagementContent: React.FC<MenuManagementContentProps> = ({
               onClick={() => setBulkDeleteConfirmOpen(false)}
               className="inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary sm:w-auto sm:text-sm"
             >
-              Cancel
+              {t('cancel', language)}
             </button>
             <button
               type="button"
@@ -603,7 +606,7 @@ const MenuManagementContent: React.FC<MenuManagementContentProps> = ({
               }}
               className="inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:w-auto sm:text-sm"
             >
-              Delete
+              {t('delete', language)}
             </button>
           </div>
         </div>
@@ -616,12 +619,10 @@ const MenuManagementContent: React.FC<MenuManagementContentProps> = ({
         <div className="flex-1 flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <p className="text-sm text-gray-700">
-              Showing <span className="font-medium">{startIndex + 1}</span> to{' '}
-              <span className="font-medium">{Math.min(endIndex, filteredItems.length)}</span>{' '}
-              of <span className="font-medium">{filteredItems.length}</span> results
+              {t('showing_results', language)}
             </p>
             <div className="flex items-center space-x-2">
-              <label htmlFor="itemsPerPage" className="text-sm text-gray-700">Items per page:</label>
+              <label htmlFor="itemsPerPage" className="text-sm text-gray-700">{t('items_per_page', language)}</label>
               <select
                 id="itemsPerPage"
                 value={itemsPerPage}
@@ -658,11 +659,11 @@ const MenuManagementContent: React.FC<MenuManagementContentProps> = ({
                   />
                 </div>
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Plat (Dish)</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('dish_column', language)}</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('category_column', language)}</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('price_column', language)}</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('status_column', language)}</th>
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t('actions_column', language)}</th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
@@ -670,8 +671,8 @@ const MenuManagementContent: React.FC<MenuManagementContentProps> = ({
               <tr>
                 <td colSpan={6} className="px-6 py-10 text-center text-gray-500">
                   {localMenuItems.length === 0 ? 
-                    "No dishes found. Add your first dish!" : 
-                    "No dishes match your search criteria."}
+                    t('no_dishes_found', language) : 
+                    t('no_dishes_match', language)}
                 </td>
               </tr>
             ) : (
@@ -697,7 +698,7 @@ const MenuManagementContent: React.FC<MenuManagementContentProps> = ({
                         )}
                       </div>
                       <div className="ml-4">
-                        <div className="text-sm font-medium" style={{ color: designSystem.colors.primary }}>{item.title} <span className="text-xs" style={{ color: designSystem.colors.text }}>{"(Plat)"}</span></div>
+                        <div className="text-sm font-medium" style={{ color: designSystem.colors.primary }}>{item.title} <span className="text-xs" style={{ color: designSystem.colors.text }}>{t('dish_label', language)}</span></div>
                         {item.description && (
                           <div className="text-sm truncate max-w-xs" style={{ color: designSystem.colors.text }}>{item.description}</div>
                         )}
@@ -718,26 +719,26 @@ const MenuManagementContent: React.FC<MenuManagementContentProps> = ({
                         color: item.status === 'active' ? designSystem.colors.statusReadyText : designSystem.colors.statusPendingText
                       }}
                     >
-                      {item.status === 'active' ? 'Active' : 'Inactive'}
+                      {item.status === 'active' ? t('active', language) : t('inactive', language)}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div className="flex justify-end space-x-2">
                       <button
                         onClick={() => onToggleStatus(item)}
-                        title={item.status === 'active' ? 'Deactivate' : 'Activate'}
+                        title={item.status === 'active' ? t('deactivate', language) : t('activate', language)}
                       >
                         {item.status === 'active' ? <EyeOff size={18} style={{ color: designSystem.colors.secondary }} /> : <Eye size={18} style={{ color: designSystem.colors.secondary }} />}
                       </button>
                       <button
                         onClick={() => openEditModal(item)}
-                        title="Edit"
+                        title={t('edit', language)}
                       >
                         <Edit size={18} style={{ color: designSystem.colors.secondary }} />
                       </button>
                       <button
                         onClick={() => { setItemToDelete(item); setDeleteConfirmOpen(true); }}
-                        title="Delete"
+                        title={t('delete', language)}
                       >
                         <Trash2 size={18} style={{ color: designSystem.colors.secondary }} />
                       </button>
@@ -754,12 +755,10 @@ const MenuManagementContent: React.FC<MenuManagementContentProps> = ({
         <div className="flex-1 flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <p className="text-sm text-gray-700">
-              Showing <span className="font-medium">{startIndex + 1}</span> to{' '}
-              <span className="font-medium">{Math.min(endIndex, filteredItems.length)}</span>{' '}
-              of <span className="font-medium">{filteredItems.length}</span> results
+              {t('showing_results', language)}
             </p>
             <div className="flex items-center space-x-2">
-              <label htmlFor="itemsPerPageBottom" className="text-sm text-gray-700">Items per page:</label>
+              <label htmlFor="itemsPerPageBottom" className="text-sm text-gray-700">{t('items_per_page', language)}</label>
               <select
                 id="itemsPerPageBottom"
                 value={itemsPerPage}
@@ -782,14 +781,14 @@ const MenuManagementContent: React.FC<MenuManagementContentProps> = ({
         </div>
       </div>
       {/* Add/Edit Modal */}
-      <Modal isOpen={isModalOpen} onClose={closeModal} title={editingItem ? 'Edit Dish' : 'Add Dish'}>
+      <Modal isOpen={isModalOpen} onClose={closeModal} title={editingItem ? t('edit_dish', language) : t('add_dish', language)}>
         {/* Field requirements explanation */}
         <div className="mb-3 text-xs text-gray-500">
-          <span className="text-red-500">*</span> Required fields. <span className="ml-2">Other fields are optional.</span>
+          <span className="text-red-500">*</span> {t('required_fields', language)} <span className="ml-2">{t('other_fields_optional', language)}</span>
         </div>
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="mb-2">
-            <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">Title*</label>
+            <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">{t('dish_title', language)}*</label>
             <input
               type="text"
               id="title"
@@ -801,7 +800,7 @@ const MenuManagementContent: React.FC<MenuManagementContentProps> = ({
             />
           </div>
           <div className="mb-2">
-            <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-1">Price*</label>
+            <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-1">{t('dish_price', language)}*</label>
             <div className="relative rounded-md shadow-sm">
               <input
                 type="number"
@@ -820,7 +819,7 @@ const MenuManagementContent: React.FC<MenuManagementContentProps> = ({
             </div>
           </div>
           <div className="mb-2">
-            <label htmlFor="categoryId" className="block text-sm font-medium text-gray-700 mb-1">Category*</label>
+            <label htmlFor="categoryId" className="block text-sm font-medium text-gray-700 mb-1">{t('dish_category', language)}*</label>
             <select
               id="categoryId"
               name="categoryId"
@@ -829,14 +828,14 @@ const MenuManagementContent: React.FC<MenuManagementContentProps> = ({
               className="block w-full py-3 px-3 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
               required
             >
-              <option value="">Select a category</option>
+              <option value="">{t('select_category', language)}</option>
               {localCategories.map(category => (
                 <option key={category.id} value={category.id}>{category.title}</option>
               ))}
             </select>
           </div>
           <div className="mb-2">
-            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">{t('dish_description', language)}</label>
             <textarea
               id="description"
               name="description"
@@ -847,7 +846,7 @@ const MenuManagementContent: React.FC<MenuManagementContentProps> = ({
             />
           </div>
           <div className="mb-2">
-            <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+            <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">{t('dish_status', language)}</label>
             <select
               id="status"
               name="status"
@@ -855,12 +854,12 @@ const MenuManagementContent: React.FC<MenuManagementContentProps> = ({
               onChange={handleInputChange}
               className="block w-full py-3 px-3 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
             >
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
+              <option value="active">{t('active', language)}</option>
+              <option value="inactive">{t('inactive', language)}</option>
             </select>
           </div>
           <div className="mb-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Image</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('dish_image', language)}</label>
             <div className="flex items-center">
               {isImageUploading ? (
                 <div className="w-24 h-24 flex items-center justify-center">
@@ -887,7 +886,7 @@ const MenuManagementContent: React.FC<MenuManagementContentProps> = ({
                   className="cursor-pointer flex flex-col items-center justify-center w-24 h-24 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary transition-colors"
                 >
                   <Upload size={24} className="text-gray-400" />
-                  <span className="mt-2 text-xs text-gray-500">Upload image</span>
+                  <span className="mt-2 text-xs text-gray-500">{t('upload_image', language)}</span>
                 </label>
               )}
               <input
@@ -906,42 +905,42 @@ const MenuManagementContent: React.FC<MenuManagementContentProps> = ({
               onClick={closeModal}
               className="inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary sm:w-auto sm:text-sm"
             >
-              Cancel
+              {t('cancel', language)}
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
               className="inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-primary text-base font-medium text-white hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary sm:w-auto sm:text-sm disabled:opacity-50"
             >
-              {isSubmitting ? <LoadingSpinner size={20} /> : (editingItem ? 'Save Changes' : 'Add Dish')}
+              {isSubmitting ? <LoadingSpinner size={20} /> : (editingItem ? t('save_changes', language) : t('add_dish', language))}
             </button>
           </div>
         </form>
       </Modal>
       {/* Delete Confirmation Modal */}
-      <Modal isOpen={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)} title="Delete Dish" >
+      <Modal isOpen={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)} title={t('delete_dish', language)} >
         <div className="p-4">
-          <p className="text-gray-800 text-base mb-4">Are you sure you want to delete the dish <span className="font-semibold">{itemToDelete?.title}</span>? This action cannot be undone.</p>
+          <p className="text-gray-800 text-base mb-4">{t('delete_dish_confirm', language)}{itemToDelete?.title ? `: ${itemToDelete.title}` : ''}</p>
           <div className="flex justify-end gap-2">
             <button
               type="button"
               onClick={() => setDeleteConfirmOpen(false)}
               className="inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary sm:w-auto sm:text-sm"
             >
-              Cancel
+              {t('cancel', language)}
             </button>
             <button
               type="button"
               onClick={() => { if (itemToDelete) { onDelete(itemToDelete.id); setDeleteConfirmOpen(false); setItemToDelete(null); } }}
               className="inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:w-auto sm:text-sm"
             >
-              Delete
+              {t('delete', language)}
             </button>
           </div>
         </div>
       </Modal>
       {/* CSV Import Modal */}
-      <Modal isOpen={isCSVModalOpen} onClose={closeCSVModal} title="Import Dishes from CSV">
+      <Modal isOpen={isCSVModalOpen} onClose={closeCSVModal} title={t('import_dishes_csv', language)}>
         {csvStep === 'upload' && (
           <div className="space-y-4">
             <div className="flex flex-col items-center justify-center border-2 border-dashed border-blue-400 rounded-lg p-6 bg-blue-50 hover:bg-blue-100 transition-colors cursor-pointer relative w-full max-w-md mx-auto"
@@ -949,11 +948,11 @@ const MenuManagementContent: React.FC<MenuManagementContentProps> = ({
               tabIndex={0}
               onKeyPress={e => { if (e.key === 'Enter') document.getElementById('csv-upload-input')?.click(); }}
               role="button"
-              aria-label="Upload CSV file"
+              aria-label={t('upload_csv_file', language)}
             >
               <Upload size={36} className="text-blue-500 mb-2" />
-              <span className="text-base font-medium text-blue-700">Click or drag CSV file to upload</span>
-              <span className="text-xs text-blue-500 mt-1">Only .csv files are supported</span>
+              <span className="text-base font-medium text-blue-700">{t('click_or_drag_csv', language)}</span>
+              <span className="text-xs text-blue-500 mt-1">{t('only_csv_supported', language)}</span>
               <input
                 id="csv-upload-input"
                 type="file"
@@ -968,7 +967,7 @@ const MenuManagementContent: React.FC<MenuManagementContentProps> = ({
                     type="button"
                     onClick={e => { e.stopPropagation(); setCSVFile(null); setCSVHeaders([]); setCSVRows([]); setCSVMapping({}); setCSVStep('upload'); }}
                     className="ml-2 text-red-500 hover:text-red-700"
-                    aria-label="Remove file"
+                    aria-label={t('remove_file', language)}
                   >
                     <X size={18} />
                   </button>
@@ -980,7 +979,7 @@ const MenuManagementContent: React.FC<MenuManagementContentProps> = ({
         )}
         {csvStep === 'mapping' && (
           <div className="space-y-4">
-            <div className="text-sm text-gray-700">Map CSV columns to dish fields:</div>
+            <div className="text-sm text-gray-700">{t('map_csv_columns', language)}</div>
             {dishFields.map(field => (
               <div key={field.key} className="flex items-center gap-2">
                 <label className="w-40 text-gray-700">{field.label}</label>
@@ -989,7 +988,7 @@ const MenuManagementContent: React.FC<MenuManagementContentProps> = ({
                   onChange={e => handleCSVMappingChange(field.key, e.target.value)}
                   className="block w-60 py-2 px-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
                 >
-                  <option value="">-- Not mapped --</option>
+                  <option value="">-- {t('not_mapped', language)} --</option>
                   {csvHeaders.map(header => (
                     <option key={header} value={header}>{header}</option>
                   ))}
@@ -1001,29 +1000,29 @@ const MenuManagementContent: React.FC<MenuManagementContentProps> = ({
               className="mt-4 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium bg-green-600 text-white hover:bg-green-700"
               disabled={!csvMapping['title'] || !csvMapping['price'] || !csvMapping['category']}
             >
-              Start Import
+              {t('start_import', language)}
             </button>
           </div>
         )}
         {csvStep === 'importing' && (
           <div className="space-y-4">
-            <div className="text-sm text-gray-700">Importing dishes... Please wait.</div>
+            <div className="text-sm text-gray-700">{t('importing_dishes_wait', language)}</div>
             <div className="w-full bg-gray-200 rounded-full h-4">
               <div
                 className="bg-blue-600 h-4 rounded-full transition-all duration-300"
                 style={{ width: `${csvProgress}%` }}
               ></div>
             </div>
-            <div className="text-xs text-gray-500">{csvProgress}% complete</div>
+            <div className="text-xs text-gray-500">{csvProgress}% {t('complete', language)}</div>
           </div>
         )}
         {csvStep === 'done' && (
           <div className="space-y-4">
-            <div className="text-green-600 text-sm font-medium">Import complete!</div>
+            <div className="text-green-600 text-sm font-medium">{t('import_complete', language)}</div>
             <div className="text-sm text-gray-700">
-              <div>Total rows processed: <b>{importSummary.total}</b></div>
-              <div>Successfully imported: <b>{importSummary.success}</b></div>
-              <div>Skipped/Failed: <b>{importSummary.failed}</b></div>
+              <div>{t('total_rows_processed', language)} <b>{importSummary.total}</b></div>
+              <div>{t('successfully_imported', language)} <b>{importSummary.success}</b></div>
+              <div>{t('skipped_failed', language)} <b>{importSummary.failed}</b></div>
               {importSummary.errors.length > 0 && (
                 <ul className="mt-2 text-xs text-red-500 list-disc list-inside">
                   {importSummary.errors.map((err, idx) => <li key={idx}>{err}</li>)}
@@ -1034,7 +1033,7 @@ const MenuManagementContent: React.FC<MenuManagementContentProps> = ({
               onClick={closeCSVModal}
               className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium bg-primary text-white hover:bg-primary-dark"
             >
-              Close
+              {t('close', language)}
             </button>
           </div>
         )}
