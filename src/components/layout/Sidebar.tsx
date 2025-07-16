@@ -3,6 +3,8 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useDemoAuthSafe } from '../../contexts/DemoAuthContext';
 import { useOfflineSync } from '../../contexts/OfflineSyncContext';
+import { useLanguage } from '../../contexts/LanguageContext';
+import { t } from '../../utils/i18n';
 import designSystem from '../../designSystem';
 import {
   LayoutDashboard,
@@ -28,6 +30,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, open, onClose }) => {
   const { signOut, restaurant } = useAuth();
   const isDemoUser = !!useDemoAuthSafe();
   const { isOnline } = useOfflineSync();
+  const { language } = useLanguage();
   const navigate = useNavigate();
 
   const handleSignOut = async () => {
@@ -47,24 +50,24 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, open, onClose }) => {
   const tableManagement = restaurant?.tableManagement !== false;
   const navItems = [
     {
-      name: 'Dashboard',
+      name: t('dashboard', language),
       path: isDemoUser ? '/demo-dashboard' : '/dashboard',
       icon: <LayoutDashboard size={20} />,
     },
     {
-      name: 'Dishes',
+      name: t('dishes', language),
       path: isDemoUser ? '/demo-menu-management' : '/menu-management',
       icon: <UtensilsCrossed size={20} />,
     },
     {
-      name: 'Categories',
+      name: t('categories', language),
       path: isDemoUser ? '/demo-category-management' : '/category-management',
       icon: <Layers size={20} />,
     },
     ...(!isDemoUser && tableManagement
       ? [
           {
-            name: 'Tables',
+            name: t('tables', language),
             path: '/table-management',
             icon: <Table size={20} />,
           },
@@ -74,7 +77,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, open, onClose }) => {
       orderManagement
         ? [
             {
-              name: 'Orders',
+              name: t('orders', language),
               path: isDemoUser ? '/demo-order-management' : '/orders',
               icon: <ClipboardList size={20} />,
             },
@@ -84,15 +87,14 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, open, onClose }) => {
     ...(!isDemoUser
       ? [
           {
-            name: 'Settings',
+            name: t('settings', language),
             path: '/profile-setup',
-            icon: <Settings size={20} />,
-            isSettings: true,
+            icon: <Settings size={20} />, isSettings: true,
           },
         ]
       : [
           {
-            name: 'Profile',
+            name: t('profile', language),
             path: '/demo-profile-edit',
             icon: <User size={20} />,
           },
@@ -233,7 +235,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, open, onClose }) => {
             <div className="flex items-center gap-1 text-xs">
               <Circle size={10} className={isOnline ? 'text-green-400' : 'text-red-400'} />
               <span className={isOnline ? 'text-green-400' : 'text-red-400'}>
-                {isOnline ? 'Online' : 'Offline'}
+                {isOnline ? t('online', language) : t('offline', language)}
               </span>
             </div>
           </div>
@@ -243,7 +245,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, open, onClose }) => {
               <div className="flex items-center gap-1 text-xs">
                 <Circle size={10} className={isOnline ? 'text-green-400' : 'text-red-400'} />
                 <span className={isOnline ? 'text-green-400' : 'text-red-400'}>
-                  {isOnline ? 'Online' : 'Offline'}
+                  {isOnline ? t('online', language) : t('offline', language)}
                 </span>
               </div>
             </div>
@@ -255,7 +257,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, open, onClose }) => {
               background: designSystem.colors.accent,
               color: designSystem.colors.text,
             }}
-            title="Sign Out"
+            title={t('sign_out', language)}
           >
             <LogOut size={18} />
           </button>

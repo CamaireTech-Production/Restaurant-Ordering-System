@@ -1,8 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import designSystem from '../../designSystem';
-import { Share2, ExternalLink } from 'lucide-react';
+import { Share2, ExternalLink, Globe } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useDemoAuthSafe } from '../../contexts/DemoAuthContext';
+import { useLanguage } from '../../contexts/LanguageContext';
+import { t } from '../../utils/i18n';
 
 interface HeaderProps {
   title: string;
@@ -17,38 +19,57 @@ const Header: React.FC<HeaderProps> = ({ title, onSidebarToggle, sidebarCollapse
   const isDemoUser = !!useDemoAuthSafe();
   const publicMenuLink = restaurant?.publicMenuLink !== false;
   const publicOrderLink = restaurant?.publicOrderLink !== false;
+  const { language, setLanguage, supportedLanguages } = useLanguage();
+  const [langDropdownOpen, setLangDropdownOpen] = React.useState(false);
+  const langSwitcherRef = React.useRef<HTMLDivElement>(null);
+
+  // Close dropdown on outside click
+  React.useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (langSwitcherRef.current && !langSwitcherRef.current.contains(e.target as Node)) {
+        setLangDropdownOpen(false);
+      }
+    }
+    if (langDropdownOpen) {
+      document.addEventListener('mousedown', handleClick);
+    } else {
+      document.removeEventListener('mousedown', handleClick);
+    }
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [langDropdownOpen]);
+
   const menuLinks = React.useMemo(() => {
     if (!restaurant?.id) return [];
     const links = [];
     if (isDemoUser) {
       if (publicMenuLink) {
         links.push({
-          label: 'Menu Link',
+          label: t('menu_link', language),
           icon: <ExternalLink size={18} className="mr-2" />, href: `/demo-public-menu/${restaurant.id}`, variant: 'outline',
         });
       }
       if (publicOrderLink) {
         links.push({
-          label: 'Order Link',
+          label: t('order_link', language),
           icon: <Share2 size={18} className="mr-2" />, href: `/demo-public-order/${restaurant.id}`, variant: 'gold',
         });
       }
     } else {
       if (publicMenuLink) {
         links.push({
-          label: 'Menu Link',
+          label: t('menu_link', language),
           icon: <ExternalLink size={18} className="mr-2" />, href: `/public-menu/${restaurant.id}`, variant: 'outline',
         });
       }
       if (publicOrderLink) {
         links.push({
-          label: 'Order Link',
+          label: t('order_link', language),
           icon: <Share2 size={18} className="mr-2" />, href: `/public-order/${restaurant.id}`, variant: 'gold',
         });
       }
     }
     return links;
-  }, [restaurant, isDemoUser, publicMenuLink, publicOrderLink]);
+  }, [restaurant, isDemoUser, publicMenuLink, publicOrderLink, language]);
 
   // For mobile slideshow
   const [slideIndex, setSlideIndex] = useState(0);
@@ -148,7 +169,7 @@ const Header: React.FC<HeaderProps> = ({ title, onSidebarToggle, sidebarCollapse
               })
             }}
           >
-            {'Restaurant Management'}
+            {t('restaurant_management', language)}
           </span>
         </div>
       </div>
@@ -170,7 +191,7 @@ const Header: React.FC<HeaderProps> = ({ title, onSidebarToggle, sidebarCollapse
           {title}
         </span>
       </div>
-      {/* Right: Menu/Order links or mobile slideshow */}
+      {/* Right: Menu/Order links or mobile slideshow + Language Switcher */}
       <div className="flex items-center gap-2">
         {isMobile ? (
           <div
@@ -262,6 +283,47 @@ const Header: React.FC<HeaderProps> = ({ title, onSidebarToggle, sidebarCollapse
             })}
           </>
         )}
+        {/* Modern Language Switcher */}
+        <div
+          ref={langSwitcherRef}
+          className="relative ml-2"
+        >
+          <button
+            className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-gray-50 border border-gray-200 shadow-sm hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-accent transition-all text-sm font-medium text-gray-700"
+            style={{ minWidth: 80 }}
+            aria-haspopup="listbox"
+            aria-expanded={langDropdownOpen}
+            aria-label="Select language"
+            onClick={() => setLangDropdownOpen(v => !v)}
+            tabIndex={0}
+            type="button"
+          >
+            <Globe size={18} className="text-gray-400 mr-1" />
+            <span className="capitalize">{supportedLanguages.find(l => l.code === language)?.label || language}</span>
+            <svg className={`ml-1 w-4 h-4 transition-transform ${langDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+          </button>
+          {langDropdownOpen && (
+            <ul
+              className="absolute right-0 mt-2 w-40 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-50 animate-fade-in"
+              role="listbox"
+              tabIndex={-1}
+            >
+              {supportedLanguages.map(lang => (
+                <li
+                  key={lang.code}
+                  className={`px-4 py-2 cursor-pointer text-gray-700 hover:bg-accent/10 rounded-lg transition-all ${lang.code === language ? 'font-semibold bg-accent/20' : ''}`}
+                  role="option"
+                  aria-selected={lang.code === language}
+                  onClick={() => { setLanguage(lang.code); setLangDropdownOpen(false); }}
+                  tabIndex={0}
+                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { setLanguage(lang.code); setLangDropdownOpen(false); } }}
+                >
+                  {lang.label}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
     </header>
   );

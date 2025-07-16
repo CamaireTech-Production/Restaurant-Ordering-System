@@ -7,6 +7,7 @@ import { OfflineSyncProvider } from './contexts/OfflineSyncContext';
 import designSystem from './designSystem';
 import { AdminAuthProvider } from './contexts/AdminAuthContext';
 import { DemoAuthProvider } from './contexts/DemoAuthContext';
+import { LanguageProvider } from './contexts/LanguageContext';
 
 // Pages
 import Login from './pages/auth/Login';
@@ -51,200 +52,202 @@ import AdminProtectedRoute from './components/auth/AdminProtectedRoute';
 
 function App() {
   return (
-    <Router>
-      <AuthProvider>
-        <OfflineSyncProvider>
-          <AdminAuthProvider>
-            <ColorPaletteEffect />
-            <Routes>
-              <Route path="/public-menu/:restaurantId" element={<PublicMenuPage />} />
-              <Route path="/public-order/:restaurantId" element={<PublicOrderPage />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/newResturant" element={<Register />} />
-              <Route 
-                path="/profile-setup" 
-                element={
-                  <ProtectedRoute>
-                    <ProfileSetup key="profile-setup" />
-                  </ProtectedRoute>
-                } 
+    <LanguageProvider>
+      <Router>
+        <AuthProvider>
+          <OfflineSyncProvider>
+            <AdminAuthProvider>
+              <ColorPaletteEffect />
+              <Routes>
+                <Route path="/public-menu/:restaurantId" element={<PublicMenuPage />} />
+                <Route path="/public-order/:restaurantId" element={<PublicOrderPage />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/newResturant" element={<Register />} />
+                <Route 
+                  path="/profile-setup" 
+                  element={
+                    <ProtectedRoute>
+                      <ProfileSetup key="profile-setup" />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/dashboard" 
+                  element={
+                    <ProtectedRoute>
+                      <Dashboard />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/menu-management" 
+                  element={
+                    <ProtectedRoute>
+                      <MenuManagement />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/category-management" 
+                  element={
+                    <ProtectedRoute>
+                      <CategoryManagement />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/table-management" 
+                  element={
+                    <ProtectedRoute>
+                      <TableManagement />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/orders" 
+                  element={
+                    <ProtectedRoute>
+                      <OrdersPage />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route
+                  path="/customer/orders/:tableNumber"
+                  element={
+                    <Suspense fallback={<div>Loading...</div>}>
+                      <CustomerOrdersPage />
+                    </Suspense>
+                  }
+                />
+                <Route path="/table-selection" element={<TableSelection />} />
+                <Route path="/menu/:restaurantId" element={<MenuPage />} />
+                <Route path="/admin/create-initial" element={<CreateInitialAdmin />} />
+                <Route path="/admin/login" element={<AdminLogin />} />
+                <Route
+                  path="/admin/dashboard"
+                  element={
+                    <AdminProtectedRoute>
+                      <AdminDashboard />
+                    </AdminProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin/restaurants"
+                  element={
+                    <AdminProtectedRoute>
+                      <AdminRestaurants />
+                    </AdminProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin/restaurants/:id"
+                  element={
+                    <AdminProtectedRoute>
+                      <RestaurantDetail />
+                    </AdminProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin/users"
+                  element={
+                    <AdminProtectedRoute>
+                      <AdminUsers />
+                    </AdminProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin/menus"
+                  element={
+                    <AdminProtectedRoute>
+                      <AdminMenus />
+                    </AdminProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin/orders"
+                  element={
+                    <AdminProtectedRoute>
+                      <AdminOrders />
+                    </AdminProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin/activity-log"
+                  element={
+                    <AdminProtectedRoute>
+                      <AdminActivityLog />
+                    </AdminProtectedRoute>
+                  }
+                />
+                <Route path="/demo-login" element={
+                  <DemoAuthProvider>
+                    <DemoLogin />
+                  </DemoAuthProvider>
+                } />
+                <Route path="/demo-signup" element={
+                  <DemoAuthProvider>
+                    <DemoSignup />
+                  </DemoAuthProvider>
+                } />
+                <Route path="/demo-complete-setup" element={
+                  <DemoAuthProvider>
+                    <DemoCompleteSetup />
+                  </DemoAuthProvider>
+                } />
+                <Route path="/demo-dashboard" element={
+                  <DemoAuthProvider>
+                    <DemoDashboard />
+                  </DemoAuthProvider>
+                } />
+                <Route path="/demo-profile-edit" element={
+                  <DemoAuthProvider>
+                    <DemoProfileEdit />
+                  </DemoAuthProvider>
+                } />
+                <Route path="/demo-category-management" element={
+                  <DemoAuthProvider>
+                    <DemoCategoryManagement />
+                  </DemoAuthProvider>
+                } />
+                <Route path="/demo-menu-management" element={
+                  <DemoAuthProvider>
+                    <DemoMenuManagement />
+                  </DemoAuthProvider>
+                } />
+                <Route path="/demo-order-management" element={
+                  <DemoAuthProvider>
+                    <DemoOrderManagement />
+                  </DemoAuthProvider>
+                } />
+                <Route path="/demo-public-menu/:demoId" element={<DemoPublicMenuPage />} />
+                <Route path="/demo-public-order/:demoId" element={<DemoPublicOrderPage />} />
+                <Route
+                  path="/admin/demo-restaurants/:id"
+                  element={
+                    <AdminProtectedRoute>
+                      <DemoRestaurantDetail />
+                    </AdminProtectedRoute>
+                  }
+                />
+                {/* Default routes */}
+                <Route path="/" element={<Navigate to="/login" replace />} />
+                <Route path="*" element={<Navigate to="/login" replace />} />
+              </Routes>
+              <Toaster
+                position="top-right"
+                toastOptions={{
+                  duration: 3000,
+                  style: {
+                    background: designSystem.colors.background,
+                    color: designSystem.colors.text,
+                  },
+                }}
               />
-              <Route 
-                path="/dashboard" 
-                element={
-                  <ProtectedRoute>
-                    <Dashboard />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/menu-management" 
-                element={
-                  <ProtectedRoute>
-                    <MenuManagement />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/category-management" 
-                element={
-                  <ProtectedRoute>
-                    <CategoryManagement />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/table-management" 
-                element={
-                  <ProtectedRoute>
-                    <TableManagement />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/orders" 
-                element={
-                  <ProtectedRoute>
-                    <OrdersPage />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route
-                path="/customer/orders/:tableNumber"
-                element={
-                  <Suspense fallback={<div>Loading...</div>}>
-                    <CustomerOrdersPage />
-                  </Suspense>
-                }
-              />
-              <Route path="/table-selection" element={<TableSelection />} />
-              <Route path="/menu/:restaurantId" element={<MenuPage />} />
-              <Route path="/admin/create-initial" element={<CreateInitialAdmin />} />
-              <Route path="/admin/login" element={<AdminLogin />} />
-              <Route
-                path="/admin/dashboard"
-                element={
-                  <AdminProtectedRoute>
-                    <AdminDashboard />
-                  </AdminProtectedRoute>
-                }
-              />
-              <Route
-                path="/admin/restaurants"
-                element={
-                  <AdminProtectedRoute>
-                    <AdminRestaurants />
-                  </AdminProtectedRoute>
-                }
-              />
-              <Route
-                path="/admin/restaurants/:id"
-                element={
-                  <AdminProtectedRoute>
-                    <RestaurantDetail />
-                  </AdminProtectedRoute>
-                }
-              />
-              <Route
-                path="/admin/users"
-                element={
-                  <AdminProtectedRoute>
-                    <AdminUsers />
-                  </AdminProtectedRoute>
-                }
-              />
-              <Route
-                path="/admin/menus"
-                element={
-                  <AdminProtectedRoute>
-                    <AdminMenus />
-                  </AdminProtectedRoute>
-                }
-              />
-              <Route
-                path="/admin/orders"
-                element={
-                  <AdminProtectedRoute>
-                    <AdminOrders />
-                  </AdminProtectedRoute>
-                }
-              />
-              <Route
-                path="/admin/activity-log"
-                element={
-                  <AdminProtectedRoute>
-                    <AdminActivityLog />
-                  </AdminProtectedRoute>
-                }
-              />
-              <Route path="/demo-login" element={
-                <DemoAuthProvider>
-                  <DemoLogin />
-                </DemoAuthProvider>
-              } />
-              <Route path="/demo-signup" element={
-                <DemoAuthProvider>
-                  <DemoSignup />
-                </DemoAuthProvider>
-              } />
-              <Route path="/demo-complete-setup" element={
-                <DemoAuthProvider>
-                  <DemoCompleteSetup />
-                </DemoAuthProvider>
-              } />
-              <Route path="/demo-dashboard" element={
-                <DemoAuthProvider>
-                  <DemoDashboard />
-                </DemoAuthProvider>
-              } />
-              <Route path="/demo-profile-edit" element={
-                <DemoAuthProvider>
-                  <DemoProfileEdit />
-                </DemoAuthProvider>
-              } />
-              <Route path="/demo-category-management" element={
-                <DemoAuthProvider>
-                  <DemoCategoryManagement />
-                </DemoAuthProvider>
-              } />
-              <Route path="/demo-menu-management" element={
-                <DemoAuthProvider>
-                  <DemoMenuManagement />
-                </DemoAuthProvider>
-              } />
-              <Route path="/demo-order-management" element={
-                <DemoAuthProvider>
-                  <DemoOrderManagement />
-                </DemoAuthProvider>
-              } />
-              <Route path="/demo-public-menu/:demoId" element={<DemoPublicMenuPage />} />
-              <Route path="/demo-public-order/:demoId" element={<DemoPublicOrderPage />} />
-              <Route
-                path="/admin/demo-restaurants/:id"
-                element={
-                  <AdminProtectedRoute>
-                    <DemoRestaurantDetail />
-                  </AdminProtectedRoute>
-                }
-              />
-              {/* Default routes */}
-              <Route path="/" element={<Navigate to="/login" replace />} />
-              <Route path="*" element={<Navigate to="/login" replace />} />
-            </Routes>
-            <Toaster
-              position="top-right"
-              toastOptions={{
-                duration: 3000,
-                style: {
-                  background: designSystem.colors.background,
-                  color: designSystem.colors.text,
-                },
-              }}
-            />
-          </AdminAuthProvider>
-        </OfflineSyncProvider>
-      </AuthProvider>
-    </Router>
+            </AdminAuthProvider>
+          </OfflineSyncProvider>
+        </AuthProvider>
+      </Router>
+    </LanguageProvider>
   );
 }
 
