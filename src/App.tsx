@@ -238,8 +238,22 @@ function App() {
                 toastOptions={{
                   duration: 3000,
                   style: {
-                    background: designSystem.colors.background,
+                    background: designSystem.colors.white,
                     color: designSystem.colors.text,
+                    border: `1px solid ${designSystem.colors.borderLightGray}`,
+                    fontWeight: 500,
+                  },
+                  success: {
+                    style: {
+                      background: designSystem.colors.success,
+                      color: designSystem.colors.textInverse,
+                    },
+                  },
+                  error: {
+                    style: {
+                      background: designSystem.colors.error,
+                      color: designSystem.colors.textInverse,
+                    },
                   },
                 }}
               />
