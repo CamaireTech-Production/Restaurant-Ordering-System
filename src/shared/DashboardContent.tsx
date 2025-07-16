@@ -3,6 +3,8 @@ import { Copy, UtensilsCrossed, Layers, Table, ClipboardList, Star, ShoppingCart
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import { toast } from 'react-hot-toast';
 import designSystem from '../designSystem';
+import { useLanguage } from '../contexts/LanguageContext';
+import { t } from '../utils/i18n';
 
 
 interface DashboardContentProps {
@@ -81,6 +83,8 @@ const DashboardContent: React.FC<DashboardContentProps> = ({ restaurant, orders,
     colorCustomization = false,
   } = restaurant || {};
 
+  const { language } = useLanguage();
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -98,7 +102,7 @@ const DashboardContent: React.FC<DashboardContentProps> = ({ restaurant, orders,
           <div className="flex flex-col bg-white rounded-lg shadow p-4 transition-transform hover:shadow-lg hover:scale-[1.02]">
             <div className="flex items-center mb-2">
               <ClipboardList className="h-5 w-5 mr-2" style={{ color: designSystem.colors.primary }} />
-              <span className="font-semibold text-base" style={{ color: designSystem.colors.primary }}>Public Menu Link</span>
+              <span className="font-semibold text-base" style={{ color: designSystem.colors.primary }}>{t('public_menu_link', language)}</span>
             </div>
             <div className="flex items-center gap-2">
               <input
@@ -113,23 +117,23 @@ const DashboardContent: React.FC<DashboardContentProps> = ({ restaurant, orders,
                 style={{ background: designSystem.colors.secondary }}
                 onClick={() => {
                   navigator.clipboard.writeText(`${window.location.origin}/public-menu/${restaurant.id}`);
-                  toast.success('Menu link copied!', {
+                  toast.success(t('menu_link_copied', language), {
                     style: {
                       background: designSystem.colors.success,
                       color: designSystem.colors.textInverse,
                     },
                   });
                 }}
-                title="Copy link"
+                title={t('copy_link', language)}
               >
                 <Copy color={designSystem.colors.primary} size={16} />
               </button>
               <button
                 className="inline-flex items-center px-2 py-1 rounded bg-[${designSystem.colors.secondary}] text-black hover:opacity-90 text-xs"
                 onClick={() => window.open(`${window.location.origin}/public-menu/${restaurant.id}`, '_blank')}
-                title="Open link"
+                title={t('open_link', language)}
               >
-                <span className="sr-only">Open</span>
+                <span className="sr-only">{t('open', language)}</span>
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M14 3h7m0 0v7m0-7L10 14m-7 7h7a2 2 0 002-2v-7" /></svg>
               </button>
             </div>
@@ -140,7 +144,7 @@ const DashboardContent: React.FC<DashboardContentProps> = ({ restaurant, orders,
           <div className="flex flex-col bg-white rounded-lg shadow p-4 transition-transform hover:shadow-lg hover:scale-[1.02]">
             <div className="flex items-center mb-2">
               <ClipboardList className="h-5 w-5 mr-2" style={{ color: designSystem.colors.primary }} />
-              <span className="font-semibold text-base" style={{ color: designSystem.colors.primary }}>Public Order Link</span>
+              <span className="font-semibold text-base" style={{ color: designSystem.colors.primary }}>{t('public_order_link', language)}</span>
             </div>
             <div className="flex items-center gap-2">
               <input
@@ -155,23 +159,23 @@ const DashboardContent: React.FC<DashboardContentProps> = ({ restaurant, orders,
                 style={{ background: designSystem.colors.secondary }}
                 onClick={() => {
                   navigator.clipboard.writeText(`${window.location.origin}/public-order/${restaurant.id}`);
-                  toast.success('Order page link copied!', {
+                  toast.success(t('order_link_copied', language), {
                     style: {
                       background: designSystem.colors.success,
                       color: designSystem.colors.textInverse,
                     },
                   });
                 }}
-                title="Copy link"
+                title={t('copy_link', language)}
               >
                 <Copy color={designSystem.colors.primary} size={16} />
               </button>
               <button
                 className="inline-flex items-center px-2 py-1 rounded bg-[${designSystem.colors.secondary}] text-black hover:opacity-90 text-xs"
                 onClick={() => window.open(`${window.location.origin}/public-order/${restaurant.id}`, '_blank')}
-                title="Open link"
+                title={t('open_link', language)}
               >
-                <span className="sr-only">Open</span>
+                <span className="sr-only">{t('open', language)}</span>
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M14 3h7m0 0v7m0-7L10 14m-7 7h7a2 2 0 002-2v-7" /></svg>
               </button>
             </div>
@@ -189,7 +193,7 @@ const DashboardContent: React.FC<DashboardContentProps> = ({ restaurant, orders,
                 <ShoppingCart className="h-6 w-6" style={{ color: designSystem.colors.primary }} />
               </div>
               <div>
-                <div className="text-xs" style={{ color: designSystem.colors.text }}>Total Revenue</div>
+                <div className="text-xs" style={{ color: designSystem.colors.text }}>{t('total_revenue', language)}</div>
                 <div className="text-xl font-bold" style={{ color: designSystem.colors.primary }}>{totalRevenue.toLocaleString()} FCFA</div>
               </div>
             </div>
@@ -203,7 +207,7 @@ const DashboardContent: React.FC<DashboardContentProps> = ({ restaurant, orders,
                 <ClipboardList className="h-6 w-6" style={{ color: designSystem.colors.primary }} />
               </div>
               <div>
-                <div className="text-xs" style={{ color: designSystem.colors.text }}>Total Orders</div>
+                <div className="text-xs" style={{ color: designSystem.colors.text }}>{t('total_orders', language)}</div>
                 <div className="text-xl font-bold" style={{ color: designSystem.colors.primary }}>{totalOrders}</div>
               </div>
             </div>
@@ -216,7 +220,7 @@ const DashboardContent: React.FC<DashboardContentProps> = ({ restaurant, orders,
               <UtensilsCrossed className="h-6 w-6" style={{ color: designSystem.colors.primary }} />
             </div>
             <div>
-              <div className="text-xs" style={{ color: designSystem.colors.text }}>Total Dishes</div>
+              <div className="text-xs" style={{ color: designSystem.colors.text }}>{t('total_dishes', language)}</div>
               <div className="text-xl font-bold" style={{ color: designSystem.colors.primary }}>{totalDishes}</div>
             </div>
           </div>
@@ -228,7 +232,7 @@ const DashboardContent: React.FC<DashboardContentProps> = ({ restaurant, orders,
               <Layers className="h-6 w-6" style={{ color: designSystem.colors.primary }} />
             </div>
             <div>
-              <div className="text-xs" style={{ color: designSystem.colors.text }}>Total Categories</div>
+              <div className="text-xs" style={{ color: designSystem.colors.text }}>{t('total_categories', language)}</div>
               <div className="text-xl font-bold" style={{ color: designSystem.colors.primary }}>{totalCategories}</div>
             </div>
           </div>
@@ -242,16 +246,16 @@ const DashboardContent: React.FC<DashboardContentProps> = ({ restaurant, orders,
           <div className="bg-white shadow rounded-lg p-5">
             <div className="flex items-center mb-3">
               <ClipboardList className="h-5 w-5 mr-2" style={{ color: designSystem.colors.primary }} />
-              <span className="font-semibold text-lg" style={{ color: designSystem.colors.primary }}>Recent Orders</span>
+              <span className="font-semibold text-lg" style={{ color: designSystem.colors.primary }}>{t('recent_orders', language)}</span>
             </div>
             <div className="divide-y divide-gray-100">
-              {recentOrders.length === 0 && <div className="text-gray-400 text-sm py-4">No recent orders</div>}
+              {recentOrders.length === 0 && <div className="text-gray-400 text-sm py-4">{t('no_recent_orders', language)}</div>}
               {recentOrders.map((order, idx) => (
                 <div key={order.id} className="flex items-center justify-between py-3">
                   <div className="flex flex-col">
                     <span className="font-mono text-xs text-gray-500">#{order.id?.slice(-4) || '----'}</span>
-                    <span className="text-sm font-medium text-gray-800">{order.customerName || 'Customer'}</span>
-                    <span className="text-xs text-gray-400">{order.items?.length || 0} items • {order.createdAt?.toDate ? timeAgo(order.createdAt.toDate()) : ''}</span>
+                    <span className="text-sm font-medium text-gray-800">{order.customerName || t('customer', language)}</span>
+                    <span className="text-xs text-gray-400">{order.items?.length || 0} {t('items', language)} • {order.createdAt?.toDate ? timeAgo(order.createdAt.toDate()) : ''}</span>
                   </div>
                   <div className="flex flex-col items-end">
                     {(() => {
@@ -261,7 +265,7 @@ const DashboardContent: React.FC<DashboardContentProps> = ({ restaurant, orders,
                           className="px-2 py-1 rounded text-xs font-semibold"
                           style={{ background: statusColors.background, color: statusColors.color }}
                         >
-                          {order.status}
+                          {t(order.status, language)}
                         </span>
                       );
                     })()}
@@ -277,10 +281,10 @@ const DashboardContent: React.FC<DashboardContentProps> = ({ restaurant, orders,
           <div className="bg-white shadow rounded-lg p-5">
             <div className="flex items-center mb-3">
               <BarChart2 className="h-5 w-5 mr-2" style={{ color: designSystem.colors.primary }} />
-              <span className="font-semibold text-lg" style={{ color: designSystem.colors.primary }}>Top Performing Dishes</span>
+              <span className="font-semibold text-lg" style={{ color: designSystem.colors.primary }}>{t('top_performing_dishes', language)}</span>
             </div>
             <div className="divide-y divide-gray-100">
-              {topDishes.length === 0 && <div className="text-gray-400 text-sm py-4">No data</div>}
+              {topDishes.length === 0 && <div className="text-gray-400 text-sm py-4">{t('no_data', language)}</div>}
               {topDishes.map((dish, idx) => (
                 <div key={dish.title} className="flex items-center justify-between py-3">
                   <div className="flex items-center gap-2">
@@ -288,7 +292,7 @@ const DashboardContent: React.FC<DashboardContentProps> = ({ restaurant, orders,
                     <span className="text-sm font-medium text-gray-800">{dish.title}</span>
                   </div>
                   <div className="flex flex-col items-end">
-                    <span className="text-xs text-gray-500">{dish.count} orders</span>
+                    <span className="text-xs text-gray-500">{dish.count} {t('orders', language)}</span>
                     <span className="text-sm font-bold mt-1" style={{ color: designSystem.colors.primary }}>${dish.revenue.toFixed(2)}</span>
                   </div>
                 </div>
@@ -302,21 +306,21 @@ const DashboardContent: React.FC<DashboardContentProps> = ({ restaurant, orders,
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-8">
         <div className="bg-white shadow rounded-lg flex flex-col items-center justify-center py-6 cursor-pointer transition-transform hover:shadow-xl hover:scale-[1.03]">
           <UtensilsCrossed className="h-7 w-7 mb-2" style={{ color: designSystem.colors.secondary }} />
-          <span className="font-semibold text-sm" style={{ color: designSystem.colors.primary }}>Add New Dish</span>
+          <span className="font-semibold text-sm" style={{ color: designSystem.colors.primary }}>{t('add_new_dish', language)}</span>
         </div>
         {orderManagement && (
           <div className="bg-white shadow rounded-lg flex flex-col items-center justify-center py-6 cursor-pointer transition-transform hover:shadow-xl hover:scale-[1.03]">
             <ClipboardList className="h-7 w-7 mb-2" style={{ color: designSystem.colors.secondary }} />
-            <span className="font-semibold text-sm" style={{ color: designSystem.colors.primary }}>View Orders</span>
+            <span className="font-semibold text-sm" style={{ color: designSystem.colors.primary }}>{t('view_orders', language)}</span>
           </div>
         )}
         <div className="bg-white shadow rounded-lg flex flex-col items-center justify-center py-6 cursor-pointer transition-transform hover:shadow-xl hover:scale-[1.03]">
           <User className="h-7 w-7 mb-2" style={{ color: designSystem.colors.secondary }} />
-          <span className="font-semibold text-sm" style={{ color: designSystem.colors.primary }}>Customer Reviews</span>
+          <span className="font-semibold text-sm" style={{ color: designSystem.colors.primary }}>{t('customer_reviews', language)}</span>
         </div>
         <div className="bg-white shadow rounded-lg flex flex-col items-center justify-center py-6 cursor-pointer transition-transform hover:shadow-xl hover:scale-[1.03]">
           <BarChart2 className="h-7 w-7 mb-2" style={{ color: designSystem.colors.secondary }} />
-          <span className="font-semibold text-sm" style={{ color: designSystem.colors.primary }}>View Analytics</span>
+          <span className="font-semibold text-sm" style={{ color: designSystem.colors.primary }}>{t('view_analytics', language)}</span>
         </div>
       </div>
 
