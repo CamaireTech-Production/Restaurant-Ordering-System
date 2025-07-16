@@ -34,6 +34,8 @@ import {
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 import { Table } from '../../../types';
 import designSystem from '../../../designSystem';
+import { t } from '../../../utils/i18n';
+import { useLanguage } from '../../../contexts/LanguageContext';
 
 const TableManagement: React.FC = () => {
   const { restaurant } = useAuth();
@@ -52,6 +54,8 @@ const TableManagement: React.FC = () => {
     name: '',
     status: 'available' as 'available' | 'occupied' | 'reserved'
   });
+
+  const { language } = useLanguage();
 
   useEffect(() => {
     const fetchTables = async () => {
@@ -77,7 +81,7 @@ const TableManagement: React.FC = () => {
         }
       } catch (error) {
         console.error('Error fetching tables:', error);
-        toast.error('Failed to load tables', {
+        toast.error(t('failed_to_load_tables', language), {
           style: {
             background: designSystem.colors.error,
             color: designSystem.colors.text,
@@ -88,7 +92,7 @@ const TableManagement: React.FC = () => {
       }
     };
     fetchTables();
-  }, [restaurant]);
+  }, [restaurant, language]);
 
   const resetForm = () => {
     setFormData({
@@ -145,7 +149,7 @@ const TableManagement: React.FC = () => {
     e.preventDefault();
     
     if (!restaurant?.id) {
-      toast.error('Restaurant information missing', {
+      toast.error(t('restaurant_info_missing', language), {
         style: {
           background: designSystem.colors.error,
           color: designSystem.colors.text,
@@ -155,7 +159,7 @@ const TableManagement: React.FC = () => {
     }
     
     if (formData.number <= 0) {
-      toast.error('Table number must be greater than 0', {
+      toast.error(t('table_number_gt_zero', language), {
         style: {
           background: designSystem.colors.error,
           color: designSystem.colors.text,
@@ -189,7 +193,7 @@ const TableManagement: React.FC = () => {
             queuePendingAction({ type: 'createTable', payload: { ...tableData } });
             setTables(prevTables => [...prevTables, tableData]);
           }
-          toast.success(`${tableCount} tables queued for sync!`, {
+          toast.success(t('tables_queued_for_sync', language) + ` ${tableCount}`, {
             style: {
               background: designSystem.colors.success,
               color: designSystem.colors.text,
@@ -204,7 +208,7 @@ const TableManagement: React.FC = () => {
           };
           queuePendingAction({ type: 'updateTable', payload: { id: editingTable.id, data: tableData } });
           setTables(prevTables => prevTables.map(table => table.id === editingTable.id ? { ...table, ...tableData, updatedAt: new Date() } : table));
-          toast.success('Table update queued for sync!', {
+          toast.success(t('table_update_queued', language), {
             style: {
               background: designSystem.colors.success,
               color: designSystem.colors.text,
@@ -222,7 +226,7 @@ const TableManagement: React.FC = () => {
           };
           queuePendingAction({ type: 'createTable', payload: tableData });
           setTables(prevTables => [...prevTables, tableData]);
-          toast.success('Table creation queued for sync!', {
+          toast.success(t('table_creation_queued', language), {
             style: {
               background: designSystem.colors.success,
               color: designSystem.colors.text,
@@ -253,7 +257,7 @@ const TableManagement: React.FC = () => {
           });
         }
         setTables(prevTables => [...prevTables, ...newTables]);
-        toast.success(`${tableCount} tables added successfully!`, {
+        toast.success(t('tables_added_success', language) + ` ${tableCount}`, {
           style: {
             background: designSystem.colors.success,
             color: designSystem.colors.text,
@@ -278,7 +282,7 @@ const TableManagement: React.FC = () => {
               : table
           )
         );
-        toast.success('Table updated successfully!', {
+        toast.success(t('table_updated_success', language), {
           style: {
             background: designSystem.colors.success,
             color: designSystem.colors.text,
@@ -302,7 +306,7 @@ const TableManagement: React.FC = () => {
           createdAt: new Date(),
         } as Table;
         setTables(prevTables => [...prevTables, newTable]);
-        toast.success('Table added successfully!', {
+        toast.success(t('table_added_success', language), {
           style: {
             background: designSystem.colors.success,
             color: designSystem.colors.text,
@@ -312,7 +316,7 @@ const TableManagement: React.FC = () => {
       closeModal();
     } catch (error) {
       console.error('Error saving table:', error);
-      toast.error('Failed to save table', {
+      toast.error(t('failed_to_save_table', language), {
         style: {
           background: designSystem.colors.error,
           color: designSystem.colors.text,
@@ -331,7 +335,7 @@ const TableManagement: React.FC = () => {
       if (!navigator.onLine) {
         queuePendingAction({ type: 'deleteTable', payload: { id: tableId } });
         setTables(prevTables => prevTables.filter(table => table.id !== tableId));
-        toast.success('Table delete queued for sync!', {
+        toast.success(t('table_delete_queued', language), {
           style: {
             background: designSystem.colors.success,
             color: designSystem.colors.text,
@@ -342,7 +346,7 @@ const TableManagement: React.FC = () => {
       }
       await deleteDoc(doc(db, 'tables', tableId));
       setTables(prevTables => prevTables.filter(table => table.id !== tableId));
-      toast.success('Table deleted successfully!', {
+      toast.success(t('table_deleted_success', language), {
         style: {
           background: designSystem.colors.success,
           color: designSystem.colors.text,
@@ -350,7 +354,7 @@ const TableManagement: React.FC = () => {
       });
     } catch (error) {
       console.error('Error deleting table:', error);
-      toast.error('Failed to delete table', {
+      toast.error(t('failed_to_delete_table', language), {
         style: {
           background: designSystem.colors.error,
           color: designSystem.colors.text,
@@ -369,7 +373,7 @@ const TableManagement: React.FC = () => {
 
   if (loading && tables.length === 0) {
     return (
-      <DashboardLayout title="Table Management">
+      <DashboardLayout title={t('table_management', language)}>
         <div className="flex justify-center items-center h-64">
           <LoadingSpinner size={60} />
         </div>
@@ -378,13 +382,13 @@ const TableManagement: React.FC = () => {
   }
 
   return (
-    <DashboardLayout title="Table Management">
+    <DashboardLayout title={t('table_management', language)}>
       <div className="shadow rounded-lg overflow-hidden" style={{ background: designSystem.colors.white }}>
         <div className="p-4 sm:p-6 border-b" style={{ borderColor: designSystem.colors.borderLightGray }}>
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-              <h2 className="text-xl font-semibold" style={{ color: designSystem.colors.primary }}>Tables</h2>
-              <p className="text-sm" style={{ color: designSystem.colors.text }}>Manage your restaurant tables</p>
+              <h2 className="text-xl font-semibold" style={{ color: designSystem.colors.primary }}>{t('tables', language)}</h2>
+              <p className="text-sm" style={{ color: designSystem.colors.text }}>{t('manage_your_tables', language)}</p>
             </div>
             <div className="flex flex-col sm:flex-row gap-2">
               <button
@@ -401,7 +405,7 @@ const TableManagement: React.FC = () => {
                 }}
               >
                 <PlusCircle size={16} className="mr-2" style={{ color: designSystem.colors.primary }} />
-                Bulk Add Tables
+                {t('bulk_add_tables', language)}
               </button>
               <button
                 onClick={openAddModal}
@@ -417,7 +421,7 @@ const TableManagement: React.FC = () => {
                 }}
               >
                 <PlusCircle size={16} className="mr-2" style={{ color: designSystem.colors.white }} />
-                Add Table
+                {t('add_table', language)}
               </button>
             </div>
           </div>
@@ -431,7 +435,7 @@ const TableManagement: React.FC = () => {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search tables..."
+                placeholder={t('search_tables', language)}
                 className="pl-10 block w-full py-3 border rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
                 style={{ borderColor: designSystem.colors.iconFiltercolor, color: designSystem.colors.text }}
               />
@@ -453,11 +457,11 @@ const TableManagement: React.FC = () => {
           {filteredTables.length === 0 ? (
             <div className="text-center py-10">
               <TableIcon size={48} className="mx-auto" style={{ color: designSystem.colors.secondary }} />
-              <h3 className="mt-2 text-sm font-medium" style={{ color: designSystem.colors.primary }}>No tables</h3>
+              <h3 className="mt-2 text-sm font-medium" style={{ color: designSystem.colors.primary }}>{t('no_tables', language)}</h3>
               <p className="mt-1 text-sm" style={{ color: designSystem.colors.secondary }}>
                 {tables.length === 0 ? 
-                  "Get started by creating a new table" : 
-                  "No tables match your search criteria"}
+                  t('get_started_by_creating_table', language) : 
+                  t('no_tables_match_search', language)}
               </p>
               {tables.length === 0 && (
                 <div className="mt-6">
@@ -467,7 +471,7 @@ const TableManagement: React.FC = () => {
                     style={{ background: designSystem.colors.primary, color: designSystem.colors.white }}
                   >
                     <PlusCircle size={16} className="mr-2" style={{ color: designSystem.colors.secondary }} />
-                    Add Table
+                    {t('add_table', language)}
                   </button>
                 </div>
               )}
@@ -503,7 +507,7 @@ const TableManagement: React.FC = () => {
                             {table.name || `Table ${table.number}`}
                           </h3>
                           <p className="text-sm" style={{ color: designSystem.colors.primary }}>
-                            Table #{table.number}
+                            {t('table_number', language) + ` ${table.number}`}
                           </p>
                           <span
                             className="mt-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
@@ -558,7 +562,7 @@ const TableManagement: React.FC = () => {
                 <div className="sm:flex sm:items-start">
                   <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
                     <h3 className="text-lg leading-6 font-medium text-primary">
-                      {editingTable ? 'Edit Table' : (bulkMode ? 'Add Multiple Tables' : 'Add Table')}
+                      {editingTable ? t('edit_table', language) : (bulkMode ? t('add_multiple_tables', language) : t('add_table', language))}
                     </h3>
                     <div className="mt-4">
                       <form onSubmit={handleSubmit}>
@@ -566,7 +570,7 @@ const TableManagement: React.FC = () => {
                           <>
                             <div className="mb-4">
                               <label htmlFor="number" className="block text-sm font-medium text-primary">
-                                Starting Table Number*
+                                {t('starting_table_number', language)}*
                               </label>
                               <input
                                 type="number"
@@ -575,7 +579,7 @@ const TableManagement: React.FC = () => {
                                 min="1"
                                 value={formData.number}
                                 onChange={handleInputChange}
-                                className="mt-1 block w-full rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
+                                className="mt-1 block w-full rounded-md shadow-sm border-2 border-primary focus:ring-primary focus:border-primary sm:text-sm"
                                 style={{
                                   borderColor: designSystem.colors.inputBorder,
                                   background: designSystem.colors.inputBg,
@@ -590,7 +594,7 @@ const TableManagement: React.FC = () => {
                             </div>
                             <div className="mb-4">
                               <label htmlFor="tableCount" className="block text-sm font-medium text-primary">
-                                Number of Tables to Add*
+                                {t('number_of_tables_to_add', language)}*
                               </label>
                               <input
                                 type="number"
@@ -598,7 +602,7 @@ const TableManagement: React.FC = () => {
                                 min="1"
                                 value={tableCount}
                                 onChange={handleTableCountChange}
-                                className="mt-1 block w-full rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
+                                className="mt-1 block w-full rounded-md shadow-sm border-2 border-primary focus:ring-primary focus:border-primary sm:text-sm"
                                 style={{
                                   borderColor: designSystem.colors.inputBorder,
                                   background: designSystem.colors.inputBg,
@@ -612,16 +616,16 @@ const TableManagement: React.FC = () => {
                               />
                             </div>
                             <div className="p-4 bg-background rounded-md">
-                              <h4 className="text-sm font-medium text-secondary mb-2">Preview:</h4>
+                              <h4 className="text-sm font-medium text-secondary mb-2">{t('preview', language)}:</h4>
                               <div className="text-sm text-secondary">
                                 {Array.from({ length: Math.min(tableCount, 5) }, (_, i) => (
                                   <div key={i} className="mb-1">
-                                    Table #{formData.number + i}: Table {formData.number + i}
+                                    {t('table_number', language) + ` ${formData.number + i}}`}: {t('table', language) + ` ${formData.number + i}`}
                                   </div>
                                 ))}
                                 {tableCount > 5 && (
                                   <div className="text-accent italic">
-                                    ...and {tableCount - 5} more tables
+                                    {t('and_more_tables', language) + ` ${tableCount - 5}`}
                                   </div>
                                 )}
                               </div>
@@ -631,7 +635,7 @@ const TableManagement: React.FC = () => {
                           <>
                             <div className="mb-4">
                               <label htmlFor="number" className="block text-sm font-medium text-primary">
-                                Table Number*
+                                {t('table_number', language)}*
                               </label>
                               <input
                                 type="number"
@@ -640,7 +644,7 @@ const TableManagement: React.FC = () => {
                                 min="1"
                                 value={formData.number}
                                 onChange={handleInputChange}
-                                className="mt-1 block w-full rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
+                                className="mt-1 block w-full rounded-md shadow-sm border-2 border-primary focus:ring-primary focus:border-primary sm:text-sm"
                                 style={{
                                   borderColor: designSystem.colors.inputBorder,
                                   background: designSystem.colors.inputBg,
@@ -655,7 +659,7 @@ const TableManagement: React.FC = () => {
                             </div>
                             <div className="mb-4">
                               <label htmlFor="name" className="block text-sm font-medium text-primary">
-                                Table Name (Optional)
+                                {t('table_name_optional', language)}
                               </label>
                               <input
                                 type="text"
@@ -663,8 +667,8 @@ const TableManagement: React.FC = () => {
                                 name="name"
                                 value={formData.name}
                                 onChange={handleInputChange}
-                                placeholder={`Table ${formData.number}`}
-                                className="mt-1 block w-full rounded-md shadow-sm focus:ring-accent focus:border-accent sm:text-sm"
+                                placeholder={t('table_placeholder', language) + ` ${formData.number}`}
+                                className="mt-1 block w-full rounded-md shadow-sm border-2 border-primary focus:ring-accent focus:border-accent sm:text-sm"
                                 style={{
                                   borderColor: designSystem.colors.inputBorder,
                                   background: designSystem.colors.inputBg,
@@ -678,14 +682,14 @@ const TableManagement: React.FC = () => {
                             </div>
                             <div className="mb-4">
                               <label htmlFor="status" className="block text-sm font-medium text-primary">
-                                Status
+                                {t('status', language)}
                               </label>
                               <select
                                 id="status"
                                 name="status"
                                 value={formData.status}
                                 onChange={handleInputChange}
-                                className="mt-1 block w-full rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
+                                className="mt-1 block w-full rounded-md shadow-sm border-2 border-primary focus:ring-primary focus:border-primary sm:text-sm"
                                 style={{
                                   borderColor: designSystem.colors.iconFiltercolor,
                                   // background: designSystem.colors.inputBg,
@@ -696,9 +700,9 @@ const TableManagement: React.FC = () => {
                                   paddingRight: '1rem',
                                 }}
                               >
-                                <option value="available">Available</option>
-                                <option value="reserved">Reserved</option>
-                                <option value="occupied">Occupied</option>
+                                <option value="available">{t('available', language)}</option>
+                                <option value="reserved">{t('reserved', language)}</option>
+                                <option value="occupied">{t('occupied', language)}</option>
                               </select>
                             </div>
                           </>
@@ -720,7 +724,7 @@ const TableManagement: React.FC = () => {
                   ) : (
                     <>
                       <Save size={16} className="mr-2" />
-                      {editingTable ? 'Save Changes' : (bulkMode ? `Add ${tableCount} Tables` : 'Add Table')}
+                      {editingTable ? t('save_changes', language) : (bulkMode ? t('add_tables', language) + ` ${tableCount}` : t('add_table', language))}
                     </>
                   )}
                 </button>
@@ -730,7 +734,7 @@ const TableManagement: React.FC = () => {
                   disabled={loading}
                   className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50"
                 >
-                  Cancel
+                  {t('cancel', language)}
                 </button>
               </div>
             </div>
