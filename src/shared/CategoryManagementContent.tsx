@@ -3,6 +3,8 @@ import { PlusCircle, Edit, Trash2, Eye, EyeOff, Search, X, Layers, ArrowUp, Arro
 import Modal from '../components/ui/Modal';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import designSystem from '../designSystem';
+import { t } from '../utils/i18n';
+import { useLanguage } from '../contexts/LanguageContext';
 
 // This file will contain the shared UI for category management, similar to DashboardContent.
 // It will receive props for categories, CRUD handlers, loading, and user type (demo or restaurant).
@@ -188,19 +190,21 @@ const CategoryManagementContent: React.FC<CategoryManagementContentProps> = ({
     closeModal();
   };
 
+  const { language } = useLanguage();
+
   return (
     <div className="shadow rounded-lg overflow-hidden" style={{ background: designSystem.colors.white }}>
       <div className="p-4 sm:p-6 border-b flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4" style={{ borderColor: designSystem.colors.borderLightGray }}>
         <div>
-          <h2 className="text-xl font-semibold" style={{ color: designSystem.colors.primary }}>Categories</h2>
-          <p className="text-sm" style={{ color: designSystem.colors.text }}>Manage your menu categories</p>
+          <h2 className="text-xl font-semibold" style={{ color: designSystem.colors.primary }}>{t('categories', language)}</h2>
+          <p className="text-sm" style={{ color: designSystem.colors.text }}>{t('manage_your_categories', language)}</p>
         </div>
         <button
           onClick={openAddModal}
           className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium"
           style={{ background: designSystem.colors.primary, color: designSystem.colors.white }}
         >
-          <PlusCircle size={16} className="mr-2" style={{ color: designSystem.colors.white }} /> Add Category
+          <PlusCircle size={16} className="mr-2" style={{ color: designSystem.colors.white }} /> {t('add_category', language)}
         </button>
       </div>
       {/* Search */}
@@ -213,7 +217,7 @@ const CategoryManagementContent: React.FC<CategoryManagementContentProps> = ({
             type="text"
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            placeholder="Search categories..."
+            placeholder={t('search_categories', language)}
                               className="pl-10 block w-full py-3 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
             style={{ color: designSystem.colors.text }}
           />
@@ -234,12 +238,12 @@ const CategoryManagementContent: React.FC<CategoryManagementContentProps> = ({
         <div className="flex-1 flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <p className="text-sm text-gray-700">
-              Showing <span className="font-medium">{startIndex + 1}</span> to{' '}
+              {t('showing_results', language)} <span className="font-medium">{startIndex + 1}</span> to{' '}
               <span className="font-medium">{Math.min(endIndex, sortedCategories.length)}</span>{' '}
-              of <span className="font-medium">{sortedCategories.length}</span> results
+              {t('of_results', language)} <span className="font-medium">{sortedCategories.length}</span>
             </p>
             <div className="flex items-center space-x-2">
-              <label htmlFor="itemsPerPage" className="text-sm text-gray-700">Items per page:</label>
+              <label htmlFor="itemsPerPage" className="text-sm text-gray-700">{t('items_per_page', language)}</label>
               <select
                 id="itemsPerPage"
                 value={itemsPerPage}
@@ -272,7 +276,7 @@ const CategoryManagementContent: React.FC<CategoryManagementContentProps> = ({
                   className="flex items-center space-x-1"
                   style={{ color: designSystem.colors.primary }}
                 >
-                  <span>Title</span>
+                  <span>{t('category_title', language)}</span>
                   {sortField === 'title' ? (
                     sortDirection === 'asc' ? <ArrowUp size={14} style={{ color: designSystem.colors.primary }} /> : <ArrowDown size={14} style={{ color: designSystem.colors.primary }} />
                   ) : (
@@ -286,7 +290,7 @@ const CategoryManagementContent: React.FC<CategoryManagementContentProps> = ({
                   className="flex items-center space-x-1"
                   style={{ color: designSystem.colors.primary }}
                 >
-                  <span>Order</span>
+                  <span>{t('display_order', language)}</span>
                   {sortField === 'order' ? (
                     sortDirection === 'asc' ? <ArrowUp size={14} style={{ color: designSystem.colors.primary }} /> : <ArrowDown size={14} style={{ color: designSystem.colors.primary }} />
                   ) : (
@@ -294,8 +298,8 @@ const CategoryManagementContent: React.FC<CategoryManagementContentProps> = ({
                   )}
                 </button>
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: designSystem.colors.text }}>Status</th>
-              <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: designSystem.colors.text }}>Actions</th>
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: designSystem.colors.text }}>{t('status_column', language)}</th>
+              <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: designSystem.colors.text }}>{t('actions_column', language)}</th>
             </tr>
           </thead>
           <tbody style={{ background: designSystem.colors.white }}>
@@ -308,7 +312,7 @@ const CategoryManagementContent: React.FC<CategoryManagementContentProps> = ({
             ) : currentItems.length === 0 ? (
               <tr>
                 <td colSpan={4} className="px-6 py-10 text-center" style={{ color: designSystem.colors.text }}>
-                  {visibleCategories.length === 0 ? 'No categories found. Add your first category!' : 'No categories match your search criteria.'}
+                  {visibleCategories.length === 0 ? t('no_categories_found', language) : t('no_categories_match', language)}
                 </td>
               </tr>
             ) : (
@@ -335,28 +339,28 @@ const CategoryManagementContent: React.FC<CategoryManagementContentProps> = ({
                         color: category.status === 'active' ? designSystem.colors.statusReadyText : designSystem.colors.statusPendingText,
                       }}
                     >
-                      {category.status === 'active' ? 'Active' : 'Inactive'}
+                      {category.status === 'active' ? t('active', language) : t('inactive', language)}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div className="flex justify-end space-x-2">
                       <button
                         onClick={() => onToggleStatus(category)}
-                        title={category.status === 'active' ? 'Deactivate' : 'Activate'}
+                        title={category.status === 'active' ? t('deactivate', language) : t('activate', language)}
                         style={{ color: designSystem.colors.secondary }}
                       >
                         {category.status === 'active' ? <EyeOff size={18} /> : <Eye size={18} />}
                       </button>
                       <button
                         onClick={() => openEditModal(category)}
-                        title="Edit"
+                        title={t('edit', language)}
                         style={{ color: designSystem.colors.secondary }}
                       >
                         <Edit size={18} />
                       </button>
                       <button
                         onClick={() => { setCategoryToDelete(category); setDeleteConfirmOpen(true); }}
-                        title="Delete"
+                        title={t('delete', language)}
                         style={{ color: designSystem.colors.secondary }}
                       >
                         <Trash2 size={18} />
@@ -375,12 +379,12 @@ const CategoryManagementContent: React.FC<CategoryManagementContentProps> = ({
         <div className="flex-1 flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <p className="text-sm text-gray-700">
-              Showing <span className="font-medium">{startIndex + 1}</span> to{' '}
+              {t('showing_results', language)} <span className="font-medium">{startIndex + 1}</span> to{' '}
               <span className="font-medium">{Math.min(endIndex, sortedCategories.length)}</span>{' '}
-              of <span className="font-medium">{sortedCategories.length}</span> results
+              {t('of_results', language)} <span className="font-medium">{sortedCategories.length}</span>
             </p>
             <div className="flex items-center space-x-2">
-              <label htmlFor="itemsPerPageBottom" className="text-sm text-gray-700">Items per page:</label>
+              <label htmlFor="itemsPerPageBottom" className="text-sm text-gray-700">{t('items_per_page', language)}</label>
               <select
                 id="itemsPerPageBottom"
                 value={itemsPerPage}
@@ -404,35 +408,35 @@ const CategoryManagementContent: React.FC<CategoryManagementContentProps> = ({
       </div>
 
       {/* Add/Edit Modal */}
-      <Modal isOpen={isModalOpen} onClose={closeModal} title={editingCategory ? 'Edit Category' : 'Add Category'}>
+      <Modal isOpen={isModalOpen} onClose={closeModal} title={editingCategory ? t('edit_category', language) : t('add_category', language)}>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="title" className="block text-sm font-medium text-gray-700">Title*</label>
+            <label htmlFor="title" className="block text-sm font-medium text-gray-700">{t('category_title', language)}*</label>
             <input
               type="text"
               id="title"
               name="title"
               value={formData.title}
               onChange={handleInputChange}
-              className="mt-1 block w-full py-3 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
+              className="mt-1 block w-full py-3 px-3 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
               required
             />
           </div>
           <div>
-            <label htmlFor="status" className="block text-sm font-medium text-gray-700">Status</label>
+            <label htmlFor="status" className="block text-sm font-medium text-gray-700">{t('status_column', language)}</label>
             <select
               id="status"
               name="status"
               value={formData.status}
               onChange={handleInputChange}
-              className="mt-1 block w-full py-3 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
+              className="mt-1 block w-full py-3 px-3 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
             >
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
+              <option value="active">{t('active', language)}</option>
+              <option value="inactive">{t('inactive', language)}</option>
             </select>
           </div>
           <div>
-            <label htmlFor="order" className="block text-sm font-medium text-gray-700">Display Order</label>
+            <label htmlFor="order" className="block text-sm font-medium text-gray-700">{t('display_order', language)}</label>
             <input
               type="number"
               id="order"
@@ -440,9 +444,9 @@ const CategoryManagementContent: React.FC<CategoryManagementContentProps> = ({
               min="0"
               value={formData.order}
               onChange={handleInputChange}
-              className="mt-1 block w-full py-3 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
+              className="mt-1 block w-full py-3 px-3 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
             />
-            <p className="mt-1 text-xs text-gray-500">Lower numbers will appear first in the menu</p>
+            <p className="mt-1 text-xs text-gray-500">{t('display_order_hint', language)}</p>
           </div>
           <div className="flex justify-end gap-2 pt-2">
             <button
@@ -451,36 +455,36 @@ const CategoryManagementContent: React.FC<CategoryManagementContentProps> = ({
               className="inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary sm:w-auto sm:text-sm"
               disabled={isSubmitting}
             >
-              Cancel
+              {t('cancel', language)}
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
               className="inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-primary text-base font-medium text-white hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary sm:w-auto sm:text-sm disabled:opacity-50"
             >
-              {isSubmitting ? 'Saving...' : (editingCategory ? 'Save Changes' : 'Add Category')}
+              {isSubmitting ? t('saving', language) : (editingCategory ? t('save_changes', language) : t('add_category', language))}
             </button>
           </div>
         </form>
       </Modal>
       {/* Delete Confirmation Modal */}
-      <Modal isOpen={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)} title="Delete Category" >
+      <Modal isOpen={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)} title={t('delete_category', language)}>
         <div className="p-4">
-          <p className="text-gray-800 text-base mb-4">Are you sure you want to delete the category <span className="font-semibold">{categoryToDelete?.title}</span>? This action cannot be undone.</p>
+          <p className="text-gray-800 text-base mb-4">{t('delete_category_confirm', language)} <span className="font-semibold">{categoryToDelete?.title}</span> {t('delete_category_confirm_note', language)}</p>
           <div className="flex justify-end gap-2">
             <button
               type="button"
               onClick={() => setDeleteConfirmOpen(false)}
               className="inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary sm:w-auto sm:text-sm"
             >
-              Cancel
+              {t('cancel', language)}
             </button>
             <button
               type="button"
               onClick={() => { if (categoryToDelete) { onDelete(categoryToDelete.id); setDeleteConfirmOpen(false); setCategoryToDelete(null); } }}
               className="inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:w-auto sm:text-sm"
             >
-              Delete
+              {t('delete', language)}
             </button>
           </div>
         </div>
