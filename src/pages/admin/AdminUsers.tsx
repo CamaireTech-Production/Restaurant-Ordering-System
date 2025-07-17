@@ -111,6 +111,7 @@ const AdminUsers: React.FC = () => {
     setSuccess('');
     try {
       const ref = doc(db, 'users', editModal.user.id);
+      const oldData = { email: editModal.user.email, role: editModal.user.role };
       // If editing self, update email/password in Auth and Firestore
       if (editModal.user.id === currentAdmin.id) {
         const auth = getAuth();
@@ -127,6 +128,21 @@ const AdminUsers: React.FC = () => {
           role: editForm.role,
           updatedAt: new Date(),
         });
+        // Log activity for edit
+        await logActivity({
+          userId: currentAdmin?.id,
+          userEmail: currentAdmin?.email,
+          action: 'admin_edit_user',
+          entityType: 'admin',
+          entityId: editModal.user.id,
+          details: {
+            oldEmail: oldData.email,
+            newEmail: editForm.email,
+            oldRole: oldData.role,
+            newRole: editForm.role,
+            selfEdit: true,
+          },
+        });
         setSuccess('Account updated successfully.');
       } else {
         // Editing another user: only update Firestore, show note for email/password
@@ -134,6 +150,21 @@ const AdminUsers: React.FC = () => {
           email: editForm.email,
           role: editForm.role,
           updatedAt: new Date(),
+        });
+        // Log activity for edit
+        await logActivity({
+          userId: currentAdmin?.id,
+          userEmail: currentAdmin?.email,
+          action: 'admin_edit_user',
+          entityType: 'admin',
+          entityId: editModal.user.id,
+          details: {
+            oldEmail: oldData.email,
+            newEmail: editForm.email,
+            oldRole: oldData.role,
+            newRole: editForm.role,
+            selfEdit: false,
+          },
         });
         setSuccess('Account updated in database. Email/password changes require admin action.');
       }
@@ -152,6 +183,18 @@ const AdminUsers: React.FC = () => {
     try {
       const ref = doc(db, 'users', deleteModal.user.id);
       await updateDoc(ref, { isDeleted: true, updatedAt: new Date() });
+      // Log activity for delete
+      await logActivity({
+        userId: currentAdmin?.id,
+        userEmail: currentAdmin?.email,
+        action: 'admin_delete_user',
+        entityType: 'admin',
+        entityId: deleteModal.user.id,
+        details: {
+          email: deleteModal.user.email,
+          role: deleteModal.user.role,
+        },
+      });
       setDeleteModal({ open: false, user: null });
     } catch (err: any) {
       setError(err.message || 'Failed to delete admin');
@@ -166,6 +209,19 @@ const AdminUsers: React.FC = () => {
     try {
       const ref = doc(db, 'users', user.id);
       await updateDoc(ref, { isDeleted: !user.isDeleted, updatedAt: new Date() });
+      // Log activity for activate/deactivate
+      await logActivity({
+        userId: currentAdmin?.id,
+        userEmail: currentAdmin?.email,
+        action: user.isDeleted ? 'admin_activate_user' : 'admin_deactivate_user',
+        entityType: 'admin',
+        entityId: user.id,
+        details: {
+          email: user.email,
+          role: user.role,
+          newStatus: !user.isDeleted ? 'deactivated' : 'activated',
+        },
+      });
     } catch (err: any) {
       setError(err.message || 'Failed to update status');
     } finally {
