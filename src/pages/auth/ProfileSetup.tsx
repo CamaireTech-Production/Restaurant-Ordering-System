@@ -155,7 +155,7 @@ const ProfileSetup: React.FC = () => {
   const showSidebar = location.state && location.state.fromSettings === true;
 
   // Feature toggles
-  const paymentInfoEnabled = restaurant?.paymentInfoEnabled === true;
+  const paymentInfoEnabled = !!restaurant?.paymentInfo;
   const colorCustomizationEnabled = restaurant?.colorCustomization === true;
 
   const content = (

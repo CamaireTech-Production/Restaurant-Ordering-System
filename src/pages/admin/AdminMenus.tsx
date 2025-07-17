@@ -1,11 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import AdminDashboardLayout from '../../components/layout/AdminDashboardLayout';
-import { getFirestore, collection, getDocs, orderBy, query } from 'firebase/firestore';
+import { getFirestore, collection, getDocs, orderBy, query, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { useAdminAuth } from '../../contexts/AdminAuthContext';
+import { logActivity } from '../../services/activityLogService';
+import toast from 'react-hot-toast';
+import LoadingSpinner from '../../components/ui/LoadingSpinner';
+import designSystem from '../../designSystem';
+import { Pencil, Trash2, RotateCcw, Eye } from 'lucide-react';
 
 const PAGE_SIZE = 10;
 
 const AdminMenus: React.FC = () => {
   const db = getFirestore();
+  const { currentAdmin } = useAdminAuth();
   const [dishes, setDishes] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [restaurants, setRestaurants] = useState<any>({});
@@ -19,6 +26,11 @@ const AdminMenus: React.FC = () => {
   const [dishPage, setDishPage] = useState(1);
   const [dishItemsPerPage, setDishItemsPerPage] = useState(10);
   const [catPage, setCatPage] = useState(1);
+  // Dish action handlers
+  const [dishAction, setDishAction] = useState<null | { type: 'delete' | 'restore'; dish: any }>(null);
+  const [categoryAction, setCategoryAction] = useState<null | { type: 'delete' | 'restore'; category: any }>(null);
+  const [dishesLoading, setDishesLoading] = useState(false);
+  const [categoriesLoading, setCategoriesLoading] = useState(false);
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -159,20 +171,186 @@ const AdminMenus: React.FC = () => {
     return pages;
   };
 
+  // Dish action handlers
+  const handleDishAction = async (type: 'delete' | 'restore', dish: any) => {
+    setDishesLoading(true);
+    try {
+      const ref = doc(db, 'menuItems', dish.id);
+      if (type === 'delete') {
+        await updateDoc(ref, { deleted: true, updatedAt: serverTimestamp() });
+        setDishes(prev => prev.map(d => d.id === dish.id ? { ...d, deleted: true } : d));
+        await logActivity({
+          userId: currentAdmin?.id,
+          userEmail: currentAdmin?.email,
+          action: 'admin_delete_dish',
+          entityType: 'dish',
+          entityId: dish.id,
+          details: { title: dish.title, role: 'admin' },
+        });
+        toast('Dish deleted.', {
+          style: {
+            background: designSystem.colors.white,
+            color: designSystem.colors.primary,
+            border: `1px solid ${designSystem.colors.error}`,
+            fontWeight: 500,
+          },
+          icon: '❌',
+        });
+      } else if (type === 'restore') {
+        await updateDoc(ref, { deleted: false, updatedAt: serverTimestamp() });
+        setDishes(prev => prev.map(d => d.id === dish.id ? { ...d, deleted: false } : d));
+        await logActivity({
+          userId: currentAdmin?.id,
+          userEmail: currentAdmin?.email,
+          action: 'admin_restore_dish',
+          entityType: 'dish',
+          entityId: dish.id,
+          details: { title: dish.title, role: 'admin' },
+        });
+        toast('Dish restored.', {
+          style: {
+            background: designSystem.colors.white,
+            color: designSystem.colors.primary,
+            border: `1px solid ${designSystem.colors.success}`,
+            fontWeight: 500,
+          },
+          icon: '✅',
+        });
+      }
+    } catch (err) {
+      toast('Action failed. Please try again.', {
+        style: {
+          background: designSystem.colors.white,
+          color: designSystem.colors.primary,
+          border: `1px solid ${designSystem.colors.error}`,
+          fontWeight: 500,
+        },
+        icon: '❌',
+      });
+    } finally {
+      setDishesLoading(false);
+      setDishAction(null);
+    }
+  };
+  // Category action handlers
+  const handleCategoryAction = async (type: 'delete' | 'restore', category: any) => {
+    setCategoriesLoading(true);
+    try {
+      const ref = doc(db, 'categories', category.id);
+      if (type === 'delete') {
+        await updateDoc(ref, { deleted: true, updatedAt: serverTimestamp() });
+        setCategories(prev => prev.map(c => c.id === category.id ? { ...c, deleted: true } : c));
+        await logActivity({
+          userId: currentAdmin?.id,
+          userEmail: currentAdmin?.email,
+          action: 'admin_delete_category',
+          entityType: 'category',
+          entityId: category.id,
+          details: { title: category.title, role: 'admin' },
+        });
+        toast('Category deleted.', {
+          style: {
+            background: designSystem.colors.white,
+            color: designSystem.colors.primary,
+            border: `1px solid ${designSystem.colors.error}`,
+            fontWeight: 500,
+          },
+          icon: '❌',
+        });
+      } else if (type === 'restore') {
+        await updateDoc(ref, { deleted: false, updatedAt: serverTimestamp() });
+        setCategories(prev => prev.map(c => c.id === category.id ? { ...c, deleted: false } : c));
+        await logActivity({
+          userId: currentAdmin?.id,
+          userEmail: currentAdmin?.email,
+          action: 'admin_restore_category',
+          entityType: 'category',
+          entityId: category.id,
+          details: { title: category.title, role: 'admin' },
+        });
+        toast('Category restored.', {
+          style: {
+            background: designSystem.colors.white,
+            color: designSystem.colors.primary,
+            border: `1px solid ${designSystem.colors.success}`,
+            fontWeight: 500,
+          },
+          icon: '✅',
+        });
+      }
+    } catch (err) {
+      toast('Action failed. Please try again.', {
+        style: {
+          background: designSystem.colors.white,
+          color: designSystem.colors.primary,
+          border: `1px solid ${designSystem.colors.error}`,
+          fontWeight: 500,
+        },
+        icon: '❌',
+      });
+    } finally {
+      setCategoriesLoading(false);
+      setCategoryAction(null);
+    }
+  };
+
   const renderDishRow = (dish: any, idx: number) => (
-    <tr key={dish.id || idx} className="border-b last:border-none">
-      <td className="py-2 font-medium">{dish.title || '—'}</td>
-      <td className="py-2 text-right">{dish.price ? `${dish.price} FCFA` : '—'}</td>
-      <td className="py-2">{getCategoryName(dish.categoryId)}</td>
-      <td className="py-2">{getRestaurantName(dish.restaurantId)}</td>
-      <td className="py-2 capitalize">{dish.status || '—'}</td>
+    <tr
+      key={dish.id || idx}
+      className={`hover:bg-gray-50 transition border-b last:border-none ${dish.deleted ? 'opacity-60' : ''}`}
+    >
+      <td className="px-6 py-4 whitespace-nowrap">
+        {dish.image ? (
+          <img src={dish.image} alt={dish.title} className="w-12 h-12 object-cover rounded" />
+        ) : (
+          <span className="text-gray-400">—</span>
+        )}
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap font-medium text-primary">{dish.title || '—'}</td>
+      <td className="px-6 py-4 whitespace-nowrap text-right">{dish.price ? `${dish.price} FCFA` : '—'}</td>
+      <td className="px-6 py-4 whitespace-nowrap">{getCategoryName(dish.categoryId)}</td>
+      <td className="px-6 py-4 whitespace-nowrap">{getRestaurantName(dish.restaurantId)}</td>
+      <td className="px-6 py-4 whitespace-nowrap">
+        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${dish.deleted ? 'bg-red-100 text-red-800' : dish.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>{dish.deleted ? 'Deleted' : dish.status === 'active' ? 'Active' : 'Inactive'}</span>
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap text-right">
+        <div className="flex justify-end space-x-2">
+          <button title="View Details" className="p-2 rounded hover:bg-blue-100 transition text-blue-600"><Eye size={18} /></button>
+          {!dish.deleted && (
+            <button title="Edit" className="p-2 rounded hover:bg-green-100 transition text-green-600"><Pencil size={18} /></button>
+          )}
+          {!dish.deleted && (
+            <button title="Delete" onClick={() => setDishAction({ type: 'delete', dish })} className="p-2 rounded hover:bg-red-100 transition"><Trash2 size={18} className="text-red-600" /></button>
+          )}
+          {dish.deleted && (
+            <button title="Restore" onClick={() => setDishAction({ type: 'restore', dish })} className="p-2 rounded hover:bg-blue-100 transition"><RotateCcw size={18} className="text-blue-600" /></button>
+          )}
+        </div>
+      </td>
     </tr>
   );
+
   const renderCategoryRow = (cat: any, idx: number) => (
-    <tr key={cat.id || idx} className="border-b last:border-none">
-      <td className="py-2 font-medium">{cat.title || '—'}</td>
-      <td className="py-2">{getRestaurantName(cat.restaurantId)}</td>
-      <td className="py-2 capitalize">{cat.status || '—'}</td>
+    <tr
+      key={cat.id || idx}
+      className={`hover:bg-gray-50 transition border-b last:border-none ${cat.deleted ? 'opacity-60' : ''}`}
+    >
+      <td className="px-6 py-4 whitespace-nowrap font-medium text-primary">{cat.title || '—'}</td>
+      <td className="px-6 py-4 whitespace-nowrap">{getRestaurantName(cat.restaurantId)}</td>
+      <td className="px-6 py-4 whitespace-nowrap">
+        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${cat.deleted ? 'bg-red-100 text-red-800' : cat.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>{cat.deleted ? 'Deleted' : cat.status === 'active' ? 'Active' : 'Inactive'}</span>
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap text-right">
+        <div className="flex justify-end space-x-2">
+          <button title="Edit" className="p-2 rounded hover:bg-green-100 transition text-green-600"><Pencil size={18} /></button>
+          {!cat.deleted && (
+            <button title="Delete" onClick={() => setCategoryAction({ type: 'delete', category: cat })} className="p-2 rounded hover:bg-red-100 transition"><Trash2 size={18} className="text-red-600" /></button>
+          )}
+          {cat.deleted && (
+            <button title="Restore" onClick={() => setCategoryAction({ type: 'restore', category: cat })} className="p-2 rounded hover:bg-blue-100 transition"><RotateCcw size={18} className="text-blue-600" /></button>
+          )}
+        </div>
+      </td>
     </tr>
   );
 
@@ -180,11 +358,13 @@ const AdminMenus: React.FC = () => {
     <AdminDashboardLayout>
       <h1 className="text-2xl font-bold mb-4">Menus & Categories</h1>
       {loading ? (
-        <div className="flex justify-center items-center h-32">Loading...</div>
+        <div className="flex justify-center items-center h-32">
+          <LoadingSpinner size={48} color={designSystem.colors.primary} />
+        </div>
       ) : (
         <>
-          <div className="bg-white shadow rounded p-6 mb-8">
-            <div className="flex flex-wrap gap-4 mb-4">
+          <div className="bg-white shadow rounded-lg overflow-hidden mb-8">
+            <div className="flex flex-wrap gap-4 mb-4 p-4">
               <div>
                 <label className="block text-sm font-medium mb-1">Filter by Restaurant</label>
                 <select value={selectedRestaurant} onChange={e => { setSelectedRestaurant(e.target.value); setDishPage(1); }} className="border px-2 py-1 rounded">
@@ -236,18 +416,26 @@ const AdminMenus: React.FC = () => {
                 </div>
               </div>
             </div>
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left border-b">
-                  <th className="py-2 cursor-pointer" onClick={() => handleDishSort('title')}>Name</th>
-                  <th className="py-2 cursor-pointer text-right" onClick={() => handleDishSort('price')}>Price</th>
-                  <th className="py-2 cursor-pointer" onClick={() => handleDishSort('categoryId')}>Category</th>
-                  <th className="py-2 cursor-pointer" onClick={() => handleDishSort('restaurantId')}>Restaurant</th>
-                  <th className="py-2 cursor-pointer" onClick={() => handleDishSort('status')}>Status</th>
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Image</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Restaurant</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
-              <tbody>
-                {paginatedDishes.map(renderDishRow)}
+              <tbody className="bg-white divide-y divide-gray-200">
+                {paginatedDishes.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="px-6 py-10 text-center text-gray-500">No dishes found.</td>
+                  </tr>
+                ) : (
+                  paginatedDishes.map(renderDishRow)
+                )}
               </tbody>
             </table>
             {/* Pagination controls (bottom) */}
@@ -283,27 +471,59 @@ const AdminMenus: React.FC = () => {
               </div>
             </div>
           </div>
-          <div className="bg-white shadow rounded p-6">
-            <h2 className="text-xl font-semibold mb-4">Categories</h2>
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left border-b">
-                  <th className="py-2">Title</th>
-                  <th className="py-2">Restaurant</th>
-                  <th className="py-2">Status</th>
+          <div className="bg-white shadow rounded-lg overflow-hidden">
+            <h2 className="text-xl font-semibold mb-4 p-4">Categories</h2>
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Restaurant</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
-              <tbody>
-                {paginatedCategories.map(renderCategoryRow)}
+              <tbody className="bg-white divide-y divide-gray-200">
+                {paginatedCategories.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="px-6 py-10 text-center text-gray-500">No categories found.</td>
+                  </tr>
+                ) : (
+                  paginatedCategories.map(renderCategoryRow)
+                )}
               </tbody>
             </table>
-            <div className="flex justify-between items-center mt-4">
+            <div className="flex justify-between items-center mt-4 p-4">
               <button disabled={catPage === 1} onClick={() => setCatPage(p => Math.max(1, p - 1))} className="px-4 py-2 rounded bg-primary text-white disabled:opacity-50">Previous</button>
               <span>Page {catPage} of {catTotalPages}</span>
               <button disabled={catPage === catTotalPages} onClick={() => setCatPage(p => Math.min(catTotalPages, p + 1))} className="px-4 py-2 rounded bg-primary text-white disabled:opacity-50">Next</button>
             </div>
           </div>
         </>
+      )}
+      {/* Confirmation modals */}
+      {dishAction && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
+          <div className="bg-white rounded shadow-lg p-6 w-full max-w-sm">
+            <h2 className="text-lg font-bold mb-2">Confirm {dishAction.type === 'delete' ? 'Delete' : 'Restore'}</h2>
+            <p className="mb-4">Are you sure you want to {dishAction.type} <span className="font-semibold">{dishAction.dish.title}</span>?</p>
+            <div className="flex justify-end gap-2">
+              <button className="px-4 py-2 bg-gray-200 rounded" onClick={() => setDishAction(null)}>Cancel</button>
+              <button className="px-4 py-2 bg-primary text-white rounded" onClick={() => handleDishAction(dishAction.type, dishAction.dish)} disabled={dishesLoading}>Confirm</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {categoryAction && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
+          <div className="bg-white rounded shadow-lg p-6 w-full max-w-sm">
+            <h2 className="text-lg font-bold mb-2">Confirm {categoryAction.type === 'delete' ? 'Delete' : 'Restore'}</h2>
+            <p className="mb-4">Are you sure you want to {categoryAction.type} <span className="font-semibold">{categoryAction.category.title}</span>?</p>
+            <div className="flex justify-end gap-2">
+              <button className="px-4 py-2 bg-gray-200 rounded" onClick={() => setCategoryAction(null)}>Cancel</button>
+              <button className="px-4 py-2 bg-primary text-white rounded" onClick={() => handleCategoryAction(categoryAction.type, categoryAction.category)} disabled={categoriesLoading}>Confirm</button>
+            </div>
+          </div>
+        </div>
       )}
     </AdminDashboardLayout>
   );
