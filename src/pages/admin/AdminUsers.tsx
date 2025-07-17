@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import AdminDashboardLayout from '../../components/layout/AdminDashboardLayout';
 import { getFirestore, collection, getDocs, query, where, orderBy } from 'firebase/firestore';
+import LoadingSpinner from '../../components/ui/LoadingSpinner';
+import designSystem from '../../designSystem';
 
 const AdminUsers: React.FC = () => {
   const db = getFirestore();
@@ -42,7 +44,9 @@ const AdminUsers: React.FC = () => {
         {currentAdmin?.role === 'super_admin' ? 'Users (Admins & Superadmins)' : 'Users (Admins)'}
       </h1>
       {loading ? (
-        <div className="flex justify-center items-center h-32">Loading...</div>
+        <div className="flex justify-center items-center h-32">
+          <LoadingSpinner size={48} color={designSystem.colors.primary} />
+        </div>
       ) : (
         <>
           {currentAdmin?.role === 'super_admin' && (
