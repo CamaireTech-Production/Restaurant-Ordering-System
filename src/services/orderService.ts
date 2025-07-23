@@ -4,14 +4,17 @@ import { Order } from '../types';
 
 const ordersCollection = collection(db, 'orders');
 
-export const createOrder = async (order: Omit<Order, 'id' | 'createdAt' | 'updatedAt'>) => {
+export const createOrder = async (order: Omit<Order, 'id' | 'createdAt' | 'updatedAt'> & { customerName?: string, customerPhone?: string, customerLocation?: string }) => {
   try {
     const timestamp = Timestamp.now();
     const docRef = await addDoc(ordersCollection, {
       ...order,
       status: 'pending',
       createdAt: timestamp,
-      updatedAt: timestamp
+      updatedAt: timestamp,
+      ...(order.customerName ? { customerName: order.customerName } : {}),
+      ...(order.customerPhone ? { customerPhone: order.customerPhone } : {}),
+      ...(order.customerLocation ? { customerLocation: order.customerLocation } : {}),
     });
     return docRef.id;
   } catch (error) {

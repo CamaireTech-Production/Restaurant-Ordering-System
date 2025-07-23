@@ -61,6 +61,7 @@ const OrderManagementContent: React.FC<OrderManagementContentProps> = ({
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [statusChangeModal, setStatusChangeModal] = useState<{order: Order, newStatus: Order['status']}|null>(null);
 
   // Filter orders based on status
   let filteredOrders = statusFilter === 'all'
@@ -208,6 +209,7 @@ const OrderManagementContent: React.FC<OrderManagementContentProps> = ({
                   )}
                   <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: designSystem.colors.text }}>{t('status_order', language)}</th>
                   <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: designSystem.colors.text }}>{t('total_order', language)}</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: designSystem.colors.text }}>{t('customer_info', language)}</th>
                   <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer select-none" style={{ color: designSystem.colors.text }} onClick={handleSortDate}>
                     {t('date_order', language)}
                     <span className="ml-1 align-middle">
@@ -264,6 +266,15 @@ const OrderManagementContent: React.FC<OrderManagementContentProps> = ({
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-semibold text-gray-900">
+                        {order.customerName || '-'}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {order.customerPhone || '-'}<br />
+                        {order.customerLocation || '-'}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm" style={{ color: designSystem.colors.primary }}>
                         {formatDate(order.createdAt)}
                       </div>
@@ -275,7 +286,7 @@ const OrderManagementContent: React.FC<OrderManagementContentProps> = ({
                         <div className="flex items-center justify-end space-x-2">
                           {order.status === 'pending' && (
                             <button
-                              onClick={() => onStatusChange(order.id, 'preparing')}
+                              onClick={() => setStatusChangeModal({ order, newStatus: 'preparing' })}
                               className="px-2 py-1 text-xs rounded-md border"
                               style={{
                                 color: designSystem.colors.statusPreparingText,
@@ -287,7 +298,7 @@ const OrderManagementContent: React.FC<OrderManagementContentProps> = ({
                           )}
                           {order.status === 'preparing' && (
                             <button
-                              onClick={() => onStatusChange(order.id, 'ready')}
+                              onClick={() => setStatusChangeModal({ order, newStatus: 'ready' })}
                               className="px-2 py-1 text-xs rounded-md border"
                               style={{
                                 color: designSystem.colors.statusReadyText,
@@ -299,7 +310,7 @@ const OrderManagementContent: React.FC<OrderManagementContentProps> = ({
                           )}
                           {order.status === 'ready' && (
                             <button
-                              onClick={() => onStatusChange(order.id, 'completed')}
+                              onClick={() => setStatusChangeModal({ order, newStatus: 'completed' })}
                               className="px-2 py-1 text-xs rounded-md border"
                               style={{
                                 color: designSystem.colors.statusCompletedText,
@@ -311,7 +322,7 @@ const OrderManagementContent: React.FC<OrderManagementContentProps> = ({
                           )}
                           {(order.status === 'pending' || order.status === 'preparing') && (
                             <button
-                              onClick={() => onStatusChange(order.id, 'cancelled')}
+                              onClick={() => setStatusChangeModal({ order, newStatus: 'cancelled' })}
                               className="px-2 py-1 text-xs rounded-md border"
                               style={{
                                 color: designSystem.colors.statusCancelledText,
@@ -441,6 +452,30 @@ const OrderManagementContent: React.FC<OrderManagementContentProps> = ({
               className="inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:w-auto sm:text-sm"
             >
               {t('delete', language)}
+            </button>
+          </div>
+        </div>
+      </Modal>
+      {/* Status Change Confirmation Modal */}
+      <Modal isOpen={!!statusChangeModal} onClose={() => setStatusChangeModal(null)} title={statusChangeModal ? t('confirm_status_change', language) : ''}>
+        <div className="p-4">
+          <p className="text-gray-800 text-base mb-4">
+            {statusChangeModal && t(`confirm_change_to_${statusChangeModal.newStatus}`, language)}
+          </p>
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setStatusChangeModal(null)}
+              className="inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary sm:w-auto sm:text-sm"
+            >
+              {t('cancel', language)}
+            </button>
+            <button
+              type="button"
+              onClick={() => { if (statusChangeModal) { onStatusChange(statusChangeModal.order.id, statusChangeModal.newStatus); setStatusChangeModal(null); } }}
+              className="inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-primary text-base font-medium text-white hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary sm:w-auto sm:text-sm"
+            >
+              {t('confirm', language)}
             </button>
           </div>
         </div>

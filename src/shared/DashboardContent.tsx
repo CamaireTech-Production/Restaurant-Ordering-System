@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Copy, UtensilsCrossed, Layers, Table, ClipboardList, Star, ShoppingCart, BarChart2, User } from 'lucide-react';
+import { Copy, UtensilsCrossed, Layers, ClipboardList, ShoppingCart, BarChart2, User } from 'lucide-react';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import { toast } from 'react-hot-toast';
 import designSystem from '../designSystem';
@@ -36,30 +36,35 @@ const getOrderStatusColors = (status: string) => {
   }
 };
 
-const DashboardContent: React.FC<DashboardContentProps> = ({ restaurant, orders, menuItems, categories, isDemoUser, loading, children }) => {
+const DashboardContent: React.FC<DashboardContentProps> = ({ restaurant, orders, menuItems, categories, loading, children }) => {
   // Memoized stats
   // Defensive: default to empty arrays if undefined
   const safeOrders = Array.isArray(orders) ? orders : [];
   const safeMenuItems = Array.isArray(menuItems) ? menuItems : [];
   const safeCategories = Array.isArray(categories) ? categories : [];
 
-  const totalRevenue = useMemo(() => safeOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0), [safeOrders]);
-  const totalOrders = safeOrders.length;
-  const totalDishes = safeMenuItems.length;
-  const totalCategories = safeCategories.length;
+  const restaurantId = restaurant?.id;
+  const ordersForRestaurant = safeOrders.filter(o => o.restaurantId === restaurantId && !o.deleted);
+  const menuItemsForRestaurant = safeMenuItems.filter(d => d.restaurantId === restaurantId && !d.deleted);
+  const categoriesForRestaurant = safeCategories.filter(c => c.restaurantId === restaurantId && !c.deleted);
+  const nonPendingOrders = ordersForRestaurant.filter(o => o.status !== 'pending');
+  const totalRevenue = useMemo(() => nonPendingOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0), [nonPendingOrders]);
+  const totalOrders = useMemo(() => nonPendingOrders.length, [nonPendingOrders]);
+  const totalDishes = menuItemsForRestaurant.length;
+  const totalCategories = categoriesForRestaurant.length;
 
   // Recent Orders (latest 4)
   const recentOrders = useMemo(() => {
-    return safeOrders.slice().sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0)).slice(0, 4);
-  }, [safeOrders]);
+    return ordersForRestaurant.slice().sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0)).slice(0, 4);
+  }, [ordersForRestaurant]);
 
   // Top Performing Dishes (by order count)
   const topDishes = useMemo(() => {
     const dishMap: Record<string, { title: string; count: number; revenue: number }> = {};
-    safeOrders.forEach(order => {
+    ordersForRestaurant.forEach(order => {
       (order.items || []).forEach((item: any) => {
         if (!dishMap[item.menuItemId]) {
-          const menuItem = safeMenuItems.find((m: any) => m.id === item.menuItemId);
+          const menuItem = menuItemsForRestaurant.find((m: any) => m.id === item.menuItemId);
           dishMap[item.menuItemId] = {
             title: menuItem?.title || item.title || 'Unknown',
             count: 0,
@@ -71,16 +76,13 @@ const DashboardContent: React.FC<DashboardContentProps> = ({ restaurant, orders,
       });
     });
     return Object.values(dishMap).sort((a, b) => b.count - a.count).slice(0, 4);
-  }, [safeOrders, safeMenuItems]);
+  }, [ordersForRestaurant, menuItemsForRestaurant]);
 
   // Feature toggles from restaurant
   const {
     publicMenuLink = true,
     publicOrderLink = true,
     orderManagement = true,
-    tableManagement = true,
-    paymentInfo = false,
-    colorCustomization = false,
   } = restaurant || {};
 
   const { language } = useLanguage();
@@ -195,6 +197,7 @@ const DashboardContent: React.FC<DashboardContentProps> = ({ restaurant, orders,
               <div>
                 <div className="text-xs" style={{ color: designSystem.colors.text }}>{t('total_revenue', language)}</div>
                 <div className="text-xl font-bold" style={{ color: designSystem.colors.primary }}>{totalRevenue.toLocaleString()} FCFA</div>
+                <div className="text-xs text-gray-400 mt-1">{t('excluding_pending_orders', language)}</div>
               </div>
             </div>
           </div>
@@ -209,6 +212,7 @@ const DashboardContent: React.FC<DashboardContentProps> = ({ restaurant, orders,
               <div>
                 <div className="text-xs" style={{ color: designSystem.colors.text }}>{t('total_orders', language)}</div>
                 <div className="text-xl font-bold" style={{ color: designSystem.colors.primary }}>{totalOrders}</div>
+                <div className="text-xs text-gray-400 mt-1">{t('excluding_pending_orders', language)}</div>
               </div>
             </div>
           </div>
@@ -250,11 +254,14 @@ const DashboardContent: React.FC<DashboardContentProps> = ({ restaurant, orders,
             </div>
             <div className="divide-y divide-gray-100">
               {recentOrders.length === 0 && <div className="text-gray-400 text-sm py-4">{t('no_recent_orders', language)}</div>}
-              {recentOrders.map((order, idx) => (
+              {recentOrders.map((order) => (
                 <div key={order.id} className="flex items-center justify-between py-3">
                   <div className="flex flex-col">
                     <span className="font-mono text-xs text-gray-500">#{order.id?.slice(-4) || '----'}</span>
-                    <span className="text-sm font-medium text-gray-800">{order.customerName || t('customer', language)}</span>
+                    <span className="text-sm font-medium text-gray-800">
+                      {order.customerName || t('customer', language)}
+                      {order.customerPhone ? ` (${order.customerPhone})` : ''}
+                    </span>
                     <span className="text-xs text-gray-400">{order.items?.length || 0} {t('items', language)} • {order.createdAt?.toDate ? timeAgo(order.createdAt.toDate()) : ''}</span>
                   </div>
                   <div className="flex flex-col items-end">

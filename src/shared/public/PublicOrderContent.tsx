@@ -33,6 +33,7 @@ const PublicOrderContent: React.FC<PublicOrderContentProps> = ({ restaurant, cat
   const [showCheckout, setShowCheckout] = useState(false);
   const [checkoutPhone, setCheckoutPhone] = useState('');
   const [checkoutLocation, setCheckoutLocation] = useState('');
+  const [checkoutName, setCheckoutName] = useState('');
   const [placingOrder, setPlacingOrder] = useState(false);
   const [cartAnim, setCartAnim] = useState(false);
   const [phoneTouched, setPhoneTouched] = useState(false);
@@ -72,13 +73,14 @@ const PublicOrderContent: React.FC<PublicOrderContentProps> = ({ restaurant, cat
       if (!checkoutPhone || !checkoutLocation) throw new Error('Missing info');
       
       // Register order in Firestore
-      const orderPayload: Omit<Order, 'id' | 'createdAt' | 'updatedAt'> = {
+      const orderPayload: Omit<Order, 'id' | 'createdAt' | 'updatedAt'> & { customerName?: string } = {
         items: cart,
         restaurantId: restaurant.id,
         status: 'pending',
         totalAmount: totalCartAmount,
         customerViewStatus: 'active',
         tableNumber: 0, // 0 for public orders
+        ...(checkoutName ? { customerName: checkoutName } : {})
       };
       await createOrder(orderPayload); // Ensure order is saved before WhatsApp
       
@@ -90,7 +92,8 @@ const PublicOrderContent: React.FC<PublicOrderContentProps> = ({ restaurant, cat
         checkoutPhone,
         checkoutLocation,
         restaurant.paymentInfo,
-        language
+        language,
+        checkoutName
       );
       
       // Send WhatsApp message
@@ -103,6 +106,7 @@ const PublicOrderContent: React.FC<PublicOrderContentProps> = ({ restaurant, cat
       setShowCheckout(false);
       setCheckoutPhone('');
       setCheckoutLocation('');
+      setCheckoutName('');
       toast.success(t('order_placed_success', language), {
         style: {
           background: designSystem.colors.success,
@@ -609,6 +613,10 @@ const PublicOrderContent: React.FC<PublicOrderContentProps> = ({ restaurant, cat
           ) : showCheckout ? (
             <form onSubmit={e => { e.preventDefault(); handlePlaceOrder(); }}>
               <button type="button" onClick={() => setShowCheckout(false)} className="mb-4 text-primary hover:underline">&larr; {t('back_to_cart', language)}</button>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('customer_name', language)} ({t('optional', language)})</label>
+                <input type="text" value={checkoutName} onChange={e => setCheckoutName(e.target.value)} className="w-full border border-gray-300 rounded-md p-2" />
+              </div>
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">{t('phone_number', language)}</label>
                 <div className="relative">

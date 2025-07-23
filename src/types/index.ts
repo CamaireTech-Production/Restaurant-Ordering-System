@@ -94,6 +94,9 @@ export interface Order {
   createdAt: any;
   updatedAt?: any;
   deleted?: boolean;
+  customerName?: string;
+  customerPhone?: string;
+  customerLocation?: string;
 }
 
 // Demo Account Types

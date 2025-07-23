@@ -248,6 +248,13 @@ const translations: Record<string, Record<string, string>> = {
     'copy_ussd_code': 'Copy the USSD code above',
     'open_phone_app': 'Open your phone app and paste/dial the code',
     'complete_payment_and_send_screenshot': 'Complete payment and send a screenshot as confirmation',
+    'confirm_status_change': 'Confirm Status Change',
+    'confirm_change_to_preparing': 'Are you sure you want to mark this order as Preparing?',
+    'confirm_change_to_ready': 'Are you sure you want to mark this order as Ready?',
+    'confirm_change_to_completed': 'Are you sure you want to mark this order as Completed?',
+    'confirm_change_to_cancelled': 'Are you sure you want to cancel this order?',
+    'confirm': 'Confirm',
+    'excluding_pending_orders': 'Excludes orders with pending status',
   },
   fr: {
     'restaurant_management': 'Gestion du restaurant',
@@ -498,6 +505,13 @@ const translations: Record<string, Record<string, string>> = {
     'copy_ussd_code': 'Copiez le code USSD ci-dessus',
     'open_phone_app': 'Ouvrez votre application téléphone et collez/composez le code',
     'complete_payment_and_send_screenshot': 'Effectuez le paiement et envoyez une capture d’écran comme confirmation',
+    'confirm_status_change': 'Confirmer le changement de statut',
+    'confirm_change_to_preparing': 'Êtes-vous sûr de vouloir passer cette commande à En préparation ?',
+    'confirm_change_to_ready': 'Êtes-vous sûr de vouloir passer cette commande à Prête ?',
+    'confirm_change_to_completed': 'Êtes-vous sûr de vouloir passer cette commande à Terminée ?',
+    'confirm_change_to_cancelled': 'Êtes-vous sûr de vouloir annuler cette commande ?',
+    'confirm': 'Confirmer',
+    'excluding_pending_orders': 'Exclut les commandes en attente',
   },
 };
 
