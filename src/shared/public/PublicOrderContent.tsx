@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect, useMemo } from 'react';
-import { ChefHat, Search, X, ShoppingCart, PlusCircle, MinusCircle, Trash2, AlertCircle, MapPin, Phone } from 'lucide-react';
+import { ChefHat, Search, X, ShoppingCart, PlusCircle, MinusCircle, Trash2, AlertCircle, MapPin, Phone, ArrowUp } from 'lucide-react';
 
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import DishDetailModal from '../../pages/client/customer/DishDetailModal';
@@ -36,6 +36,7 @@ const PublicOrderContent: React.FC<PublicOrderContentProps> = ({ restaurant, cat
   const [phoneTouched, setPhoneTouched] = useState(false);
   const phoneError = phoneTouched && !validateCameroonPhone(checkoutPhone) ? 'Please enter a valid Cameroon phone number' : '';
   let lastManualClick = 0;
+  const [showScrollTop, setShowScrollTop] = useState(false);
 
   // --- Cart Logic ---
   const addToCart = (item: Dish) => {
@@ -151,6 +152,14 @@ const PublicOrderContent: React.FC<PublicOrderContentProps> = ({ restaurant, cat
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, [categories]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowScrollTop(window.scrollY > 200);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // --- Scroll to Section ---
   const handleCategoryClick = (catId: string) => {
@@ -512,19 +521,38 @@ const PublicOrderContent: React.FC<PublicOrderContentProps> = ({ restaurant, cat
           </div>
         </main>
 
-        {/* Floating Cart Button */}
-        <button
-          className={`fixed bottom-6 right-6 z-50 bg-primary text-white rounded-full shadow-lg p-4 flex items-center transition-transform ${cartAnim ? 'scale-110' : ''}`}
-          style={{ minWidth: 56, minHeight: 56 }}
-          onClick={() => setShowCart(true)}
-        >
-          <ShoppingCart size={28} />
-          {totalCartItems > 0 && (
-            <span className="ml-2 bg-accent text-white rounded-full px-2 py-1 text-xs font-bold animate-bounce">
-              {totalCartItems}
-            </span>
-          )}
-        </button>
+        {/* Floating Action Buttons Row */}
+        {(showScrollTop || cart.length > 0) && (
+          <div className="fixed bottom-6 right-6 z-50 flex flex-row gap-4 items-end">
+            {/* Cart Button */}
+            {cart.length > 0 && (
+              <button
+                className={`bg-primary text-white rounded-full shadow-lg p-4 flex items-center transition-transform ${cartAnim ? 'scale-110' : ''}`}
+                style={{ minWidth: 56, minHeight: 56 }}
+                onClick={() => setShowCart(true)}
+                aria-label="View cart"
+              >
+                <ShoppingCart size={28} />
+                {totalCartItems > 0 && (
+                  <span className="ml-2 bg-accent text-white rounded-full px-2 py-1 text-xs font-bold animate-bounce">
+                    {totalCartItems}
+                  </span>
+                )}
+              </button>
+            )}
+            {/* Back to Top Button */}
+            {showScrollTop && (
+              <button
+                onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                className="bg-primary text-white rounded-full shadow-lg p-4 flex items-center justify-center hover:bg-primary-dark transition-colors"
+                aria-label="Back to top"
+                style={{ minWidth: 56, minHeight: 56 }}
+              >
+                <ArrowUp size={28} />
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Cart Modal */}
         <Modal isOpen={showCart} onClose={() => { setShowCart(false); setShowCheckout(false); }} title="Your Cart" className="max-w-lg">
