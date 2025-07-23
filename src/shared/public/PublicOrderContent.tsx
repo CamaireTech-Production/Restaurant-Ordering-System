@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect, useMemo } from 'react';
-import { ChefHat, Search, X, ShoppingCart, PlusCircle, MinusCircle, Trash2, AlertCircle, MapPin, Phone, ArrowUp } from 'lucide-react';
+import { ChefHat, Search, X, ShoppingCart, PlusCircle, MinusCircle, Trash2, AlertCircle, MapPin, Phone, ArrowUp, Globe } from 'lucide-react';
 
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import DishDetailModal from '../../pages/client/customer/DishDetailModal';
@@ -8,6 +8,8 @@ import toast from 'react-hot-toast';
 import designSystem from '../../designSystem';
 import { Dish, Category, Restaurant, OrderItem, Order } from '../../types';
 import { generatePaymentMessage, validateCameroonPhone, formatCameroonPhone } from '../../utils/paymentUtils';
+import { useLanguage } from '../../contexts/LanguageContext';
+import { t } from '../../utils/i18n';
 
 interface PublicOrderContentProps {
   restaurant: Restaurant | null;
@@ -37,6 +39,9 @@ const PublicOrderContent: React.FC<PublicOrderContentProps> = ({ restaurant, cat
   const phoneError = phoneTouched && !validateCameroonPhone(checkoutPhone) ? 'Please enter a valid Cameroon phone number' : '';
   let lastManualClick = 0;
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const { language, setLanguage, supportedLanguages } = useLanguage();
+  const [langDropdownOpen, setLangDropdownOpen] = useState(false);
+  const langSwitcherRef = useRef<HTMLDivElement>(null);
 
   // --- Cart Logic ---
   const addToCart = (item: Dish) => {
@@ -84,7 +89,8 @@ const PublicOrderContent: React.FC<PublicOrderContentProps> = ({ restaurant, cat
         totalCartAmount,
         checkoutPhone,
         checkoutLocation,
-        restaurant.paymentInfo
+        restaurant.paymentInfo,
+        language
       );
       
       // Send WhatsApp message
@@ -97,7 +103,7 @@ const PublicOrderContent: React.FC<PublicOrderContentProps> = ({ restaurant, cat
       setShowCheckout(false);
       setCheckoutPhone('');
       setCheckoutLocation('');
-      toast.success('Order placed! The restaurant has been notified.', {
+      toast.success(t('order_placed_success', language), {
         style: {
           background: designSystem.colors.success,
           color: designSystem.colors.textInverse,
@@ -252,7 +258,7 @@ const PublicOrderContent: React.FC<PublicOrderContentProps> = ({ restaurant, cat
         <div className="sticky top-0 z-30" style={{ background: designSystem.colors.white }}>
           {/* Header - Refined */}
           <header className="w-full" style={{ background: designSystem.colors.white }}>
-            <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 pt-6 pb-2">
+            <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 pt-6 pb-2 flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="flex flex-row items-center gap-5 min-w-0">
                 {/* Restaurant Icon */}
                 <span className="flex items-center justify-center h-18 w-18 rounded-full flex-shrink-0" >
@@ -313,6 +319,44 @@ const PublicOrderContent: React.FC<PublicOrderContentProps> = ({ restaurant, cat
                   </div>
                 </div>
               </div>
+              {/* Language Selector - Modern Dropdown */}
+              <div ref={langSwitcherRef} className="relative ml-2">
+                <button
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-gray-50 border border-gray-200 shadow-sm hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-accent transition-all text-sm font-medium text-gray-700"
+                  style={{ minWidth: 80 }}
+                  aria-haspopup="listbox"
+                  aria-expanded={langDropdownOpen}
+                  aria-label={t('select_language', language)}
+                  onClick={() => setLangDropdownOpen(v => !v)}
+                  tabIndex={0}
+                  type="button"
+                >
+                  <Globe size={18} className="text-gray-400 mr-1" />
+                  <span className="capitalize">{supportedLanguages.find(l => l.code === language)?.label || language}</span>
+                  <svg className={`ml-1 w-4 h-4 transition-transform ${langDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                </button>
+                {langDropdownOpen && (
+                  <ul
+                    className="absolute right-0 mt-2 w-40 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-50 animate-fade-in"
+                    role="listbox"
+                    tabIndex={-1}
+                  >
+                    {supportedLanguages.map(lang => (
+                      <li
+                        key={lang.code}
+                        className={`px-4 py-2 cursor-pointer text-gray-700 hover:bg-accent/10 rounded-lg transition-all ${lang.code === language ? 'font-semibold bg-accent/20' : ''}`}
+                        role="option"
+                        aria-selected={lang.code === language}
+                        onClick={() => { setLanguage(lang.code); setLangDropdownOpen(false); }}
+                        tabIndex={0}
+                        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { setLanguage(lang.code); setLangDropdownOpen(false); } }}
+                      >
+                        {lang.label}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </div>
             {/* Separator */}
             <div style={{ borderBottom: `1.5px solid ${designSystem.colors.borderLightGray}` }} className="mt-4" />
@@ -352,7 +396,7 @@ const PublicOrderContent: React.FC<PublicOrderContentProps> = ({ restaurant, cat
                     }
                   }}
                 >
-                  All
+                  {t('all_dishes', language)}
                 </button>
                 {categories.map(cat => (
                   <button
@@ -402,7 +446,7 @@ const PublicOrderContent: React.FC<PublicOrderContentProps> = ({ restaurant, cat
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search dishes..."
+                placeholder={t('search_Dishes_Placeholder', language)}
                 className="pl-10 p-3 block w-full border border-gray-200 rounded-lg shadow-sm focus:ring-0 focus:border-primary text-base bg-white"
                 style={{ fontFamily: designSystem.fonts.body, fontSize: '1rem', color: designSystem.colors.primary }}
               />
@@ -496,7 +540,7 @@ const PublicOrderContent: React.FC<PublicOrderContentProps> = ({ restaurant, cat
                                   className="inline-flex justify-center items-center px-3 py-2 mt-4 border border-transparent rounded-md shadow-sm text-xs sm:text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
                                 >
                                   <PlusCircle size={14} className="mr-2" />
-                                  Add to Cart
+                                  {t('add_to_cart', language)}
                                 </button>
                               ) : (
                                 <div className="flex items-center gap-1">
@@ -515,7 +559,7 @@ const PublicOrderContent: React.FC<PublicOrderContentProps> = ({ restaurant, cat
             ))}
             {filteredCategories.length === 0 && (
               <div className="text-center py-8">
-                <p className="text-gray-500">No items found matching your search</p>
+                <p className="text-gray-500">{t('no_items_found', language)}</p>
               </div>
             )}
           </div>
@@ -530,7 +574,7 @@ const PublicOrderContent: React.FC<PublicOrderContentProps> = ({ restaurant, cat
                 className={`bg-primary text-white rounded-full shadow-lg p-4 flex items-center transition-transform ${cartAnim ? 'scale-110' : ''}`}
                 style={{ minWidth: 56, minHeight: 56 }}
                 onClick={() => setShowCart(true)}
-                aria-label="View cart"
+                aria-label={t('view_cart', language)}
               >
                 <ShoppingCart size={28} />
                 {totalCartItems > 0 && (
@@ -545,7 +589,7 @@ const PublicOrderContent: React.FC<PublicOrderContentProps> = ({ restaurant, cat
               <button
                 onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
                 className="bg-primary text-white rounded-full shadow-lg p-4 flex items-center justify-center hover:bg-primary-dark transition-colors"
-                aria-label="Back to top"
+                aria-label={t('back_to_top', language)}
                 style={{ minWidth: 56, minHeight: 56 }}
               >
                 <ArrowUp size={28} />
@@ -555,18 +599,18 @@ const PublicOrderContent: React.FC<PublicOrderContentProps> = ({ restaurant, cat
         )}
 
         {/* Cart Modal */}
-        <Modal isOpen={showCart} onClose={() => { setShowCart(false); setShowCheckout(false); }} title="Your Cart" className="max-w-lg">
+        <Modal isOpen={showCart} onClose={() => { setShowCart(false); setShowCheckout(false); }} title={t('your_cart', language)} className="max-w-lg">
           {cart.length === 0 ? (
             <div className="text-center py-10">
               <ShoppingCart size={48} className="mx-auto text-gray-400" />
-              <h3 className="mt-2 text-sm font-medium text-gray-900">Your cart is empty</h3>
-              <p className="mt-1 text-sm text-gray-500">Add items from the menu to start your order</p>
+              <h3 className="mt-2 text-sm font-medium text-gray-900">{t('your_cart_is_empty', language)}</h3>
+              <p className="mt-1 text-sm text-gray-500">{t('add_items_to_start_order', language)}</p>
             </div>
           ) : showCheckout ? (
             <form onSubmit={e => { e.preventDefault(); handlePlaceOrder(); }}>
-              <button type="button" onClick={() => setShowCheckout(false)} className="mb-4 text-primary hover:underline">&larr; Back to Cart</button>
+              <button type="button" onClick={() => setShowCheckout(false)} className="mb-4 text-primary hover:underline">&larr; {t('back_to_cart', language)}</button>
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('phone_number', language)}</label>
                 <div className="relative">
                   <div className="flex">
                     {/* Fixed +237 prefix */}
@@ -582,7 +626,7 @@ const PublicOrderContent: React.FC<PublicOrderContentProps> = ({ restaurant, cat
                       className={`flex-1 px-4 py-3 border rounded-r-md shadow-sm focus:ring-primary focus:border-primary text-sm ${
                         phoneError ? 'border-red-300' : 'border-gray-300'
                       }`}
-                      placeholder="612345678"
+                      placeholder={t('phone_number_placeholder', language)}
                       maxLength={9}
                     />
                   </div>
@@ -600,11 +644,11 @@ const PublicOrderContent: React.FC<PublicOrderContentProps> = ({ restaurant, cat
                 )}
               </div>
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Location / Address</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('location_address', language)}</label>
                 <input type="text" value={checkoutLocation} onChange={e => setCheckoutLocation(e.target.value)} className="w-full border border-gray-300 rounded-md p-2" required />
               </div>
               <button type="submit" className="w-full py-2 px-4 rounded-md bg-primary text-white font-semibold hover:bg-primary-dark transition-colors flex items-center justify-center gap-2" disabled={placingOrder}>
-                {placingOrder ? (<><LoadingSpinner size={18} color="#fff" /> Placing Order...</>) : 'Finalize Order'}
+                {placingOrder ? (<><LoadingSpinner size={18} color="#fff" /> {t('placing_order', language)}...</>) : t('finalize_order', language)}
               </button>
             </form>
           ) : (
@@ -614,7 +658,7 @@ const PublicOrderContent: React.FC<PublicOrderContentProps> = ({ restaurant, cat
                   <li key={item.id} className="py-3 flex items-center justify-between">
                     <div>
                       <div className="font-medium text-gray-900">{item.title}</div>
-                      <div className="text-xs text-gray-500">{item.price.toLocaleString()} FCFA each</div>
+                      <div className="text-xs text-gray-500">{item.price.toLocaleString()} FCFA {t('each', language)}</div>
                     </div>
                     <div className="flex items-center gap-2">
                       <button onClick={() => decrementItem(item.id)} className="text-gray-500 hover:text-gray-700"><MinusCircle size={18} /></button>
@@ -626,12 +670,12 @@ const PublicOrderContent: React.FC<PublicOrderContentProps> = ({ restaurant, cat
                 ))}
               </ul>
               <div className="flex justify-between font-bold mb-4">
-                <span>Subtotal:</span>
+                <span>{t('subtotal', language)}:</span>
                 <span>{totalCartAmount.toLocaleString()} FCFA</span>
               </div>
               <div className="flex justify-between gap-2">
-                <button onClick={clearCart} className="px-4 py-2 rounded-md bg-gray-100 text-gray-700 font-medium hover:bg-gray-200">Clear Cart</button>
-                <button onClick={() => setShowCheckout(true)} className="px-4 py-2 rounded-md bg-primary text-white font-semibold hover:bg-primary-dark transition-colors">Place Order</button>
+                <button onClick={clearCart} className="px-4 py-2 rounded-md bg-gray-100 text-gray-700 font-medium hover:bg-gray-200">{t('clear_cart', language)}</button>
+                <button onClick={() => setShowCheckout(true)} className="px-4 py-2 rounded-md bg-primary text-white font-semibold hover:bg-primary-dark transition-colors">{t('place_order', language)}</button>
               </div>
             </div>
           )}
@@ -640,7 +684,7 @@ const PublicOrderContent: React.FC<PublicOrderContentProps> = ({ restaurant, cat
         {/* Sticky Footer */}
         <footer className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-sm border-t border-gray-200 py-2 px-4 text-center z-40">
           <p className="text-xs text-gray-500">
-            Powered by{' '}
+            {t('powered_by', language)}{' '}
             <a 
               href="https://camairetech.com" 
               target="_blank" 

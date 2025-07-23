@@ -1,9 +1,11 @@
 import React, { useRef, useState, useEffect, useMemo } from 'react';
 import designSystem from '../../designSystem';
-import { ChefHat, Search, X, MapPin, Phone, ArrowUp } from 'lucide-react';
+import { ChefHat, Search, X, MapPin, Phone, ArrowUp, Globe } from 'lucide-react';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import DishDetailModal from '../../pages/client/customer/DishDetailModal';
 import { Dish, Category, Restaurant } from '../../types';
+import { useLanguage } from '../../contexts/LanguageContext';
+import { t } from '../../utils/i18n';
 
 type MenuItem = Dish;
 
@@ -24,6 +26,9 @@ const PublicMenuContent: React.FC<PublicMenuContentProps> = ({ restaurant, categ
   const [selectedDish, setSelectedDish] = useState<MenuItem | null>(null);
   const [isModalOpen, setModalOpen] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const { language, setLanguage, supportedLanguages } = useLanguage();
+  const [langDropdownOpen, setLangDropdownOpen] = useState(false);
+  const langSwitcherRef = useRef<HTMLDivElement>(null);
 
   // Helper to get sticky header + tabs height
   const getStickyOffset = () => {
@@ -158,8 +163,8 @@ const PublicMenuContent: React.FC<PublicMenuContentProps> = ({ restaurant, categ
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col justify-center items-center p-4">
         <ChefHat size={48} className="text-primary mb-4" />
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Restaurant Not Found</h1>
-        <p className="text-gray-600 mb-6">The restaurant you're looking for does not exist.</p>
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">{t('restaurantNotFound', language)}</h1>
+        <p className="text-gray-600 mb-6">{t('restaurantNotFoundDescription', language)}</p>
       </div>
     );
   }
@@ -173,7 +178,7 @@ const PublicMenuContent: React.FC<PublicMenuContentProps> = ({ restaurant, categ
         <div className="sticky top-0 z-30" style={{ background: designSystem.colors.white }}>
           {/* Header - Refined */}
           <header className="w-full" style={{ background: designSystem.colors.white }}>
-            <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 pt-6 pb-2">
+            <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 pt-6 pb-2 flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="flex flex-row items-center gap-5 min-w-0">
                 {/* Restaurant Icon */}
                 <span className="flex items-center justify-center h-18 w-18 rounded-full flex-shrink-0">
@@ -234,6 +239,44 @@ const PublicMenuContent: React.FC<PublicMenuContentProps> = ({ restaurant, categ
                   </div>
                 </div>
               </div>
+              {/* Language Selector - Modern Dropdown */}
+              <div ref={langSwitcherRef} className="relative ml-2">
+                <button
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-gray-50 border border-gray-200 shadow-sm hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-accent transition-all text-sm font-medium text-gray-700"
+                  style={{ minWidth: 80 }}
+                  aria-haspopup="listbox"
+                  aria-expanded={langDropdownOpen}
+                  aria-label={t('select_language', language)}
+                  onClick={() => setLangDropdownOpen(v => !v)}
+                  tabIndex={0}
+                  type="button"
+                >
+                  <Globe size={18} className="text-gray-400 mr-1" />
+                  <span className="capitalize">{supportedLanguages.find(l => l.code === language)?.label || language}</span>
+                  <svg className={`ml-1 w-4 h-4 transition-transform ${langDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                </button>
+                {langDropdownOpen && (
+                  <ul
+                    className="absolute right-0 mt-2 w-40 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-50 animate-fade-in"
+                    role="listbox"
+                    tabIndex={-1}
+                  >
+                    {supportedLanguages.map(lang => (
+                      <li
+                        key={lang.code}
+                        className={`px-4 py-2 cursor-pointer text-gray-700 hover:bg-accent/10 rounded-lg transition-all ${lang.code === language ? 'font-semibold bg-accent/20' : ''}`}
+                        role="option"
+                        aria-selected={lang.code === language}
+                        onClick={() => { setLanguage(lang.code); setLangDropdownOpen(false); }}
+                        tabIndex={0}
+                        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { setLanguage(lang.code); setLangDropdownOpen(false); } }}
+                      >
+                        {lang.label}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </div>
             {/* Separator */}
             <div style={{ borderBottom: `1.5px solid ${designSystem.colors.borderLightGray}` }} className="mt-4" />
@@ -274,7 +317,7 @@ const PublicMenuContent: React.FC<PublicMenuContentProps> = ({ restaurant, categ
                     }
                   }}
                 >
-                  All
+                  {t('all', language)}
                 </button>
                 {categories.map(cat => (
                   <button
@@ -325,7 +368,7 @@ const PublicMenuContent: React.FC<PublicMenuContentProps> = ({ restaurant, categ
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search dishes..."
+                placeholder={t('search_Dishes_Placeholder', language)}
                 className="pl-10 p-3 block w-full border border-gray-200 rounded-lg shadow-sm focus:ring-0 focus:border-primary text-base bg-white"
                 style={{ fontFamily: designSystem.fonts.body, fontSize: '1rem', color: designSystem.colors.primary }}
               />
@@ -419,7 +462,7 @@ const PublicMenuContent: React.FC<PublicMenuContentProps> = ({ restaurant, categ
             ))}
             {filteredCategories.length === 0 && (
               <div className="text-center py-8">
-                <p className="text-gray-500">No items found matching your search</p>
+                <p className="text-gray-500">{t('noItemsFoundMatchingSearch', language)}</p>
               </div>
             )}
           </div>
@@ -428,14 +471,14 @@ const PublicMenuContent: React.FC<PublicMenuContentProps> = ({ restaurant, categ
         {/* Sticky Footer */}
         <footer className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-sm border-t border-gray-200 py-2 px-4 text-center">
           <p className="text-xs text-gray-500">
-            Powered by{' '}
+            {t('poweredBy', language)}{' '}
             <a 
               href="https://camairetech.com" 
               target="_blank" 
               rel="noopener noreferrer" 
               className="font-medium text-primary hover:text-primary/80 transition-colors"
             >
-              Camairetech
+              {t('camairetech', language)}
             </a>
           </p>
         </footer>

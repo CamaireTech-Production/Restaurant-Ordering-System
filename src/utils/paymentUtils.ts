@@ -1,4 +1,5 @@
 import { PaymentInfo } from '../types';
+import { t } from './i18n';
 
 // Cameroon mobile money USSD codes
 export const CAMEROON_PAYMENT_CODES = {
@@ -40,39 +41,40 @@ export const generatePaymentMessage = (
   totalAmount: number,
   customerPhone: string,
   customerLocation: string,
-  paymentInfo?: PaymentInfo
+  paymentInfo?: PaymentInfo,
+  language: string = 'en'
 ): string => {
   const itemsList = orderItems
     .map(item => `- ${item.title} x ${item.quantity} = ${(item.price * item.quantity).toLocaleString()} FCFA`)
     .join('\n');
 
-  let message = `🍽️ *New Order from ${restaurantName}*\n\n`;
-  message += `📋 *Order Details:*\n${itemsList}\n\n`;
-  message += `💰 *Total: ${totalAmount.toLocaleString()} FCFA*\n\n`;
-  message += `📞 *Customer Phone:* ${customerPhone}\n`;
-  message += `📍 *Customer Location:* ${customerLocation}\n\n`;
+  let message = `🍽️ *${t('new_order_from', language)} ${restaurantName}*\n\n`;
+  message += `📋 *${t('order_details', language)}*\n${itemsList}\n\n`;
+  message += `💰 *${t('total', language)}: ${totalAmount.toLocaleString()} FCFA*\n\n`;
+  message += `📞 *${t('customer_phone', language)}:* ${customerPhone}\n`;
+  message += `📍 *${t('customer_location', language)}:* ${customerLocation}\n\n`;
 
   // Add payment information if available
   if (paymentInfo && (paymentInfo.momo || paymentInfo.om)) {
-    message += `💳 *Payment Methods:*\n`;
+    message += `💳 *${t('payment_methods', language)}*\n`;
     if (paymentInfo.momo) {
       const momoCode = generatePaymentCode('momo', paymentInfo.momo.number, totalAmount);
-      message += `📱 *MTN Mobile Money:*\n`;
-      message += `   Number: ${paymentInfo.momo.number}\n`;
-      message += `   Name: ${paymentInfo.momo.name}\n`;
-      message += `   USSD Code: _*${momoCode}*_\n\n`;
+      message += `📱 *${t('mtn_mobile_money', language)}*\n`;
+      message += `   ${t('number', language)}: ${paymentInfo.momo.number}\n`;
+      message += `   ${t('name', language)}: ${paymentInfo.momo.name}\n`;
+      message += `   ${t('ussd_code', language)}: _*${momoCode}*_\n\n`;
     }
     if (paymentInfo.om) {
       const omCode = generatePaymentCode('om', paymentInfo.om.number, totalAmount);
-      message += `📱 *Orange Money:*\n`;
-      message += `   Number: ${paymentInfo.om.number}\n`;
-      message += `   Name: ${paymentInfo.om.name}\n`;
-      message += `   USSD Code: _*${omCode}*_\n\n`;
+      message += `📱 *${t('orange_money', language)}*\n`;
+      message += `   ${t('number', language)}: ${paymentInfo.om.number}\n`;
+      message += `   ${t('name', language)}: ${paymentInfo.om.name}\n`;
+      message += `   ${t('ussd_code', language)}: _*${omCode}*_\n\n`;
     }
-    message += `💡 *Payment Instructions:*\n`;
-    message += `1. Copy the USSD code above\n`;
-    message += `2. Open your phone app and paste/dial the code\n`;
-    message += `3. Complete payment and send a screenshot as confirmation\n`;
+    message += `💡 *${t('payment_instructions', language)}*\n`;
+    message += `1. ${t('copy_ussd_code', language)}\n`;
+    message += `2. ${t('open_phone_app', language)}\n`;
+    message += `3. ${t('complete_payment_and_send_screenshot', language)}\n`;
   }
   return message;
 };
