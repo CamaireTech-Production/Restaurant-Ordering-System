@@ -42,7 +42,8 @@ export const generatePaymentMessage = (
   customerPhone: string,
   customerLocation: string,
   paymentInfo?: PaymentInfo,
-  language: string = 'en'
+  language: string = 'en',
+  customerName?: string
 ): string => {
   const itemsList = orderItems
     .map(item => `- ${item.title} x ${item.quantity} = ${(item.price * item.quantity).toLocaleString()} FCFA`)
@@ -52,6 +53,9 @@ export const generatePaymentMessage = (
   message += `📋 *${t('order_details', language)}*\n${itemsList}\n\n`;
   message += `💰 *${t('total', language)}: ${totalAmount.toLocaleString()} FCFA*\n\n`;
   message += `📞 *${t('customer_phone', language)}:* ${customerPhone}\n`;
+  if (customerName) {
+    message += `👤 *${t('customer_name', language)}:* ${customerName}\n`;
+  }
   message += `📍 *${t('customer_location', language)}:* ${customerLocation}\n\n`;
 
   // Add payment information if available
