@@ -1,6 +1,8 @@
 import Modal from '../../../components/ui/Modal';
 import designSystem from '../../../designSystem';
 import { Dish as MenuItem } from '../../../types/index';
+import { t } from '../../../utils/i18n';
+import { useLanguage } from '../../../contexts/LanguageContext';
 
 interface DishDetailModalProps {
   isOpen: boolean;
@@ -14,6 +16,7 @@ interface DishDetailModalProps {
 }
 
 export default function DishDetailModal({ isOpen, dish, onClose, addToCart, inCart, incrementItem, decrementItem, categoryName }: DishDetailModalProps) {
+  const { language } = useLanguage();
   if (!dish) return null;
 
   return (
@@ -46,7 +49,7 @@ export default function DishDetailModal({ isOpen, dish, onClose, addToCart, inCa
           </span>
         </div>
       )}
-      <p className="text-gray-700 mb-4">{dish.description || 'No description available.'}</p>
+      <p className="text-gray-700 mb-4">{dish.description || t('no_description_available', language)}</p>
       <div className="flex justify-between items-center mb-4">
         <span className="font-medium text-lg">{dish.price.toLocaleString()} FCFA</span>
         {addToCart && (
