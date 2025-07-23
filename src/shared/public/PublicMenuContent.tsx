@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect, useMemo } from 'react';
 import designSystem from '../../designSystem';
-import { ChefHat, Search, X, MapPin, Phone } from 'lucide-react';
+import { ChefHat, Search, X, MapPin, Phone, ArrowUp } from 'lucide-react';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import DishDetailModal from '../../pages/client/customer/DishDetailModal';
 import { Dish, Category, Restaurant } from '../../types';
@@ -23,6 +23,7 @@ const PublicMenuContent: React.FC<PublicMenuContentProps> = ({ restaurant, categ
   const categoryTabsRef = useRef<HTMLDivElement | null>(null);
   const [selectedDish, setSelectedDish] = useState<MenuItem | null>(null);
   const [isModalOpen, setModalOpen] = useState(false);
+  const [showScrollTop, setShowScrollTop] = useState(false);
 
   // Helper to get sticky header + tabs height
   const getStickyOffset = () => {
@@ -136,6 +137,14 @@ const PublicMenuContent: React.FC<PublicMenuContentProps> = ({ restaurant, categ
       background: transparent;
     }
   `;
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowScrollTop(window.scrollY > 200);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   if (loading) {
     return (
@@ -438,6 +447,16 @@ const PublicMenuContent: React.FC<PublicMenuContentProps> = ({ restaurant, categ
           onClose={() => setModalOpen(false)}
           categoryName={selectedDish ? (categories.find(cat => cat.id === selectedDish.categoryId)?.title || '') : ''}
         />
+        {/* Floating Back to Top Button */}
+        {showScrollTop && (
+          <button
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            className="fixed bottom-6 right-6 z-50 bg-primary text-white rounded-full shadow-lg p-4 flex items-center justify-center hover:bg-primary-dark transition-colors"
+            aria-label="Back to top"
+          >
+            <ArrowUp size={28} />
+          </button>
+        )}
       </div>
     </>
   );
