@@ -246,15 +246,14 @@ const PublicOrderContent: React.FC<PublicOrderContentProps> = ({ restaurant, cat
             <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 pt-6 pb-2">
               <div className="flex flex-row items-center gap-5 min-w-0">
                 {/* Restaurant Icon */}
-                <span className="flex items-center justify-center h-12 w-12 rounded-full flex-shrink-0" style={{ background: designSystem.colors.white }}>
+                <span className="flex items-center justify-center h-18 w-18 rounded-full flex-shrink-0" >
                   {isDemo ? (
                     <ChefHat size={50} color={designSystem.colors.primary} />
                   ) : restaurant?.logo ? (
                     <img
                       src={restaurant.logo}
                       alt={restaurant.name}
-                      className="h-10 w-10 rounded-full object-contain drop-shadow-md"
-                      style={{ background: 'transparent' }}
+                      className="h-16 w-16 sm:h-20 sm:w-20 lg:h-24 lg:w-24 rounded-full object-contain transition-all duration-200 max-w-full max-h-full"
                     />
                   ) : (
                     <ChefHat size={50} color={designSystem.colors.primary} />

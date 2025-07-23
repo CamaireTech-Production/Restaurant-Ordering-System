@@ -75,7 +75,7 @@ const OrdersPage: React.FC = () => {
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center space-x-3">
                   {restaurant?.logo ? (
-                    <img src={restaurant.logo} alt={restaurant.name} className="h-10 w-10 rounded-full object-cover" />
+                    <img src={restaurant.logo} alt={restaurant.name} className="h-14 w-14 sm:h-16 sm:w-16 rounded-full object-contain border-2 shadow-md bg-white transition-all duration-200 max-w-full max-h-full" style={{ borderColor: 'var(--color-accent, #f59e42)', background: 'white' }} />
                   ) : (
                     <ChefHat size={32} className="text-primary" />
                   )}

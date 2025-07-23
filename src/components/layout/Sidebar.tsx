@@ -123,21 +123,22 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, open, onClose }) => {
 
         <div className="flex flex-col h-full">
           {/* Top: Logo and Brand */}
-          <div className={`flex items-center gap-3 border-b ${collapsed ? 'p-2 justify-center' : 'p-6'}`} style={{ borderColor: designSystem.colors.border }}>
-            <div className="flex items-center justify-center w-12 h-12">
+          <div className={`flex ${collapsed ? 'flex-col items-center' : 'flex-row items-center gap-3'} border-b ${collapsed ? 'p-2 justify-center' : 'p-6'}`} style={{ borderColor: designSystem.colors.border }}>
+            <div className="flex flex-col items-center justify-center">
               {restaurant?.logo ? (
-                <img
-                  src={restaurant?.logo}
-                  alt="logo"
-                  className={`rounded-full object-cover border-2 ${collapsed ? 'w-10 h-10 mx-auto' : 'w-10 h-10'}`}
-                  style={{ borderColor: designSystem.colors.accent }}
-                />
+                <span className="flex items-center justify-center rounded-full bg-white shadow-md w-16 h-16">
+                  <img
+                    src={restaurant?.logo || ''}
+                    alt={restaurant?.name || 'logo'}
+                    className="w-18 h-18 rounded-full object-contain"
+                  />
+                </span>
               ) : (
-                <ChefHat size={32} className="drop-shadow" color={designSystem.colors.accent} />
+                <ChefHat size={48} className="drop-shadow" color={designSystem.colors.accent} />
               )}
             </div>
             {!collapsed && (
-              <span className="text-xl font-bold tracking-tight" style={{ color: designSystem.colors.textInverse }}>
+              <span className="text-xl font-bold tracking-tight ml-4" style={{ color: designSystem.colors.textInverse }}>
                 {isDemoUser ? 'Camairetech' : restaurant?.name || 'Restaurant'}
               </span>
             )}

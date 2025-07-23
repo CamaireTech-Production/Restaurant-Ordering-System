@@ -30,7 +30,6 @@ import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 import { Restaurant, Dish as MenuItem, Category, OrderItem } from '../../../types';
 import DishDetailModal from './DishDetailModal';
 import { Eye } from 'lucide-react';
-import designSystem from '../../../designSystem';
 
 const MenuPage: React.FC = () => {
   const { restaurantId } = useParams<{ restaurantId: string }>();
@@ -374,14 +373,12 @@ const MenuPage: React.FC = () => {
                 </button>
                 <div className="flex items-center">
                   {restaurant?.logo ? (
-                    <div className="h-12 w-12 rounded-full flex items-center justify-center bg-white shadow-lg ring-2 ring-accent mr-3">
-                      <img
-                        src={restaurant.logo}
-                        alt={restaurant.name}
-                        className="h-12 w-12 rounded-full object-contain drop-shadow-md"
-                        style={{ background: 'transparent' }}
-                      />
-                    </div>
+                    <img
+                      src={restaurant.logo}
+                      alt={restaurant.name}
+                      className="h-14 w-14 sm:h-16 sm:w-16 rounded-full object-contain border-2 shadow-md bg-white transition-all duration-200 max-w-full max-h-full"
+                      style={{ borderColor: 'var(--color-accent, #f59e42)', background: 'white' }}
+                    />
                   ) : (
                     <ChefHat size={24} className="mr-3" />
                   )}
