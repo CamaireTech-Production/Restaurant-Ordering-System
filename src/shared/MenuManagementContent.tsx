@@ -11,6 +11,7 @@ import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import imageCompression from 'browser-image-compression';
 import { useLanguage } from '../contexts/LanguageContext';
 import { t } from '../utils/i18n';
+import { getCurrencySymbol } from '../data/currencies';
 
 type MenuItem = Dish & {
   deleted: boolean;
@@ -29,6 +30,7 @@ interface MenuManagementContentProps {
   isDemoUser: boolean;
   restaurantId: string; // <-- add this prop
   onImportComplete?: () => void; // optional callback
+  restaurant?: any; // <-- add this prop for currency
 }
 
 const initialFormState = {
@@ -52,6 +54,7 @@ const MenuManagementContent: React.FC<MenuManagementContentProps> = ({
   onBulkAction,
   restaurantId,
   onImportComplete,
+  restaurant,
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleting] = useState(false);
@@ -84,9 +87,13 @@ const MenuManagementContent: React.FC<MenuManagementContentProps> = ({
   useEffect(() => { setLocalCategories(categories); }, [categories]);
   useEffect(() => { setLocalMenuItems(menuItems); }, [menuItems]);
 
+  // Determine currency symbol
+  const currencyCode = restaurant?.currency || 'XAF';
+  const currencySymbol = getCurrencySymbol(currencyCode) || 'FCFA';
+
   const dishFields = [
     { key: 'title', label: t('dish_title', language) + '*' },
-    { key: 'price', label: t('dish_price', language) + '*' },
+    { key: 'price', label: t('dish_price', language) + `* (${currencySymbol})` },
     { key: 'description', label: t('dish_description', language) },
     { key: 'category', label: t('dish_category', language) + '*' },
     { key: 'status', label: t('dish_status', language) + ' (active/inactive)' },
@@ -709,7 +716,7 @@ const MenuManagementContent: React.FC<MenuManagementContentProps> = ({
                     <div className="text-sm" style={{ color: designSystem.colors.primary }}>{getCategoryName(item.categoryId)}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm" style={{ color: designSystem.colors.primary }}>{item.price.toLocaleString()} FCFA</div>
+                    <div className="text-sm" style={{ color: designSystem.colors.primary }}>{item.price.toLocaleString()} {currencySymbol}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
@@ -814,7 +821,7 @@ const MenuManagementContent: React.FC<MenuManagementContentProps> = ({
                 required
               />
               <div className="absolute inset-y-0 right-2 pl-3 pr-6 flex items-center pointer-events-none">
-                <span className="text-gray-500 sm:text-sm">FCFA</span>
+                <span className="text-gray-500 sm:text-sm">{currencySymbol}</span>
               </div>
             </div>
           </div>

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { db } from '../../../firebase/config';
-import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, onSnapshot } from 'firebase/firestore';
 import PublicMenuContent from '../../../shared/public/PublicMenuContent';
 import { useOfflineSync } from '../../../contexts/OfflineSyncContext';
 
@@ -14,14 +14,16 @@ const PublicMenuPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchRestaurantData = async () => {
-      if (!restaurantId) return;
+    if (!restaurantId) return;
+    // Listen for real-time updates to the restaurant document
+    const unsub = onSnapshot(doc(db, 'restaurants', restaurantId), (restaurantDoc) => {
+      if (restaurantDoc.exists()) {
+        setRestaurant({ id: restaurantDoc.id, ...restaurantDoc.data() });
+      }
+    });
+    // Fetch categories and menu items (these can remain as one-time fetches, or you can add onSnapshot for them too if needed)
+    const fetchData = async () => {
       try {
-        // Fetch restaurant details
-        const restaurantDoc = await getDoc(doc(db, 'restaurants', restaurantId));
-        if (restaurantDoc.exists()) {
-          setRestaurant({ id: restaurantDoc.id, ...restaurantDoc.data() });
-        }
         // Fetch categories
         const categoriesQuery = query(
           collection(db, 'categories'),
@@ -34,7 +36,6 @@ const PublicMenuPage: React.FC = () => {
           ...(doc.data() as any),
           deleted: (doc.data() as any).deleted
         }));
-        // Filter categories and menu items for public view
         const filteredCategories = categoriesData.filter(
           cat => cat.status === 'active' && (cat.deleted === undefined || cat.deleted === false)
         );
@@ -48,7 +49,7 @@ const PublicMenuPage: React.FC = () => {
         const menuItemsData = menuItemsSnapshot.docs.map(doc => {
           const data = doc.data() as any;
           return {
-          id: doc.id,
+            id: doc.id,
             title: data.title,
             description: data.description || '',
             price: data.price || 0,
@@ -61,12 +62,9 @@ const PublicMenuPage: React.FC = () => {
             deleted: data.deleted
           };
         });
-        // Filter categories and menu items for public view
         const filteredMenuItems = menuItemsData.filter(
           item => item.status === 'active' && (item.deleted === undefined || item.deleted === false)
         );
-        console.log('Filtered categories:', filteredCategories);
-        console.log('Filtered menuItems:', filteredMenuItems);
         setCategories(filteredCategories.sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0)));
         setMenuItems(filteredMenuItems);
       } catch (error) {
@@ -76,7 +74,8 @@ const PublicMenuPage: React.FC = () => {
         setLoading(false);
       }
     };
-    fetchRestaurantData();
+    fetchData();
+    return () => unsub();
   }, [restaurantId]);
 
   return (

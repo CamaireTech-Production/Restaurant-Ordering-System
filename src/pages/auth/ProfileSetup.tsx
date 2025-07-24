@@ -15,6 +15,8 @@ import { updateEmail, updatePassword, EmailAuthProvider, reauthenticateWithCrede
 import { auth } from '../../firebase/config';
 import { t } from '../../utils/i18n';
 import { useLanguage } from '../../contexts/LanguageContext';
+import CurrencyDropdown from '../../components/ui/CurrencyDropdown';
+import { currencies } from '../../data/currencies';
 
 const ProfileSetup: React.FC = () => {
   const location = useLocation();
@@ -50,6 +52,14 @@ const ProfileSetup: React.FC = () => {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [currency, setCurrency] = useState(restaurant?.currency || 'XAF');
+  const [deliveryFee, setDeliveryFee] = useState(restaurant?.deliveryFee || 0);
+  // Remove mtnFee, orangeFee, and their input fields from the UI and state
+  // Always show the currency dropdown in the settings page (not just in payment section)
+  // Only show the delivery fee field for the manager to set
+  const [mtnMerchantCode, setMtnMerchantCode] = useState(restaurant?.paymentInfo?.mtnMerchantCode || '');
+  const [orangeMerchantCode, setOrangeMerchantCode] = useState(restaurant?.paymentInfo?.orangeMerchantCode || '');
+  const [paymentLink, setPaymentLink] = useState(restaurant?.paymentInfo?.paymentLink || '');
 
   // Keep local state in sync if restaurant changes (e.g., after fetch)
   useEffect(() => {
@@ -73,6 +83,11 @@ const ProfileSetup: React.FC = () => {
       setLogoPreview(restaurant.logo || null);
       setPaymentInfo(restaurant.paymentInfo || {});
       setEmail(restaurant.email || (auth.currentUser?.email ?? ''));
+      setCurrency(restaurant.currency || 'XAF');
+      setDeliveryFee(restaurant.deliveryFee || 0);
+      setMtnMerchantCode(restaurant.paymentInfo?.mtnMerchantCode || '');
+      setOrangeMerchantCode(restaurant.paymentInfo?.orangeMerchantCode || '');
+      setPaymentLink(restaurant.paymentInfo?.paymentLink || '');
     }
   }, [restaurant]);
 
@@ -121,11 +136,18 @@ const ProfileSetup: React.FC = () => {
         address,
         description,
         phone,
+        currency,
+        deliveryFee,
         colorPalette: {
           primary: primaryColor,
           secondary: secondaryColor,
         } as any, // allow extra property for Firestore
-        paymentInfo,
+        paymentInfo: {
+          ...paymentInfo,
+          mtnMerchantCode,
+          orangeMerchantCode,
+          paymentLink,
+        },
       });
       toast.success(t('profile_updated_success_profile', language), {
         style: {
@@ -250,6 +272,19 @@ const ProfileSetup: React.FC = () => {
                 </div>
               </div>
 
+              {/* Currency Dropdown */}
+              <div>
+                <label htmlFor="currency" className="block text-sm font-medium text-gray-700">
+                  {t('currency', language)}
+                </label>
+                <CurrencyDropdown
+                  value={currency}
+                  onChange={setCurrency}
+                  currencies={currencies}
+                  language={language}
+                />
+              </div>
+
               <div>
                 <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
                   {t('phone_label_profile', language)}
@@ -319,7 +354,19 @@ const ProfileSetup: React.FC = () => {
             {/* Payment Info Section */}
             {paymentInfoEnabled && (
               <div className="mt-8">
-                <PaymentSetup paymentInfo={paymentInfo} onPaymentInfoChange={setPaymentInfo} isRequired={false} />
+                <PaymentSetup
+                  paymentInfo={paymentInfo}
+                  onPaymentInfoChange={setPaymentInfo}
+                  isRequired={false}
+                  deliveryFee={deliveryFee}
+                  onDeliveryFeeChange={setDeliveryFee}
+                  mtnMerchantCode={mtnMerchantCode}
+                  setMtnMerchantCode={setMtnMerchantCode}
+                  orangeMerchantCode={orangeMerchantCode}
+                  setOrangeMerchantCode={setOrangeMerchantCode}
+                  paymentLink={paymentLink}
+                  setPaymentLink={setPaymentLink}
+                />
               </div>
             )}
 

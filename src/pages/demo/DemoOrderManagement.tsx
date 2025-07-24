@@ -133,6 +133,7 @@ const DemoOrderManagement: React.FC = () => {
         onStatusChange={updateOrderStatus}
         onDelete={softDeleteOrder}
         isDemoUser={true}
+        restaurant={demoAccount}
       />
     </DashboardLayout>
   );

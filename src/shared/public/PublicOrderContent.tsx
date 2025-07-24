@@ -10,6 +10,8 @@ import { Dish, Category, Restaurant, OrderItem, Order } from '../../types';
 import { generatePaymentMessage, validateCameroonPhone, formatCameroonPhone } from '../../utils/paymentUtils';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { t } from '../../utils/i18n';
+import { getCurrencySymbol } from '../../data/currencies';
+import { getPaymentFee } from '../../data/paymentFees';
 
 interface PublicOrderContentProps {
   restaurant: Restaurant | null;
@@ -43,6 +45,7 @@ const PublicOrderContent: React.FC<PublicOrderContentProps> = ({ restaurant, cat
   const { language, setLanguage, supportedLanguages } = useLanguage();
   const [langDropdownOpen, setLangDropdownOpen] = useState(false);
   const langSwitcherRef = useRef<HTMLDivElement>(null);
+  const currencySymbol = restaurant?.currency ? getCurrencySymbol(restaurant.currency) : 'FCFA';
 
   // --- Cart Logic ---
   const addToCart = (item: Dish) => {
@@ -71,19 +74,26 @@ const PublicOrderContent: React.FC<PublicOrderContentProps> = ({ restaurant, cat
     try {
       if (!restaurant?.id) throw new Error('Missing restaurant');
       if (!checkoutPhone || !checkoutLocation) throw new Error('Missing info');
-      
+      const currencyCode = restaurant.currency || 'XAF';
+      const deliveryFee = restaurant.deliveryFee || 0;
+      const mtnFee = getPaymentFee(currencyCode, 'mtn') * totalCartAmount;
+      const orangeFee = getPaymentFee(currencyCode, 'orange') * totalCartAmount;
       // Register order in Firestore
-      const orderPayload: Omit<Order, 'id' | 'createdAt' | 'updatedAt'> & { customerName?: string } = {
+      const orderPayload: Omit<Order, 'id' | 'createdAt' | 'updatedAt'> & { customerName?: string, customerPhone?: string, customerLocation?: string, deliveryFee?: number, mtnFee?: number, orangeFee?: number } = {
         items: cart,
         restaurantId: restaurant.id,
         status: 'pending',
         totalAmount: totalCartAmount,
         customerViewStatus: 'active',
         tableNumber: 0, // 0 for public orders
-        ...(checkoutName ? { customerName: checkoutName } : {})
+        customerName: checkoutName || '',
+        customerPhone: checkoutPhone || '',
+        customerLocation: checkoutLocation || '',
+        deliveryFee,
+        mtnFee,
+        orangeFee,
       };
-      await createOrder(orderPayload); // Ensure order is saved before WhatsApp
-      
+      const orderId = await createOrder(orderPayload); // Ensure order is saved before WhatsApp
       // Generate WhatsApp message with payment information
       const message = generatePaymentMessage(
         restaurant.name,
@@ -93,7 +103,10 @@ const PublicOrderContent: React.FC<PublicOrderContentProps> = ({ restaurant, cat
         checkoutLocation,
         restaurant.paymentInfo,
         language,
-        checkoutName
+        checkoutName,
+        deliveryFee,
+        currencyCode,
+        orderId // pass orderId for command number
       );
       
       // Send WhatsApp message
@@ -532,7 +545,7 @@ const PublicOrderContent: React.FC<PublicOrderContentProps> = ({ restaurant, cat
                               )}
                             </div>
                             <div className="text-base sm:text-lg font-semibold text-primary mt-2">
-                              {item.price.toLocaleString()} FCFA
+                              {item.price.toLocaleString()} {currencySymbol}
                             </div>
                             <div className="mt-auto w-full flex items-center gap-2">
                               {!cart.find(ci => ci.menuItemId === item.id) ? (
@@ -666,7 +679,7 @@ const PublicOrderContent: React.FC<PublicOrderContentProps> = ({ restaurant, cat
                   <li key={item.id} className="py-3 flex items-center justify-between">
                     <div>
                       <div className="font-medium text-gray-900">{item.title}</div>
-                      <div className="text-xs text-gray-500">{item.price.toLocaleString()} FCFA {t('each', language)}</div>
+                      <div className="text-xs text-gray-500">{item.price.toLocaleString()} {currencySymbol} {t('each', language)}</div>
                     </div>
                     <div className="flex items-center gap-2">
                       <button onClick={() => decrementItem(item.id)} className="text-gray-500 hover:text-gray-700"><MinusCircle size={18} /></button>
@@ -679,7 +692,7 @@ const PublicOrderContent: React.FC<PublicOrderContentProps> = ({ restaurant, cat
               </ul>
               <div className="flex justify-between font-bold mb-4">
                 <span>{t('subtotal', language)}:</span>
-                <span>{totalCartAmount.toLocaleString()} FCFA</span>
+                <span>{totalCartAmount.toLocaleString()} {currencySymbol}</span>
               </div>
               <div className="flex justify-between gap-2">
                 <button onClick={clearCart} className="px-4 py-2 rounded-md bg-gray-100 text-gray-700 font-medium hover:bg-gray-200">{t('clear_cart', language)}</button>

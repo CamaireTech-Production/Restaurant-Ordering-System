@@ -11,9 +11,14 @@ import { validateCameroonPhone, formatCameroonPhone } from '../../utils/paymentU
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import designSystem from '../../designSystem';
 import { logActivity } from '../../services/activityLogService';
+import { currencies } from '../../data/currencies';
+import CurrencyDropdown from '../../components/ui/CurrencyDropdown';
+import { t } from '../../utils/i18n';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 const DemoProfileEdit: React.FC = () => {
   const { demoAccount, currentUser, refreshDemoAccount } = useDemoAuth();
+  const { language } = useLanguage();
   
   const [phone, setPhone] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
@@ -26,12 +31,22 @@ const DemoProfileEdit: React.FC = () => {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [phoneError, setPhoneError] = useState('');
+  const [currency, setCurrency] = useState(demoAccount?.currency || 'XAF');
+  const [deliveryFee, setDeliveryFee] = useState(demoAccount?.deliveryFee || 0);
+  const [mtnMerchantCode, setMtnMerchantCode] = useState(demoAccount?.paymentInfo?.mtnMerchantCode || '');
+  const [orangeMerchantCode, setOrangeMerchantCode] = useState(demoAccount?.paymentInfo?.orangeMerchantCode || '');
+  const [paymentLink, setPaymentLink] = useState(demoAccount?.paymentInfo?.paymentLink || '');
 
   useEffect(() => {
     if (demoAccount) {
       // Set phone number without +237 prefix since we have a fixed prefix section
       setPhone(demoAccount.phone || '');
       setPaymentInfo(demoAccount.paymentInfo || {});
+      setCurrency(demoAccount.currency || 'XAF');
+      setDeliveryFee(demoAccount.deliveryFee || 0);
+      setMtnMerchantCode(demoAccount.paymentInfo?.mtnMerchantCode || '');
+      setOrangeMerchantCode(demoAccount.paymentInfo?.orangeMerchantCode || '');
+      setPaymentLink(demoAccount.paymentInfo?.paymentLink || '');
     }
   }, [demoAccount]);
 
@@ -122,7 +137,14 @@ const DemoProfileEdit: React.FC = () => {
     try {
       await updateDoc(doc(db, 'demoAccounts', currentUser.uid), {
         phone: phone,
-        paymentInfo,
+        paymentInfo: {
+          ...paymentInfo,
+          mtnMerchantCode,
+          orangeMerchantCode,
+          paymentLink,
+        },
+        currency,
+        deliveryFee,
         updatedAt: serverTimestamp()
       });
       // Log activity
@@ -261,13 +283,33 @@ const DemoProfileEdit: React.FC = () => {
                     </p>
                   )}
                 </div>
-
+                {/* Currency Dropdown */}
+                <div>
+                  <label htmlFor="currency" className="block text-sm font-medium text-gray-700">
+                    {t('currency', language)}
+                  </label>
+                  <CurrencyDropdown
+                    value={currency}
+                    onChange={setCurrency}
+                    currencies={currencies}
+                    language={language}
+                  />
+                </div>
                 {/* Payment Information */}
                 <div className="border-t border-gray-200 pt-6">
                   <PaymentSetup
                     paymentInfo={paymentInfo}
                     onPaymentInfoChange={setPaymentInfo}
                     isRequired={false}
+                    deliveryFee={deliveryFee}
+                    onDeliveryFeeChange={setDeliveryFee}
+                    // Keep merchant codes and payment link in sync
+                    mtnMerchantCode={mtnMerchantCode}
+                    setMtnMerchantCode={setMtnMerchantCode}
+                    orangeMerchantCode={orangeMerchantCode}
+                    setOrangeMerchantCode={setOrangeMerchantCode}
+                    paymentLink={paymentLink}
+                    setPaymentLink={setPaymentLink}
                   />
                 </div>
 

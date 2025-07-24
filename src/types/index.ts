@@ -34,6 +34,8 @@ export interface Restaurant {
   colorCustomization?: boolean;
   publicMenuLink?: boolean;
   publicOrderLink?: boolean;
+  currency?: string;
+  deliveryFee?: number;
 }
 
 // Dish Types
@@ -84,19 +86,22 @@ export interface OrderItem {
 }
 
 export interface Order {
-  customerViewStatus: string;
   id: string;
   items: OrderItem[];
-  tableNumber: number;
   restaurantId: string;
-  status: 'pending' | 'preparing' | 'ready' | 'completed' | 'cancelled' | 'deleted';
+  status: 'pending' | 'preparing' | 'ready' | 'completed' | 'cancelled';
   totalAmount: number;
-  createdAt: any;
+  customerViewStatus?: string;
+  tableNumber?: number;
+  createdAt?: any;
   updatedAt?: any;
   deleted?: boolean;
   customerName?: string;
   customerPhone?: string;
   customerLocation?: string;
+  deliveryFee?: number;
+  mtnFee?: number;
+  orangeFee?: number;
 }
 
 // Demo Account Types
@@ -116,6 +121,8 @@ export interface DemoAccount {
   };
   // Payment information for Cameroon context
   paymentInfo?: PaymentInfo;
+  currency?: string;
+  deliveryFee?: number;
 }
 
 // Admin Types
@@ -147,4 +154,17 @@ export interface PaymentMethod {
 export interface PaymentInfo {
   momo?: PaymentMethod;
   om?: PaymentMethod;
+  mtnMerchantCode?: string;
+  orangeMerchantCode?: string;
+  paymentLink?: string;
+  mtnFee?: number;
+  orangeFee?: number;
+}
+
+export interface Contact {
+  phone: string;
+  name: string;
+  location: string;
+  count: number;
+  lastOrderDate: any;
 }
