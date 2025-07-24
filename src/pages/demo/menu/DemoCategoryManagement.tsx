@@ -14,23 +14,27 @@ const DemoCategoryManagement: React.FC = () => {
   const { demoAccount, loading } = useDemoAuth();
   const isDemoUser = useIsDemoUser();
   const [categories, setCategories] = useState<any[]>([]);
+  const [menuItems, setMenuItems] = useState<any[]>([]);
   const [catLoading, setCatLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchCategories = async () => {
+    const fetchCategoriesAndMenuItems = async () => {
       if (!demoAccount?.id) return;
       try {
         const categoriesSnapshot = await getDocs(collection(db, 'demoAccounts', demoAccount.id, 'categories'));
         const categoriesData = categoriesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         setCategories(categoriesData);
+        const menuItemsSnapshot = await getDocs(collection(db, 'demoAccounts', demoAccount.id, 'menuItems'));
+        const menuItemsData = menuItemsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setMenuItems(menuItemsData.filter((item: any) => !item.deleted));
       } catch (error) {
-        toast.error('Failed to load categories');
+        toast.error('Failed to load categories or menu items');
       } finally {
         setCatLoading(false);
       }
     };
-    fetchCategories();
+    fetchCategoriesAndMenuItems();
   }, [demoAccount]);
 
   useEffect(() => {
@@ -205,6 +209,7 @@ const DemoCategoryManagement: React.FC = () => {
         onDelete={handleDelete}
         onToggleStatus={handleToggleStatus}
         isDemoUser={isDemoUser}
+        menuItems={menuItems}
       />
     </DashboardLayout>
   );

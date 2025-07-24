@@ -17,6 +17,7 @@ interface CategoryManagementContentProps {
   onDelete: (categoryId: string) => void;
   onToggleStatus: (category: any) => void;
   isDemoUser: boolean;
+  menuItems?: any[];
 }
 
 
@@ -30,6 +31,7 @@ const CategoryManagementContent: React.FC<CategoryManagementContentProps> = ({
   onEdit,
   onDelete,
   onToggleStatus,
+  menuItems,
 }) => {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -103,6 +105,22 @@ const CategoryManagementContent: React.FC<CategoryManagementContentProps> = ({
     return currentMainCategories.map(main => map.get(main.id));
   };
   const categoryTree = buildCategoryTree(currentMainCategories, sortedCategories);
+
+  // Helper to count dishes for a category
+  const getDishCount = (catId: string) => {
+    if (!menuItems) return 0;
+    // If parent category, sum its own dishes and all its subcategories' dishes
+    const cat = categories.find((c: any) => c.id === catId);
+    if (cat && !cat.parentCategoryId) {
+      // Parent: sum own + all subcategories
+      const own = menuItems.filter(item => item.categoryId === catId).length;
+      const subcats = categories.filter((c: any) => c.parentCategoryId === catId);
+      const subcatDishes = subcats.reduce((sum: number, subcat: any) => sum + menuItems.filter(item => item.categoryId === subcat.id).length, 0);
+      return own + subcatDishes;
+    }
+    // Subcategory: just its own
+    return menuItems.filter(item => item.categoryId === catId).length;
+  };
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -320,6 +338,9 @@ const CategoryManagementContent: React.FC<CategoryManagementContentProps> = ({
                   )}
                 </button>
               </th>
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: designSystem.colors.text }}>
+                {t('dish_count', language)}
+              </th>
               <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: designSystem.colors.text }}>{t('status_column', language)}</th>
               <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: designSystem.colors.text }}>{t('actions_column', language)}</th>
             </tr>
@@ -346,13 +367,13 @@ const CategoryManagementContent: React.FC<CategoryManagementContentProps> = ({
                     className={`hover:bg-gray-50 ${expandedCategoryId === category.id ? 'bg-gray-50' : ''}`}
                     onClick={() => setExpandedCategoryId(expandedCategoryId === category.id ? null : category.id)}
                   >
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0 h-10 w-10 flex items-center justify-center rounded-full" style={{ background: designSystem.colors.statusDefaultBg }}>
-                          <Layers size={20} style={{ color: designSystem.colors.secondary }} />
-                        </div>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center">
+                      <div className="flex-shrink-0 h-10 w-10 flex items-center justify-center rounded-full" style={{ background: designSystem.colors.statusDefaultBg }}>
+                        <Layers size={20} style={{ color: designSystem.colors.secondary }} />
+                      </div>
                         <div className="ml-4 flex items-center gap-2">
-                          <div className="text-sm font-medium" style={{ color: designSystem.colors.primary }}>{category.title}</div>
+                        <div className="text-sm font-medium" style={{ color: designSystem.colors.primary }}>{category.title}</div>
                           {category.children.length > 0 && (
                             <span className="ml-2 flex items-center">
                               {expandedCategoryId === category.id ? (
@@ -363,32 +384,35 @@ const CategoryManagementContent: React.FC<CategoryManagementContentProps> = ({
                             </span>
                           )}
                         </div>
-                      </div>
-                    </td>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm" style={{ color: designSystem.colors.primary }}>{category.order || 0}</div>
+                  </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm" style={{ color: designSystem.colors.primary }}>{category.order || 0}</div>
+                      <div className="text-sm" style={{ color: designSystem.colors.primary }}>{getDishCount(category.id)}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
-                        style={{
-                          background: category.status === 'active' ? designSystem.colors.statusReadyBg : designSystem.colors.statusPendingBg,
-                          color: category.status === 'active' ? designSystem.colors.statusReadyText : designSystem.colors.statusPendingText,
-                        }}
-                      >
-                        {category.status === 'active' ? t('active', language) : t('inactive', language)}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex justify-end space-x-2">
-                        <button
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span
+                      className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
+                      style={{
+                        background: category.status === 'active' ? designSystem.colors.statusReadyBg : designSystem.colors.statusPendingBg,
+                        color: category.status === 'active' ? designSystem.colors.statusReadyText : designSystem.colors.statusPendingText,
+                      }}
+                    >
+                      {category.status === 'active' ? t('active', language) : t('inactive', language)}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <div className="flex justify-end space-x-2">
+                      <button
                           onClick={e => { e.stopPropagation(); onToggleStatus(category); }}
-                          title={category.status === 'active' ? t('deactivate', language) : t('activate', language)}
-                          style={{ color: designSystem.colors.secondary }}
-                        >
-                          {category.status === 'active' ? <EyeOff size={18} /> : <Eye size={18} />}
-                        </button>
-                        <button
+                        title={category.status === 'active' ? t('deactivate', language) : t('activate', language)}
+                        style={{ color: designSystem.colors.secondary }}
+                      >
+                        {category.status === 'active' ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                      <button
                           onClick={e => { e.stopPropagation(); openEditModal(category); }}
                           title={t('edit', language)}
                           style={{ color: designSystem.colors.secondary }}
@@ -423,6 +447,9 @@ const CategoryManagementContent: React.FC<CategoryManagementContentProps> = ({
                         <div className="text-sm" style={{ color: designSystem.colors.primary }}>{subcat.order || 0}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm" style={{ color: designSystem.colors.primary }}>{getDishCount(subcat.id)}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
                         <span
                           className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
                           style={{
@@ -444,21 +471,21 @@ const CategoryManagementContent: React.FC<CategoryManagementContentProps> = ({
                           </button>
                           <button
                             onClick={e => { e.stopPropagation(); openEditModal(subcat); }}
-                            title={t('edit', language)}
-                            style={{ color: designSystem.colors.secondary }}
-                          >
-                            <Edit size={18} />
-                          </button>
-                          <button
+                        title={t('edit', language)}
+                        style={{ color: designSystem.colors.secondary }}
+                      >
+                        <Edit size={18} />
+                      </button>
+                      <button
                             onClick={e => { e.stopPropagation(); setCategoryToDelete(subcat); setDeleteConfirmOpen(true); }}
-                            title={t('delete', language)}
-                            style={{ color: designSystem.colors.secondary }}
-                          >
-                            <Trash2 size={18} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
+                        title={t('delete', language)}
+                        style={{ color: designSystem.colors.secondary }}
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
                   ))}
                 </React.Fragment>
               ))

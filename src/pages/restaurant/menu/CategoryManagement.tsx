@@ -29,6 +29,7 @@ import { logActivity } from '../../../services/activityLogService';
 const CategoryManagement: React.FC = () => {
   const { restaurant } = useAuth();
   const [categories, setCategories] = useState<Category[]>([]);
+  const [menuItems, setMenuItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [, setIsModalOpen] = useState(false);
   const [, setIsDeleting] = useState(false);
@@ -47,13 +48,15 @@ const CategoryManagement: React.FC = () => {
   });
 
   useEffect(() => {
-    const fetchCategories = async () => {
+    const fetchCategoriesAndMenuItems = async () => {
       if (!restaurant?.id) return;
       try {
         if (!navigator.onLine) {
           // Offline: load from localStorage
           const offlineCategories = localStorage.getItem('offline_menuCategories');
           setCategories(offlineCategories ? JSON.parse(offlineCategories).filter((c: { restaurantId: string; })=>c.restaurantId===restaurant.id) : []);
+          const offlineMenuItems = localStorage.getItem('offline_menuItems');
+          setMenuItems(offlineMenuItems ? JSON.parse(offlineMenuItems).filter((m: { restaurantId: string; })=>m.restaurantId===restaurant.id) : []);
         } else {
           // Online: fetch from Firestore
           const categoriesQuery = query(
@@ -67,15 +70,26 @@ const CategoryManagement: React.FC = () => {
             ...doc.data()
           })) as Category[];
           setCategories(categoriesData);
+          const menuItemsQuery = query(
+            collection(db, 'menuItems'),
+            where('restaurantId', '==', restaurant.id),
+            orderBy('title')
+          );
+          const menuItemsSnapshot = await getDocs(menuItemsQuery);
+          const menuItemsData = menuItemsSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          })) as any[];
+          setMenuItems(menuItemsData.filter((item: any) => !item.deleted));
         }
       } catch (error) {
-        console.error('Error fetching categories:', error);
-        toast.error('Failed to load categories');
+        console.error('Error fetching categories or menu items:', error);
+        toast.error('Failed to load categories or menu items');
       } finally {
         setLoading(false);
       }
     };
-    fetchCategories();
+    fetchCategoriesAndMenuItems();
   }, [restaurant]);
 
   const resetForm = () => {
@@ -285,6 +299,7 @@ const CategoryManagement: React.FC = () => {
         onDelete={handleDelete}
         onToggleStatus={handleToggleStatus}
         isDemoUser={false}
+        menuItems={menuItems}
       />
     </DashboardLayout>
   );

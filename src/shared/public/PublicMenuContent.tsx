@@ -19,9 +19,28 @@ interface PublicMenuContentProps {
 }
 
 const PublicMenuContent: React.FC<PublicMenuContentProps> = ({ restaurant, categories, menuItems, loading, isDemo }) => {
+  // Map subcategories by parent
+  const subcategoriesByParent: { [parentId: string]: Category[] } = {};
+  categories.forEach(cat => {
+    if (cat.parentCategoryId) {
+      if (!subcategoriesByParent[cat.parentCategoryId]) subcategoriesByParent[cat.parentCategoryId] = [];
+      subcategoriesByParent[cat.parentCategoryId].push(cat);
+    }
+  });
+  // Only main categories for filter tabs, but only if they or their subcategories have dishes
+  const mainCategories = categories.filter(cat => {
+    if (cat.parentCategoryId) return false;
+    // Dishes directly under main category
+    const mainCatDishes = menuItems.filter(item => item.categoryId === cat.id);
+    // Dishes in subcategories
+    const subcats = subcategoriesByParent[cat.id] || [];
+    const subcatDishes = subcats.flatMap(subcat => menuItems.filter(item => item.categoryId === subcat.id));
+    return mainCatDishes.length > 0 || subcatDishes.length > 0;
+  });
   const [, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<string>('all');
+  // Refs for each main category section
   const sectionRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   const categoryTabsRef = useRef<HTMLDivElement | null>(null);
   const [selectedDish, setSelectedDish] = useState<MenuItem | null>(null);
@@ -45,42 +64,34 @@ const PublicMenuContent: React.FC<PublicMenuContentProps> = ({ restaurant, categ
     return offset;
   };
 
-  // --- Scroll Spy Effect ---
+  // --- Intersection Observer Scroll Spy ---
   useEffect(() => {
-    if (!categories.length) return;
-    let ticking = false;
-    const handleScroll = () => {
-      if (!ticking) {
-        window.requestAnimationFrame(() => {
-          const offset = getStickyOffset();
-          let found = 'all';
-          let minDist = Number.POSITIVE_INFINITY;
-          for (const cat of categories) {
-            const ref = sectionRefs.current[cat.id];
-            if (ref) {
-              const top = ref.getBoundingClientRect().top;
-              const dist = Math.abs(top - offset);
-              // Only consider sections above or at the sticky offset
-              if (top - offset <= 0 && dist < minDist) {
-                found = cat.id;
-                minDist = dist;
-              }
-            }
+    if (!mainCategories.length) return;
+    const headerOffset = getStickyOffset();
+    const observer = new window.IntersectionObserver(
+      (entries) => {
+        let maxRatio = 0;
+        let active = 'all';
+        entries.forEach(entry => {
+          if (entry.isIntersecting && entry.intersectionRatio > maxRatio) {
+            maxRatio = entry.intersectionRatio;
+            active = entry.target.getAttribute('data-cat-id')!;
           }
-          setActiveCategory(found);
-          // Scroll the active tab into view
-          const tab = document.getElementById(`category-tab-${found}`);
-          if (tab && tab.scrollIntoView) {
-            tab.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-          }
-          ticking = false;
         });
-        ticking = true;
+        setActiveCategory(active);
+      },
+      {
+        root: null,
+        rootMargin: `-${headerOffset}px 0px 0px 0px`,
+        threshold: [0.4, 0.6, 1.0],
       }
-    };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [categories]);
+    );
+    mainCategories.forEach(cat => {
+      const ref = sectionRefs.current[cat.id];
+      if (ref) observer.observe(ref);
+    });
+    return () => observer.disconnect();
+  }, [mainCategories, sectionRefs, getStickyOffset]);
 
   // --- Scroll to Section ---
   const handleCategoryClick = (catId: string) => {
@@ -131,6 +142,8 @@ const PublicMenuContent: React.FC<PublicMenuContentProps> = ({ restaurant, categ
       return items.length > 0;
     });
   }, [categories, dishesByCategory, searchQuery]);
+
+  // Debug logs
 
   // Custom scrollbar CSS for category tabs
   const customScrollbarStyle = `
@@ -285,7 +298,7 @@ const PublicMenuContent: React.FC<PublicMenuContentProps> = ({ restaurant, categ
             <div style={{ borderBottom: `1.5px solid ${designSystem.colors.borderLightGray}` }} className="mt-4" />
           </header>
 
-          {/* Category Tabs - Improved Hover/Active/Inactive */}
+          {/* Category Tabs - Only Main Categories */}
           <div
             ref={categoryTabsRef}
             className="pt-2 pb-2 border-b overflow-x-auto no-scrollbar custom-cat-scrollbar"
@@ -293,36 +306,7 @@ const PublicMenuContent: React.FC<PublicMenuContentProps> = ({ restaurant, categ
           >
             <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6">
               <div className="flex space-x-2 py-2" style={{ minHeight: '40px' }}>
-                <button
-                  onClick={() => handleCategoryClick('all')}
-                  className={`flex-shrink-0 px-5 py-1.5 rounded-full font-medium text-sm sm:text-base transition shadow-none`}
-                  style={{
-                    background: activeCategory === 'all' ? designSystem.colors.highlightYellow : designSystem.colors.backgroundLight,
-                    color: activeCategory === 'all' ? designSystem.colors.primary : designSystem.colors.primary,
-                    border: `1.5px solid ${designSystem.colors.borderLightGray}`,
-                    fontFamily: designSystem.fonts.heading,
-                    fontWeight: 500,
-                    minWidth: '80px',
-                  }}
-                  onMouseEnter={e => {
-                    if (activeCategory !== 'all') {
-                      e.currentTarget.style.background = designSystem.colors.primary;
-                      e.currentTarget.style.color = designSystem.colors.white;
-                    }
-                  }}
-                  onMouseLeave={e => {
-                    if (activeCategory === 'all') {
-                      e.currentTarget.style.background = designSystem.colors.highlightYellow;
-                      e.currentTarget.style.color = designSystem.colors.primary;
-                    } else {
-                      e.currentTarget.style.background = designSystem.colors.backgroundLight;
-                      e.currentTarget.style.color = designSystem.colors.primary;
-                    }
-                  }}
-                >
-                  {t('all', language)}
-                </button>
-                {categories.map(cat => (
+                {mainCategories.map(cat => (
                   <button
                     key={cat.id}
                     id={`category-tab-${cat.id}`}
@@ -388,12 +372,183 @@ const PublicMenuContent: React.FC<PublicMenuContentProps> = ({ restaurant, categ
         </div>
 
         {/* Menu Sections */}
-        <main className="flex-1 max-w-7xl mx-auto w-full px-1 sm:px-4 lg:px-6 pt-2 pb-20">
+        <main className="flex-1 max-w-7xl mx-auto w-full px-2 sm:px-4 lg:px-6 pt-2 pb-20">
           <div>
-            {filteredCategories.map((cat, idx) => (
+            {mainCategories.map((mainCat, idx) => {
+              // Dishes directly under main category (not in subcategories)
+              const mainCatDishes = menuItems.filter(item => item.categoryId === mainCat.id);
+              // Subcategories for this main category
+              const subcats = subcategoriesByParent[mainCat.id] || [];
+              // If searching, filter subcategories and dishes
+              const filteredSubcats = subcats.filter(subcat => {
+                const items = menuItems.filter(item => item.categoryId === subcat.id);
+                if (searchQuery) {
+                  return items.some(item =>
+                    item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    (item.description && item.description.toLowerCase().includes(searchQuery.toLowerCase()))
+                  );
+                }
+                return items.length > 0;
+              });
+              const filteredMainCatDishes = mainCatDishes.filter(item => {
+                if (searchQuery) {
+                  return item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    (item.description && item.description.toLowerCase().includes(searchQuery.toLowerCase()));
+                }
+                return true;
+              });
+              // Only render section if there are dishes in main or subcategories
+              if (
+                filteredMainCatDishes.length === 0 &&
+                filteredSubcats.every(subcat => menuItems.filter(item => item.categoryId === subcat.id).length === 0)
+              ) return null;
+              return (
+                <div
+                  key={mainCat.id}
+                  ref={el => (sectionRefs.current[mainCat.id] = el)}
+                  data-cat-id={mainCat.id}
+                  className={`mb-10 ${idx !== 0 ? 'pt-6' : ''}`}
+                >
+                  <div>
+                    <h2
+                      className="text-xl sm:text-2xl font-bold text-gray-900 mb-2"
+                      style={{ fontFamily: designSystem.fonts.heading }}
+                    >
+                      {mainCat.title}
+                    </h2>
+                    <div style={{ height: 2, background: designSystem.colors.highlightYellow, width: '100%', borderRadius: 2, marginBottom: 24 }} />
+                  </div>
+                  {/* Subcategories */}
+                  {filteredSubcats.length > 0 && filteredSubcats.map(subcat => {
+                    const subcatDishes = menuItems.filter(item => item.categoryId === subcat.id).filter(item => {
+                      if (searchQuery) {
+                        return item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          (item.description && item.description.toLowerCase().includes(searchQuery.toLowerCase()));
+                      }
+                      return true;
+                    });
+                    if (subcatDishes.length === 0) return null;
+                    return (
+                      <div key={subcat.id} className="mb-6">
+                        <h3
+                          className="text-lg font-semibold mb-2 px-3 py-1 rounded-full inline-block"
+                          style={{
+                            fontFamily: designSystem.fonts.heading,
+                            background: designSystem.colors.highlightYellow,
+                            color: designSystem.colors.primary,
+                            fontWeight: 700,
+                            letterSpacing: '0.5px',
+                          }}
+                        >
+                          {subcat.title}
+                        </h3>
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5 px-2 sm:px-0">
+                          {subcatDishes.map(item => (
+                            <div
+                              key={item.id}
+                              className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow flex flex-col h-full cursor-pointer group min-h-0 flex-1"
+                              style={{ minHeight: '220px', maxHeight: '370px' }}
+                              onClick={() => {
+                                setSelectedDish(item);
+                                setModalOpen(true);
+                              }}
+                            >
+                              {item.image ? (
+                                <div className="h-32 sm:h-48 w-full overflow-hidden">
+                                  <img
+                                    src={item.image}
+                                    alt={item.title}
+                                    className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
+                                  />
+                                </div>
+                              ) : (
+                                <div className="h-32 sm:h-48 w-full bg-gray-100 flex items-center justify-center">
+                                  <img
+                                    src="/icons/placeholder.png"
+                                    alt="No dish"
+                                    className="h-16 w-16 opacity-60"
+                                  />
+                                </div>
+                              )}
+                              <div className="p-3 flex-1 flex flex-col w-full">
+                                <div>
+                                  <h3 className="text-base sm:text-lg font-medium text-gray-900 truncate">
+                                    {item.title}
+                                  </h3>
+                                  {item.description && (
+                                    <div className="text-xs text-gray-500 mt-1 truncate" style={{ maxWidth: '100%' }}>
+                                      {item.description.length > 40 ? item.description.slice(0, 40) + '…' : item.description}
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="text-base sm:text-lg font-semibold text-primary mt-2">
+                                  {item.price.toLocaleString()} {currencySymbol}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {/* Dishes directly under main category (not in subcategories) */}
+                  {filteredSubcats.length === 0 && filteredMainCatDishes.length > 0 && (
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5 px-2 sm:px-0">
+                      {filteredMainCatDishes.map(item => (
+                        <div
+                          key={item.id}
+                          className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow flex flex-col h-full cursor-pointer group min-h-0 flex-1"
+                          style={{ minHeight: '220px', maxHeight: '370px' }}
+                          onClick={() => {
+                            setSelectedDish(item);
+                            setModalOpen(true);
+                          }}
+                        >
+                          {item.image ? (
+                            <div className="h-32 sm:h-48 w-full overflow-hidden">
+                              <img
+                                src={item.image}
+                                alt={item.title}
+                                className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
+                              />
+                            </div>
+                          ) : (
+                            <div className="h-32 sm:h-48 w-full bg-gray-100 flex items-center justify-center">
+                              <img
+                                src="/icons/placeholder.png"
+                                alt="No dish"
+                                className="h-16 w-16 opacity-60"
+                              />
+                            </div>
+                          )}
+                          <div className="p-3 flex-1 flex flex-col w-full">
+                            <div>
+                              <h3 className="text-base sm:text-lg font-medium text-gray-900 truncate">
+                                {item.title}
+                              </h3>
+                              {item.description && (
+                                <div className="text-xs text-gray-500 mt-1 truncate" style={{ maxWidth: '100%' }}>
+                                  {item.description.length > 40 ? item.description.slice(0, 40) + '…' : item.description}
+                                </div>
+                              )}
+                            </div>
+                            <div className="text-base sm:text-lg font-semibold text-primary mt-2">
+                              {item.price.toLocaleString()} {currencySymbol}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+            {/* If no main categories, fallback to old logic */}
+            {mainCategories.length === 0 && filteredCategories.map((cat, idx) => (
               <div
                 key={cat.id}
                 ref={el => (sectionRefs.current[cat.id] = el)}
+                data-cat-id={cat.id}
                 className={`mb-10 ${idx !== 0 ? 'pt-6' : ''}`}
               >
                 <div>
@@ -463,7 +618,7 @@ const PublicMenuContent: React.FC<PublicMenuContentProps> = ({ restaurant, categ
                 </div>
               </div>
             ))}
-            {filteredCategories.length === 0 && (
+            {mainCategories.length === 0 && filteredCategories.length === 0 && (
               <div className="text-center py-8">
                 <p className="text-gray-500">{t('noItemsFoundMatchingSearch', language)}</p>
               </div>
