@@ -6,6 +6,7 @@ import designSystem from '../designSystem';
 import { Order } from '../types';
 import { t } from '../utils/i18n';
 import { useLanguage } from '../contexts/LanguageContext';
+import { getCurrencySymbol } from '../data/currencies';
 
 interface OrderManagementContentProps {
   orders: Order[];
@@ -14,6 +15,7 @@ interface OrderManagementContentProps {
   onStatusChange: (orderId: string, newStatus: Order['status']) => void;
   onDelete: (orderId: string) => void;
   isDemoUser: boolean;
+  restaurant?: any; // add restaurant prop for currency
 }
 
 const getStatusIcon = (status: string) => {
@@ -52,6 +54,7 @@ const OrderManagementContent: React.FC<OrderManagementContentProps> = ({
   onStatusChange,
   onDelete,
   isDemoUser,
+  restaurant,
 }) => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [viewOrder, setViewOrder] = useState<Order | null>(null);
@@ -62,6 +65,10 @@ const OrderManagementContent: React.FC<OrderManagementContentProps> = ({
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [statusChangeModal, setStatusChangeModal] = useState<{order: Order, newStatus: Order['status']}|null>(null);
+
+  // Determine currency symbol
+  const currencyCode = restaurant?.currency || 'XAF';
+  const currencySymbol = getCurrencySymbol(currencyCode) || 'FCFA';
 
   // Filter orders based on status
   let filteredOrders = statusFilter === 'all'
@@ -262,7 +269,7 @@ const OrderManagementContent: React.FC<OrderManagementContentProps> = ({
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm" style={{ color: designSystem.colors.primary }}>
-                        {order.totalAmount.toLocaleString()} FCFA
+                        {order.totalAmount.toLocaleString()} {currencySymbol}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -419,15 +426,15 @@ const OrderManagementContent: React.FC<OrderManagementContentProps> = ({
                       <span className="font-medium" style={{ color: designSystem.colors.primary }}>{item.title}</span>
                     </td>
                     <td className="px-4 py-2 text-center" style={{ color: designSystem.colors.primary }}>{item.quantity}</td>
-                    <td className="px-4 py-2 text-right" style={{ color: designSystem.colors.primary }}>{item.price.toLocaleString()} FCFA</td>
-                    <td className="px-4 py-2 text-right" style={{ color: designSystem.colors.primary }}>{(item.price * item.quantity).toLocaleString()} FCFA</td>
+                    <td className="px-4 py-2 text-right" style={{ color: designSystem.colors.primary }}>{item.price.toLocaleString()} {currencySymbol}</td>
+                    <td className="px-4 py-2 text-right" style={{ color: designSystem.colors.primary }}>{(item.price * item.quantity).toLocaleString()} {currencySymbol}</td>
                   </tr>
                 ))}
               </tbody>
               <tfoot>
                 <tr>
                   <td colSpan={3} className="px-4 py-2 text-right font-bold" style={{ color: designSystem.colors.primary }}>{t('total_order', language)}</td>
-                  <td className="px-4 py-2 text-right font-bold" style={{ color: designSystem.colors.primary }}>{viewOrder.totalAmount.toLocaleString()} FCFA</td>
+                  <td className="px-4 py-2 text-right font-bold" style={{ color: designSystem.colors.primary }}>{viewOrder.totalAmount.toLocaleString()} {currencySymbol}</td>
                 </tr>
               </tfoot>
             </table>

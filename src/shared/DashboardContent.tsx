@@ -5,6 +5,7 @@ import { toast } from 'react-hot-toast';
 import designSystem from '../designSystem';
 import { useLanguage } from '../contexts/LanguageContext';
 import { t } from '../utils/i18n';
+import { getCurrencySymbol } from '../data/currencies';
 
 
 interface DashboardContentProps {
@@ -86,6 +87,10 @@ const DashboardContent: React.FC<DashboardContentProps> = ({ restaurant, orders,
   } = restaurant || {};
 
   const { language } = useLanguage();
+
+  // Determine currency symbol
+  const currencyCode = restaurant?.currency || 'XAF';
+  const currencySymbol = getCurrencySymbol(currencyCode) || 'FCFA';
 
   if (loading) {
     return (
@@ -196,7 +201,7 @@ const DashboardContent: React.FC<DashboardContentProps> = ({ restaurant, orders,
               </div>
               <div>
                 <div className="text-xs" style={{ color: designSystem.colors.text }}>{t('total_revenue', language)}</div>
-                <div className="text-xl font-bold" style={{ color: designSystem.colors.primary }}>{totalRevenue.toLocaleString()} FCFA</div>
+                <div className="text-xl font-bold" style={{ color: designSystem.colors.primary }}>{totalRevenue.toLocaleString()} {currencySymbol}</div>
                 <div className="text-xs text-gray-400 mt-1">{t('excluding_pending_orders', language)}</div>
               </div>
             </div>
@@ -276,7 +281,9 @@ const DashboardContent: React.FC<DashboardContentProps> = ({ restaurant, orders,
                         </span>
                       );
                     })()}
-                    <span className="text-sm font-bold mt-1" style={{ color: designSystem.colors.primary }}>${order.totalAmount?.toFixed(2)}</span>
+                    <span className="text-sm font-bold mt-1" style={{ color: designSystem.colors.primary }}>
+                      {order.totalAmount?.toLocaleString()} {currencySymbol}
+                    </span>
                   </div>
                 </div>
               ))}
@@ -300,7 +307,9 @@ const DashboardContent: React.FC<DashboardContentProps> = ({ restaurant, orders,
                   </div>
                   <div className="flex flex-col items-end">
                     <span className="text-xs text-gray-500">{dish.count} {t('orders', language)}</span>
-                    <span className="text-sm font-bold mt-1" style={{ color: designSystem.colors.primary }}>${dish.revenue.toFixed(2)}</span>
+                    <span className="text-sm font-bold mt-1" style={{ color: designSystem.colors.primary }}>
+                      {dish.revenue.toLocaleString()} {currencySymbol}
+                    </span>
                   </div>
                 </div>
               ))}

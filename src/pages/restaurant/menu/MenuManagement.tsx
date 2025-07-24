@@ -289,6 +289,7 @@ const MenuManagement: React.FC = () => {
         onBulkAction={handleBulkAction}
         isDemoUser={false}
         restaurantId={restaurant?.id || ''}
+        restaurant={restaurant}
       />
     </DashboardLayout>
   );

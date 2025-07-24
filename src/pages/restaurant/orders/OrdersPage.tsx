@@ -213,9 +213,15 @@ const OrdersPage: React.FC = () => {
         orders={orders}
         loading={loading}
         updatingOrderId={updatingOrderId}
-        onStatusChange={updateOrderStatus}
+        onStatusChange={(orderId, newStatus) => {
+          // Only allow status changes for allowed statuses, not "deleted"
+          if (newStatus !== "deleted") {
+            updateOrderStatus(orderId, newStatus);
+          }
+        }}
         onDelete={softDeleteOrder}
         isDemoUser={false}
+        restaurant={restaurant}
       />
     </DashboardLayout>
   );
