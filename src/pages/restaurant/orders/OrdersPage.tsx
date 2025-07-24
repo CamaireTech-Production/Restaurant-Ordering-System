@@ -214,10 +214,8 @@ const OrdersPage: React.FC = () => {
         loading={loading}
         updatingOrderId={updatingOrderId}
         onStatusChange={(orderId, newStatus) => {
-          // Only allow status changes for allowed statuses, not "deleted"
-          if (newStatus !== "deleted") {
-            updateOrderStatus(orderId, newStatus);
-          }
+          // Only allow status changes for allowed statuses
+          updateOrderStatus(orderId, newStatus);
         }}
         onDelete={softDeleteOrder}
         isDemoUser={false}

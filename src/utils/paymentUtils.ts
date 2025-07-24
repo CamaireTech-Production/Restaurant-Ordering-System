@@ -47,7 +47,8 @@ export const generatePaymentMessage = (
   language: string = 'en',
   customerName?: string,
   deliveryFee: number = 0,
-  currencyCode: string = 'XAF'
+  currencyCode: string = 'XAF',
+  orderId?: string
 ): string => {
   const currencySymbol = getCurrencySymbol(currencyCode) || 'FCFA';
   const itemsList = orderItems
@@ -55,7 +56,8 @@ export const generatePaymentMessage = (
     .join('\n');
 
   // Build message with text labels instead of emoji for iOS compatibility
-  let message = `${t('order_label', language)} *${restaurantName}*\n\n`;
+  let orderNumber = orderId ? ` #${orderId.slice(-6)}` : '';
+  let message = `${t('order_label', language)}${orderNumber} *${restaurantName}*\n\n`;
   message += `${t('details_label', language)}\n${itemsList}\n\n`;
   message += `${t('total_label', language)}: ${totalAmount.toLocaleString()} ${currencySymbol}\n`;
   if (deliveryFee > 0) {

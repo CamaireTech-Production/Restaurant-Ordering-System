@@ -86,19 +86,22 @@ export interface OrderItem {
 }
 
 export interface Order {
-  customerViewStatus: string;
   id: string;
   items: OrderItem[];
-  tableNumber: number;
   restaurantId: string;
-  status: 'pending' | 'preparing' | 'ready' | 'completed' | 'cancelled' | 'deleted';
+  status: 'pending' | 'preparing' | 'ready' | 'completed' | 'cancelled';
   totalAmount: number;
-  createdAt: any;
+  customerViewStatus?: string;
+  tableNumber?: number;
+  createdAt?: any;
   updatedAt?: any;
   deleted?: boolean;
   customerName?: string;
   customerPhone?: string;
   customerLocation?: string;
+  deliveryFee?: number;
+  mtnFee?: number;
+  orangeFee?: number;
 }
 
 // Demo Account Types

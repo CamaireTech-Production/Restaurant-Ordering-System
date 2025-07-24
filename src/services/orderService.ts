@@ -4,7 +4,7 @@ import { Order } from '../types';
 
 const ordersCollection = collection(db, 'orders');
 
-export const createOrder = async (order: Omit<Order, 'id' | 'createdAt' | 'updatedAt'> & { customerName?: string, customerPhone?: string, customerLocation?: string }) => {
+export const createOrder = async (order: Omit<Order, 'id' | 'createdAt' | 'updatedAt'> & { customerName?: string, customerPhone?: string, customerLocation?: string, deliveryFee?: number, mtnFee?: number, orangeFee?: number }) => {
   try {
     const timestamp = Timestamp.now();
     const docRef = await addDoc(ordersCollection, {
@@ -15,6 +15,9 @@ export const createOrder = async (order: Omit<Order, 'id' | 'createdAt' | 'updat
       ...(order.customerName ? { customerName: order.customerName } : {}),
       ...(order.customerPhone ? { customerPhone: order.customerPhone } : {}),
       ...(order.customerLocation ? { customerLocation: order.customerLocation } : {}),
+      ...(order.deliveryFee !== undefined ? { deliveryFee: order.deliveryFee } : {}),
+      ...(order.mtnFee !== undefined ? { mtnFee: order.mtnFee } : {}),
+      ...(order.orangeFee !== undefined ? { orangeFee: order.orangeFee } : {}),
     });
     return docRef.id;
   } catch (error) {

@@ -11,6 +11,7 @@ import { generatePaymentMessage, validateCameroonPhone, formatCameroonPhone } fr
 import { useLanguage } from '../../contexts/LanguageContext';
 import { t } from '../../utils/i18n';
 import { getCurrencySymbol } from '../../data/currencies';
+import { getPaymentFee } from '../../data/paymentFees';
 
 interface PublicOrderContentProps {
   restaurant: Restaurant | null;
@@ -73,19 +74,26 @@ const PublicOrderContent: React.FC<PublicOrderContentProps> = ({ restaurant, cat
     try {
       if (!restaurant?.id) throw new Error('Missing restaurant');
       if (!checkoutPhone || !checkoutLocation) throw new Error('Missing info');
-      
+      const currencyCode = restaurant.currency || 'XAF';
+      const deliveryFee = restaurant.deliveryFee || 0;
+      const mtnFee = getPaymentFee(currencyCode, 'mtn') * totalCartAmount;
+      const orangeFee = getPaymentFee(currencyCode, 'orange') * totalCartAmount;
       // Register order in Firestore
-      const orderPayload: Omit<Order, 'id' | 'createdAt' | 'updatedAt'> & { customerName?: string } = {
+      const orderPayload: Omit<Order, 'id' | 'createdAt' | 'updatedAt'> & { customerName?: string, customerPhone?: string, customerLocation?: string, deliveryFee?: number, mtnFee?: number, orangeFee?: number } = {
         items: cart,
         restaurantId: restaurant.id,
         status: 'pending',
         totalAmount: totalCartAmount,
         customerViewStatus: 'active',
         tableNumber: 0, // 0 for public orders
-        ...(checkoutName ? { customerName: checkoutName } : {})
+        customerName: checkoutName || '',
+        customerPhone: checkoutPhone || '',
+        customerLocation: checkoutLocation || '',
+        deliveryFee,
+        mtnFee,
+        orangeFee,
       };
-      await createOrder(orderPayload); // Ensure order is saved before WhatsApp
-      
+      const orderId = await createOrder(orderPayload); // Ensure order is saved before WhatsApp
       // Generate WhatsApp message with payment information
       const message = generatePaymentMessage(
         restaurant.name,
@@ -96,8 +104,9 @@ const PublicOrderContent: React.FC<PublicOrderContentProps> = ({ restaurant, cat
         restaurant.paymentInfo,
         language,
         checkoutName,
-        restaurant.deliveryFee || 0,
-        restaurant.currency || 'XAF'
+        deliveryFee,
+        currencyCode,
+        orderId // pass orderId for command number
       );
       
       // Send WhatsApp message

@@ -436,6 +436,25 @@ const OrderManagementContent: React.FC<OrderManagementContentProps> = ({
                   <td colSpan={3} className="px-4 py-2 text-right font-bold" style={{ color: designSystem.colors.primary }}>{t('total_order', language)}</td>
                   <td className="px-4 py-2 text-right font-bold" style={{ color: designSystem.colors.primary }}>{viewOrder.totalAmount.toLocaleString()} {currencySymbol}</td>
                 </tr>
+                {/* Fee breakdown */}
+                <tr>
+                  <td colSpan={3} className="px-4 py-2 text-right" style={{ color: designSystem.colors.primary }}>{t('transaction_fee', language)} (MTN)</td>
+                  <td className="px-4 py-2 text-right" style={{ color: designSystem.colors.primary }}>
+                    {viewOrder.mtnFee !== undefined && viewOrder.mtnFee !== null ? viewOrder.mtnFee.toLocaleString() : '-'} {currencySymbol}
+                  </td>
+                </tr>
+                <tr>
+                  <td colSpan={3} className="px-4 py-2 text-right" style={{ color: designSystem.colors.primary }}>{t('transaction_fee', language)} (Orange)</td>
+                  <td className="px-4 py-2 text-right" style={{ color: designSystem.colors.primary }}>
+                    {viewOrder.orangeFee !== undefined && viewOrder.orangeFee !== null ? viewOrder.orangeFee.toLocaleString() : '-'} {currencySymbol}
+                  </td>
+                </tr>
+                <tr>
+                  <td colSpan={3} className="px-4 py-2 text-right" style={{ color: designSystem.colors.primary }}>{t('delivery_fee', language)}</td>
+                  <td className="px-4 py-2 text-right" style={{ color: designSystem.colors.primary }}>
+                    {viewOrder.deliveryFee !== undefined && viewOrder.deliveryFee !== null ? viewOrder.deliveryFee.toLocaleString() : '-'} {currencySymbol}
+                  </td>
+                </tr>
               </tfoot>
             </table>
           </div>
