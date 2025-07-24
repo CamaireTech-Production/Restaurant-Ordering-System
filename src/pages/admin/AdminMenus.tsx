@@ -354,6 +354,66 @@ const AdminMenus: React.FC = () => {
     </tr>
   );
 
+  // 1. Split categories into active and deleted
+  const activeCategories = categories.filter((cat: any) => !cat.deleted);
+  const deletedCategories = categories.filter((cat: any) => cat.deleted);
+  // 2. Pagination state for each
+  const [activeCatPage, setActiveCatPage] = useState(1);
+  const [activeCatItemsPerPage, setActiveCatItemsPerPage] = useState(10);
+  const [deletedCatPage, setDeletedCatPage] = useState(1);
+  const [deletedCatItemsPerPage, setDeletedCatItemsPerPage] = useState(10);
+  const activeCatTotalPages = Math.ceil(activeCategories.length / activeCatItemsPerPage);
+  const deletedCatTotalPages = Math.ceil(deletedCategories.length / deletedCatItemsPerPage);
+  const activeCatStartIndex = (activeCatPage - 1) * activeCatItemsPerPage;
+  const activeCatEndIndex = activeCatStartIndex + activeCatItemsPerPage;
+  const deletedCatStartIndex = (deletedCatPage - 1) * deletedCatItemsPerPage;
+  const deletedCatEndIndex = deletedCatStartIndex + deletedCatItemsPerPage;
+  const paginatedActiveCategories = activeCategories.slice(activeCatStartIndex, activeCatEndIndex);
+  const paginatedDeletedCategories = deletedCategories.slice(deletedCatStartIndex, deletedCatEndIndex);
+  // 3. Render tree for each
+  const renderCategoryTree = (cats: any[], parentId: string = '', level: number = 0): React.ReactNode[] => {
+    return cats
+      .filter((cat: any) => (cat.parentCategoryId || '') === parentId)
+      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+      .map((cat: any, idx: number) => [
+        <tr key={cat.id} className={`hover:bg-gray-50 transition border-b last:border-none ${cat.deleted ? 'opacity-60' : ''}`}
+          style={level === 0 && idx !== 0 ? { borderTop: '4px solid #f3f4f6' } : {}} // extra space between main categories
+        >
+          <td
+            className="px-6 py-4 whitespace-nowrap font-medium text-primary"
+            style={{
+              paddingLeft: `${level * 32 + 24}px`, // more indentation for subcategories
+              background: level > 0 ? '#f9fafb' : undefined, // subtle background for subcategories
+              borderLeft: level > 0 ? '3px solid #e5e7eb' : undefined,
+              borderRadius: level > 0 ? '4px' : undefined,
+              fontWeight: level === 0 ? 600 : 500,
+              fontSize: level === 0 ? '1rem' : '0.97rem',
+              marginTop: level === 0 && idx !== 0 ? '8px' : undefined,
+              marginBottom: level === 0 ? '8px' : undefined,
+              transition: 'background 0.2s',
+            }}
+          >
+            {cat.title}
+          </td>
+          <td className="px-6 py-4 whitespace-nowrap">{getRestaurantName(cat.restaurantId)}</td>
+          <td className="px-6 py-4 whitespace-nowrap">{cat.deleted ? 'Deleted' : cat.status === 'active' ? 'Active' : 'Inactive'}</td>
+          <td className="px-6 py-4 whitespace-nowrap">{cat.parentCategoryId ? (categories.find((c: any) => c.id === cat.parentCategoryId)?.title || '—') : '—'}</td>
+          <td className="px-6 py-4 whitespace-nowrap text-right">
+            <div className="flex justify-end space-x-2">
+              <button title="Edit" className="p-2 rounded hover:bg-green-100 transition text-green-600"><Pencil size={18} /></button>
+              {!cat.deleted && (
+                <button title="Delete" onClick={() => setCategoryAction({ type: 'delete', category: cat })} className="p-2 rounded hover:bg-red-100 transition"><Trash2 size={18} className="text-red-600" /></button>
+              )}
+              {cat.deleted && (
+                <button title="Restore" onClick={() => setCategoryAction({ type: 'restore', category: cat })} className="p-2 rounded hover:bg-blue-100 transition"><RotateCcw size={18} className="text-blue-600" /></button>
+              )}
+            </div>
+          </td>
+        </tr>,
+        ...renderCategoryTree(cats, cat.id, level + 1)
+      ]).flat();
+  };
+
   return (
     <AdminDashboardLayout>
       <h1 className="text-2xl font-bold mb-4">Menus & Categories</h1>
@@ -473,29 +533,81 @@ const AdminMenus: React.FC = () => {
           </div>
           <div className="bg-white shadow rounded-lg overflow-hidden">
             <h2 className="text-xl font-semibold mb-4 p-4">Categories</h2>
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Restaurant</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {paginatedCategories.length === 0 ? (
+            {/* Active Categories Table */}
+            <div className="mb-6">
+              <div className="flex items-center justify-between px-4 py-2 bg-green-50 border-b border-green-200">
+                <span className="font-semibold text-green-700">Active Categories</span>
+                <div className="flex items-center gap-2">
+                  <label className="text-sm text-gray-700">Items per page:</label>
+                  <select value={activeCatItemsPerPage} onChange={e => { setActiveCatItemsPerPage(Number(e.target.value)); setActiveCatPage(1); }} className="border px-2 py-1 rounded">
+                    <option value={5}>5</option>
+                    <option value={10}>10</option>
+                    <option value={20}>20</option>
+                    <option value={50}>50</option>
+                  </select>
+                </div>
+              </div>
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
                   <tr>
-                    <td colSpan={4} className="px-6 py-10 text-center text-gray-500">No categories found.</td>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Restaurant</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Parent</th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                   </tr>
-                ) : (
-                  paginatedCategories.map(renderCategoryRow)
-                )}
-              </tbody>
-            </table>
-            <div className="flex justify-between items-center mt-4 p-4">
-              <button disabled={catPage === 1} onClick={() => setCatPage(p => Math.max(1, p - 1))} className="px-4 py-2 rounded bg-primary text-white disabled:opacity-50">Previous</button>
-              <span>Page {catPage} of {catTotalPages}</span>
-              <button disabled={catPage === catTotalPages} onClick={() => setCatPage(p => Math.min(catTotalPages, p + 1))} className="px-4 py-2 rounded bg-primary text-white disabled:opacity-50">Next</button>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {activeCategories.length === 0 ? (
+                    <tr><td colSpan={5} className="px-6 py-10 text-center text-gray-500">No active categories found.</td></tr>
+                  ) : (
+                    renderCategoryTree(paginatedActiveCategories)
+                  )}
+                </tbody>
+              </table>
+              <div className="flex justify-between items-center mt-4 p-4">
+                <button disabled={activeCatPage === 1} onClick={() => setActiveCatPage(p => Math.max(1, p - 1))} className="px-4 py-2 rounded bg-primary text-white disabled:opacity-50">Previous</button>
+                <span>Page {activeCatPage} of {activeCatTotalPages}</span>
+                <button disabled={activeCatPage === activeCatTotalPages} onClick={() => setActiveCatPage(p => Math.min(activeCatTotalPages, p + 1))} className="px-4 py-2 rounded bg-primary text-white disabled:opacity-50">Next</button>
+              </div>
+            </div>
+            {/* Deleted Categories Table */}
+            <div>
+              <div className="flex items-center justify-between px-4 py-2 bg-red-50 border-b border-red-200">
+                <span className="font-semibold text-red-700">Deleted Categories</span>
+                <div className="flex items-center gap-2">
+                  <label className="text-sm text-gray-700">Items per page:</label>
+                  <select value={deletedCatItemsPerPage} onChange={e => { setDeletedCatItemsPerPage(Number(e.target.value)); setDeletedCatPage(1); }} className="border px-2 py-1 rounded">
+                    <option value={5}>5</option>
+                    <option value={10}>10</option>
+                    <option value={20}>20</option>
+                    <option value={50}>50</option>
+                  </select>
+                </div>
+              </div>
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Restaurant</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Parent</th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {deletedCategories.length === 0 ? (
+                    <tr><td colSpan={5} className="px-6 py-10 text-center text-gray-500">No deleted categories found.</td></tr>
+                  ) : (
+                    renderCategoryTree(paginatedDeletedCategories)
+                  )}
+                </tbody>
+              </table>
+              <div className="flex justify-between items-center mt-4 p-4">
+                <button disabled={deletedCatPage === 1} onClick={() => setDeletedCatPage(p => Math.max(1, p - 1))} className="px-4 py-2 rounded bg-primary text-white disabled:opacity-50">Previous</button>
+                <span>Page {deletedCatPage} of {deletedCatTotalPages}</span>
+                <button disabled={deletedCatPage === deletedCatTotalPages} onClick={() => setDeletedCatPage(p => Math.min(deletedCatTotalPages, p + 1))} className="px-4 py-2 rounded bg-primary text-white disabled:opacity-50">Next</button>
+              </div>
             </div>
           </div>
         </>

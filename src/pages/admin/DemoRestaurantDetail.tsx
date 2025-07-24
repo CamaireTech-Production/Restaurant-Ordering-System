@@ -845,6 +845,31 @@ const DemoRestaurantDetail: React.FC = () => {
     );
     return pages;
   };
+  const renderCategoryTree = (categories: Category[], parentId: string = '', level: number = 0): React.ReactNode[] => {
+    return categories
+      .filter((cat: Category) => (cat.parentCategoryId || '') === parentId)
+      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+      .map((cat: Category) => [
+        <tr key={cat.id} className={`hover:bg-gray-50 transition ${cat.deleted ? 'opacity-60' : ''}`}>
+          <td className="px-6 py-4 whitespace-nowrap font-medium text-primary" style={{ paddingLeft: `${level * 24}px` }}>{cat.title}</td>
+          <td className="px-6 py-4 whitespace-nowrap">{cat.status === 'active' ? 'Active' : 'Inactive'}</td>
+          <td className="px-6 py-4 whitespace-nowrap">{cat.order ?? '—'}</td>
+          <td className="px-6 py-4 whitespace-nowrap">{cat.parentCategoryId ? (categories.find((c: Category) => c.id === cat.parentCategoryId)?.title || '—') : '—'}</td>
+          <td className="px-6 py-4 whitespace-nowrap text-right">
+            <div className="flex justify-end space-x-2">
+              <button title="Edit" onClick={() => setShowCategoryModal({ mode: 'edit', category: cat })} className="p-2 rounded hover:bg-green-100 transition text-green-600"><Pencil size={18} /></button>
+              {!cat.deleted && (
+                <button title="Delete" onClick={() => setConfirmCategoryAction({ type: 'delete', category: cat })} className="p-2 rounded hover:bg-red-100 transition"><Trash2 size={18} className="text-red-600" /></button>
+              )}
+              {cat.deleted && (
+                <button title="Restore" onClick={() => setConfirmCategoryAction({ type: 'restore', category: cat })} className="p-2 rounded hover:bg-blue-100 transition"><RotateCcw size={18} className="text-blue-600" /></button>
+              )}
+            </div>
+          </td>
+        </tr>,
+        ...renderCategoryTree(categories, cat.id, level + 1)
+      ]).flat();
+  };
   const renderCategoriesTable = () => (
     <div className="overflow-x-auto">
       <div className="flex justify-between items-center mb-4">
@@ -893,35 +918,17 @@ const DemoRestaurantDetail: React.FC = () => {
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order</th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Parent Category</th>
             <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
           </tr>
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
           {categories.length === 0 ? (
             <tr>
-              <td colSpan={4} className="px-6 py-10 text-center text-gray-500">No categories found.</td>
+              <td colSpan={5} className="px-6 py-10 text-center text-gray-500">No categories found.</td>
             </tr>
           ) : (
-            paginatedCategories.map((cat) => (
-              <tr key={cat.id} className={`hover:bg-gray-50 transition ${cat.deleted ? 'opacity-60' : ''}`}>
-                <td className="px-6 py-4 whitespace-nowrap font-medium text-primary">{cat.title}</td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${cat.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>{cat.status === 'active' ? 'Active' : 'Inactive'}</span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">{cat.order ?? '—'}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-right">
-                  <div className="flex justify-end space-x-2">
-                    <button title="Edit" onClick={() => setShowCategoryModal({ mode: 'edit', category: cat })} className="p-2 rounded hover:bg-green-100 transition text-green-600"><Pencil size={18} /></button>
-                    {!cat.deleted && (
-                      <button title="Delete" onClick={() => setConfirmCategoryAction({ type: 'delete', category: cat })} className="p-2 rounded hover:bg-red-100 transition"><Trash2 size={18} className="text-red-600" /></button>
-                    )}
-                    {cat.deleted && (
-                      <button title="Restore" onClick={() => setConfirmCategoryAction({ type: 'restore', category: cat })} className="p-2 rounded hover:bg-blue-100 transition"><RotateCcw size={18} className="text-blue-600" /></button>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            ))
+            renderCategoryTree(categories)
           )}
         </tbody>
       </table>
@@ -966,6 +973,7 @@ const DemoRestaurantDetail: React.FC = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Parent Category</th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
@@ -977,6 +985,7 @@ const DemoRestaurantDetail: React.FC = () => {
                     <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Deleted</span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">{cat.order ?? '—'}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">{cat.parentCategoryId ? (categories.find((c: Category) => c.id === cat.parentCategoryId)?.title || '—') : '—'}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-right">
                     <div className="flex justify-end space-x-2">
                       <button title="Restore" onClick={() => setConfirmCategoryAction({ type: 'restore', category: cat })} className="p-2 rounded hover:bg-blue-100 transition"><RotateCcw size={18} className="text-blue-600" /></button>
@@ -1723,6 +1732,7 @@ const DemoRestaurantDetail: React.FC = () => {
               category={showCategoryModal.category}
               onClose={() => setShowCategoryModal(null)}
               onSave={data => handleCategorySave(showCategoryModal.mode, data, showCategoryModal.category)}
+              categories={categories}
             />
           </div>
         </div>
@@ -2071,11 +2081,12 @@ function DishModalContent({ mode, dish, categories, restaurantId, onClose, onSav
 }
 
 // Category Modal Component
-function CategoryModalContent({ mode, category, onClose, onSave }: { mode: 'add' | 'edit'; category?: any; onClose: () => void; onSave: (data: Partial<Category>) => void }) {
+function CategoryModalContent({ mode, category, onClose, onSave, categories }: { mode: 'add' | 'edit'; category?: Category; onClose: () => void; onSave: (data: Partial<Category>) => void; categories: Category[] }) {
   const [title, setTitle] = useState<string>(category?.title || '');
   const [status, setStatus] = useState<'active' | 'inactive'>(category?.status || 'active');
   const [order, setOrder] = useState<number>(category?.order ?? 0);
   const [error, setError] = useState<string>('');
+  const [parentCategoryId, setParentCategoryId] = useState<string>(category?.parentCategoryId || '');
 
   const handleSave = () => {
     setError('');
@@ -2083,7 +2094,7 @@ function CategoryModalContent({ mode, category, onClose, onSave }: { mode: 'add'
       setError('Title is required.');
       return;
     }
-    onSave({ title: title.trim(), status, order });
+    onSave({ title: title.trim(), status, order, parentCategoryId: parentCategoryId || undefined });
   };
 
   return (
@@ -2120,6 +2131,19 @@ function CategoryModalContent({ mode, category, onClose, onSave }: { mode: 'add'
             onChange={e => setOrder(Number(e.target.value))}
             min={0}
           />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Parent Category</label>
+          <select
+            className="w-full border rounded px-3 py-2"
+            value={parentCategoryId}
+            onChange={e => setParentCategoryId(e.target.value)}
+          >
+            <option value="">None (Main Category)</option>
+            {categories.filter((c: Category) => !category || (c.id !== category.id && c.parentCategoryId !== category.id)).map((c: Category) => (
+              <option key={c.id} value={c.id}>{c.title}</option>
+            ))}
+          </select>
         </div>
       </div>
       <div className="flex justify-end gap-2 mt-6">
