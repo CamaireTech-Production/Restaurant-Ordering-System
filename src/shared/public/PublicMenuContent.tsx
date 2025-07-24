@@ -6,6 +6,7 @@ import DishDetailModal from '../../pages/client/customer/DishDetailModal';
 import { Dish, Category, Restaurant } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { t } from '../../utils/i18n';
+import { getCurrencySymbol } from '../../data/currencies';
 
 type MenuItem = Dish;
 
@@ -29,6 +30,8 @@ const PublicMenuContent: React.FC<PublicMenuContentProps> = ({ restaurant, categ
   const { language, setLanguage, supportedLanguages } = useLanguage();
   const [langDropdownOpen, setLangDropdownOpen] = useState(false);
   const langSwitcherRef = useRef<HTMLDivElement>(null);
+
+  const currencySymbol = restaurant?.currency ? getCurrencySymbol(restaurant.currency) : 'FCFA';
 
   // Helper to get sticky header + tabs height
   const getStickyOffset = () => {
@@ -451,7 +454,7 @@ const PublicMenuContent: React.FC<PublicMenuContentProps> = ({ restaurant, categ
                               )}
                             </div>
                             <div className="text-base sm:text-lg font-semibold text-primary mt-2">
-                              {item.price.toLocaleString()} FCFA
+                              {item.price.toLocaleString()} {currencySymbol}
                             </div>
                           </div>
                         </div>

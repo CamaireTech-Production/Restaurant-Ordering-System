@@ -34,6 +34,8 @@ export interface Restaurant {
   colorCustomization?: boolean;
   publicMenuLink?: boolean;
   publicOrderLink?: boolean;
+  currency?: string;
+  deliveryFee?: number;
 }
 
 // Dish Types
@@ -147,4 +149,9 @@ export interface PaymentMethod {
 export interface PaymentInfo {
   momo?: PaymentMethod;
   om?: PaymentMethod;
+  mtnMerchantCode?: string;
+  orangeMerchantCode?: string;
+  paymentLink?: string;
+  mtnFee?: number;
+  orangeFee?: number;
 }

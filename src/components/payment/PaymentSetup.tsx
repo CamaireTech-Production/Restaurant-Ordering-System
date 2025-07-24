@@ -2,17 +2,23 @@ import React, { useState } from 'react';
 import { User, AlertCircle, CheckCircle } from 'lucide-react';
 import { validateCameroonPhone, formatCameroonPhone } from '../../utils/paymentUtils';
 import { PaymentInfo } from '../../types';
+import { t } from '../../utils/i18n';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 interface PaymentSetupProps {
   paymentInfo: PaymentInfo;
   onPaymentInfoChange: (paymentInfo: PaymentInfo) => void;
   isRequired?: boolean;
+  deliveryFee?: number;
+  onDeliveryFeeChange?: (fee: number) => void;
 }
 
 const PaymentSetup: React.FC<PaymentSetupProps> = ({
   paymentInfo,
   onPaymentInfoChange,
-  isRequired = false
+  isRequired = false,
+  deliveryFee,
+  onDeliveryFeeChange
 }) => {
   const [errors, setErrors] = useState<{
     momoNumber?: string;
@@ -20,6 +26,7 @@ const PaymentSetup: React.FC<PaymentSetupProps> = ({
     omNumber?: string;
     omName?: string;
   }>({});
+  const { language } = useLanguage();
 
   const validateField = (_type: 'momo' | 'om', field: 'number' | 'name', value: string): string | undefined => {
     if (field === 'number' && value) {
@@ -85,185 +92,98 @@ const PaymentSetup: React.FC<PaymentSetupProps> = ({
 
   return (
     <div className="space-y-8">
+
       <div className="border-b border-gray-200 pb-6">
         <h3 className="text-lg font-medium text-gray-900 flex items-center gap-2">
-          💳 Payment Information
+          {t('payment_information', language)}
           {isRequired && <span className="text-red-500">*</span>}
         </h3>
         <p className="text-sm text-gray-600 mt-2">
-          Set up your mobile money accounts to receive payments from customers. 
-          This information will be included in order notifications.
+          {t('payment_information_desc', language)}
         </p>
       </div>
 
-      {/* MTN Mobile Money */}
-      <div className="space-y-6">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-yellow-500 rounded-full flex items-center justify-center">
-            <span className="text-white font-bold text-sm">M</span>
+      {/* Mobile Money Section */}
+      <div className="mb-10">
+        <h3 className="text-lg font-bold text-gray-900 mb-4">{t('mobile_money', language)}</h3>
+        {/* MTN Mobile Money */}
+        <div className="mb-6">
+          <h4 className="text-md font-semibold text-gray-900 mb-2">{t('mtn_mobile_money', language)}</h4>
+          {/* Phone and Name fields for MTN */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">{t('phone_number', language)}</label>
+              <div className="relative">
+                <div className="flex">
+                  <div className="flex items-center px-4 py-3 bg-gray-100 border border-r-0 border-gray-300 rounded-l-md text-sm font-medium text-gray-700">+237</div>
+                  <input type="tel" value={paymentInfo.momo?.number || ''} onChange={(e) => handleFieldChange('momo', 'number', e.target.value)} onBlur={(e) => handleFieldBlur('momo', 'number', e.target.value)} className={`flex-1 px-4 py-3 border border-gray-300 rounded-r-md shadow-sm focus:ring-primary focus:border-primary text-sm ${errors.momoNumber ? 'border-red-300' : ''}`} placeholder="612345678" />
+                </div>
+              </div>
+              {errors.momoNumber && (<p className="mt-2 text-sm text-red-600 flex items-center gap-1"><AlertCircle size={14} />{errors.momoNumber}</p>)}
+              {paymentInfo.momo?.number && !errors.momoNumber && (<p className="mt-2 text-sm text-gray-500">{formatCameroonPhone(paymentInfo.momo.number)}</p>)}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">{t('name', language)}</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none"><User size={18} className="text-gray-400" /></div>
+                <input type="text" value={paymentInfo.momo?.name || ''} onChange={(e) => handleFieldChange('momo', 'name', e.target.value)} onBlur={(e) => handleFieldBlur('momo', 'name', e.target.value)} className={`pl-12 pr-4 py-3 block w-full border rounded-md shadow-sm focus:ring-primary focus:border-primary text-sm ${errors.momoName ? 'border-red-300' : 'border-gray-300'}`} placeholder="e.g. John Doe" />
+                {paymentInfo.momo?.name && paymentInfo.momo.name.trim().length >= 2 && (<div className="absolute inset-y-0 right-0 pr-4 flex items-center"><CheckCircle size={18} className="text-green-500" /></div>)}
+              </div>
+              {errors.momoName && (<p className="mt-2 text-sm text-red-600 flex items-center gap-1"><AlertCircle size={14} />{errors.momoName}</p>)}
+            </div>
           </div>
-          <h4 className="text-lg font-medium text-gray-900">MTN Mobile Money</h4>
         </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
-              Phone Number
-            </label>
-            <div className="relative">
-              <div className="flex">
-                {/* Fixed +237 prefix */}
-                <div className="flex items-center px-4 py-3 bg-gray-100 border border-r-0 border-gray-300 rounded-l-md text-sm font-medium text-gray-700">
-                  +237
+        {/* Orange Mobile Money */}
+        <div className="mb-6">
+          <h4 className="text-md font-semibold text-gray-900 mb-2">{t('orange_mobile_money', language)}</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">{t('phone_number', language)}</label>
+              <div className="relative">
+                <div className="flex">
+                  <div className="flex items-center px-4 py-3 bg-gray-100 border border-r-0 border-gray-300 rounded-l-md text-sm font-medium text-gray-700">+237</div>
+                  <input type="tel" value={paymentInfo.om?.number || ''} onChange={(e) => handleFieldChange('om', 'number', e.target.value)} onBlur={(e) => handleFieldBlur('om', 'number', e.target.value)} className={`flex-1 px-4 py-3 border border-gray-300 rounded-r-md shadow-sm focus:ring-primary focus:border-primary text-sm ${errors.omNumber ? 'border-red-300' : ''}`} placeholder="612345678" />
                 </div>
-                {/* Phone number input */}
-                <input
-                  type="tel"
-                  value={paymentInfo.momo?.number || ''}
-                  onChange={(e) => handleFieldChange('momo', 'number', e.target.value)}
-                  onBlur={(e) => handleFieldBlur('momo', 'number', e.target.value)}
-                  className={`flex-1 px-4 py-3 border border-gray-300 rounded-r-md shadow-sm focus:ring-primary focus:border-primary text-sm ${
-                    errors.momoNumber ? 'border-red-300' : ''
-                  }`}
-                  placeholder="612345678"
-                />
-                {paymentInfo.momo?.number && validateCameroonPhone(paymentInfo.momo.number) && (
-                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-                    <CheckCircle size={18} className="text-green-500" />
-                  </div>
-                )}
               </div>
+              {errors.omNumber && (<p className="mt-2 text-sm text-red-600 flex items-center gap-1"><AlertCircle size={14} />{errors.omNumber}</p>)}
+              {paymentInfo.om?.number && !errors.omNumber && (<p className="mt-2 text-sm text-gray-500">{formatCameroonPhone(paymentInfo.om.number)}</p>)}
             </div>
-            {errors.momoNumber && (
-              <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
-                <AlertCircle size={14} />
-                {errors.momoNumber}
-              </p>
-            )}
-            {paymentInfo.momo?.number && !errors.momoNumber && (
-              <p className="mt-2 text-sm text-gray-500">
-                {formatCameroonPhone(paymentInfo.momo.number)}
-              </p>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
-              Account Name
-            </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <User size={18} className="text-gray-400" />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">{t('name', language)}</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none"><User size={18} className="text-gray-400" /></div>
+                <input type="text" value={paymentInfo.om?.name || ''} onChange={(e) => handleFieldChange('om', 'name', e.target.value)} onBlur={(e) => handleFieldBlur('om', 'name', e.target.value)} className={`pl-12 pr-4 py-3 block w-full border rounded-md shadow-sm focus:ring-primary focus:border-primary text-sm ${errors.omName ? 'border-red-300' : 'border-gray-300'}`} placeholder="e.g. John Doe" />
+                {paymentInfo.om?.name && paymentInfo.om.name.trim().length >= 2 && (<div className="absolute inset-y-0 right-0 pr-4 flex items-center"><CheckCircle size={18} className="text-green-500" /></div>)}
               </div>
-              <input
-                type="text"
-                value={paymentInfo.momo?.name || ''}
-                onChange={(e) => handleFieldChange('momo', 'name', e.target.value)}
-                onBlur={(e) => handleFieldBlur('momo', 'name', e.target.value)}
-                className={`pl-12 pr-4 py-3 block w-full border rounded-md shadow-sm focus:ring-primary focus:border-primary text-sm ${
-                  errors.momoName ? 'border-red-300' : 'border-gray-300'
-                }`}
-                placeholder="e.g. John Doe"
-              />
-              {paymentInfo.momo?.name && paymentInfo.momo.name.trim().length >= 2 && (
-                <div className="absolute inset-y-0 right-0 pr-4 flex items-center">
-                  <CheckCircle size={18} className="text-green-500" />
-                </div>
-              )}
+              {errors.omName && (<p className="mt-2 text-sm text-red-600 flex items-center gap-1"><AlertCircle size={14} />{errors.omName}</p>)}
             </div>
-            {errors.momoName && (
-              <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
-                <AlertCircle size={14} />
-                {errors.momoName}
-              </p>
-            )}
           </div>
         </div>
       </div>
 
-      {/* Orange Money */}
-      <div className="space-y-6">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center">
-            <span className="text-white font-bold text-sm">O</span>
-          </div>
-          <h4 className="text-lg font-medium text-gray-900">Orange Money</h4>
+      {/* Merchant Codes Section */}
+      <div className="mb-10">
+        <h3 className="text-lg font-bold text-gray-900 mb-4">{t('merchant_codes', language)}</h3>
+        <div className="mb-4">
+          <h4 className="text-md font-semibold text-gray-900 mb-2">{t('mtn_merchant_code', language)}</h4>
+          <input type="text" value={paymentInfo.mtnMerchantCode || ''} onChange={e => onPaymentInfoChange({ ...paymentInfo, mtnMerchantCode: e.target.value })} className="w-full border border-gray-300 rounded-md p-2" placeholder={t('mtn_merchant_code_placeholder', language)} />
         </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
-              Phone Number
-            </label>
-            <div className="relative">
-              <div className="flex">
-                {/* Fixed +237 prefix */}
-                <div className="flex items-center px-4 py-3 bg-gray-100 border border-r-0 border-gray-300 rounded-l-md text-sm font-medium text-gray-700">
-                  +237
-                </div>
-                {/* Phone number input */}
-                <input
-                  type="tel"
-                  value={paymentInfo.om?.number || ''}
-                  onChange={(e) => handleFieldChange('om', 'number', e.target.value)}
-                  onBlur={(e) => handleFieldBlur('om', 'number', e.target.value)}
-                  className={`flex-1 px-4 py-3 border border-gray-300 rounded-r-md shadow-sm focus:ring-primary focus:border-primary text-sm ${
-                    errors.omNumber ? 'border-red-300' : ''
-                  }`}
-                  placeholder="612345678"
-                />
-                {paymentInfo.om?.number && validateCameroonPhone(paymentInfo.om.number) && (
-                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-                    <CheckCircle size={18} className="text-green-500" />
-                  </div>
-                )}
-              </div>
-            </div>
-            {errors.omNumber && (
-              <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
-                <AlertCircle size={14} />
-                {errors.omNumber}
-              </p>
-            )}
-            {paymentInfo.om?.number && !errors.omNumber && (
-              <p className="mt-2 text-sm text-gray-500">
-                {formatCameroonPhone(paymentInfo.om.number)}
-              </p>
-            )}
-          </div>
+        <div className="mb-4">
+          <h4 className="text-md font-semibold text-gray-900 mb-2">{t('orange_merchant_code', language)}</h4>
+          <input type="text" value={paymentInfo.orangeMerchantCode || ''} onChange={e => onPaymentInfoChange({ ...paymentInfo, orangeMerchantCode: e.target.value })} className="w-full border border-gray-300 rounded-md p-2" placeholder={t('orange_merchant_code_placeholder', language)} />
+        </div>
+      </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
-              Account Name
-            </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <User size={18} className="text-gray-400" />
-              </div>
-              <input
-                type="text"
-                value={paymentInfo.om?.name || ''}
-                onChange={(e) => handleFieldChange('om', 'name', e.target.value)}
-                onBlur={(e) => handleFieldBlur('om', 'name', e.target.value)}
-                className={`pl-12 pr-4 py-3 block w-full border rounded-md shadow-sm focus:ring-primary focus:border-primary text-sm ${
-                  errors.omName ? 'border-red-300' : 'border-gray-300'
-                }`}
-                placeholder="e.g. John Doe"
-              />
-              {paymentInfo.om?.name && paymentInfo.om.name.trim().length >= 2 && (
-                <div className="absolute inset-y-0 right-0 pr-4 flex items-center">
-                  <CheckCircle size={18} className="text-green-500" />
-                </div>
-              )}
-            </div>
-            {errors.omName && (
-              <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
-                <AlertCircle size={14} />
-                {errors.omName}
-              </p>
-            )}
-          </div>
-        </div>
+      {/* Payment Links Section */}
+      <div className="mb-10">
+        <h3 className="text-lg font-bold text-gray-900 mb-4">{t('payment_link', language)}</h3>
+        <input type="text" value={paymentInfo.paymentLink || ''} onChange={e => onPaymentInfoChange({ ...paymentInfo, paymentLink: e.target.value })} className="w-full border border-gray-300 rounded-md p-2" placeholder={t('payment_link_placeholder', language)} />
+      </div>
+
+      {/* Delivery Fees Section */}
+      <div className="mb-10">
+        <h3 className="text-lg font-bold text-gray-900 mb-4">{t('delivery_fee', language)}</h3>
+        <input type="number" min="0" value={typeof deliveryFee === 'number' ? deliveryFee : ''} onChange={e => onDeliveryFeeChange && onDeliveryFeeChange(Number(e.target.value))} className="w-full border border-gray-300 rounded-md p-2" placeholder={t('delivery_fee_placeholder', language)} />
       </div>
 
       {/* Summary */}
@@ -273,11 +193,11 @@ const PaymentSetup: React.FC<PaymentSetupProps> = ({
             <CheckCircle size={20} className="text-blue-500 mt-0.5" />
           </div>
           <div>
-            <h4 className="text-sm font-medium text-blue-900">Payment Setup Complete</h4>
+            <h4 className="text-sm font-medium text-blue-900">{t('payment_setup_complete', language)}</h4>
             <p className="text-sm text-blue-700 mt-2">
               {hasValidPaymentInfo() 
-                ? 'Your payment information will be included in customer order notifications. Customers can pay directly using the provided USSD codes.'
-                : 'Add at least one payment method to enable mobile money payments for your customers.'
+                ? t('payment_info_included', language)
+                : t('add_payment_method', language)
               }
             </p>
           </div>
