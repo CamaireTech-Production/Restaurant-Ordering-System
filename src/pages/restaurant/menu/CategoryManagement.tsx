@@ -107,11 +107,12 @@ const CategoryManagement: React.FC = () => {
     try {
       const docRef = await addDoc(collection(db, 'categories'), {
         ...data,
+        parentCategoryId: data.parentCategoryId || null,
         restaurantId: restaurant.id,
         createdAt: serverTimestamp(),
         deleted: false,
       });
-      setCategories(prev => [...prev, { ...data, id: docRef.id, restaurantId: restaurant.id, createdAt: new Date(), deleted: false }]);
+      setCategories(prev => [...prev, { ...data, id: docRef.id, parentCategoryId: data.parentCategoryId || null, restaurantId: restaurant.id, createdAt: new Date(), deleted: false }]);
       toast.success('Category added!');
       await logActivity({
         userId: restaurant.id,
@@ -121,6 +122,16 @@ const CategoryManagement: React.FC = () => {
         entityId: docRef.id,
         details: data,
       });
+      if (data.parentCategoryId) {
+        await logActivity({
+          userId: restaurant.id,
+          userEmail: restaurant.email,
+          action: 'add_subcategory',
+          entityType: 'category',
+          entityId: docRef.id,
+          details: data,
+        });
+      }
     } catch (error) {
       toast.error('Failed to add category');
     }
@@ -131,9 +142,10 @@ const CategoryManagement: React.FC = () => {
     try {
       await updateDoc(doc(db, 'categories', category.id), {
         ...data,
+        parentCategoryId: data.parentCategoryId || null,
         updatedAt: serverTimestamp(),
       });
-      setCategories(prev => prev.map(c => c.id === category.id ? { ...c, ...data, updatedAt: new Date() } : c));
+      setCategories(prev => prev.map(c => c.id === category.id ? { ...c, ...data, parentCategoryId: data.parentCategoryId || null, updatedAt: new Date() } : c));
       toast.success('Category updated!');
       await logActivity({
         userId: restaurant.id,
@@ -143,6 +155,16 @@ const CategoryManagement: React.FC = () => {
         entityId: category.id,
         details: data,
       });
+      if (data.parentCategoryId) {
+        await logActivity({
+          userId: restaurant.id,
+          userEmail: restaurant.email,
+          action: 'edit_subcategory',
+          entityType: 'category',
+          entityId: category.id,
+          details: data,
+        });
+      }
     } catch (error) {
       toast.error('Failed to update category');
     }
@@ -187,6 +209,21 @@ const CategoryManagement: React.FC = () => {
     if (!restaurant?.id) return;
     try {
       setIsDeleting(true);
+      // Check for subcategories
+      const subcategories = categories.filter(cat => cat.parentCategoryId === categoryId && !cat.deleted);
+      if (subcategories.length > 0) {
+        toast.error('Cannot delete category with subcategories. Please delete or reassign subcategories first.');
+        await logActivity({
+          userId: restaurant.id,
+          userEmail: restaurant.email,
+          action: 'delete_category_failed_subcategories',
+          entityType: 'category',
+          entityId: categoryId,
+          details: { subcategoryCount: subcategories.length },
+        });
+        setIsDeleting(false);
+        return;
+      }
       if (!navigator.onLine) {
         queuePendingAction({ type: 'deleteCategory', payload: { id: categoryId } });
         setCategories(prevCategories => prevCategories.filter(category => category.id !== categoryId));
@@ -205,6 +242,18 @@ const CategoryManagement: React.FC = () => {
         entityType: 'category',
         entityId: categoryId,
       });
+      // Optionally, recursively soft-delete all subcategories (uncomment to enable)
+      // for (const subcat of subcategories) {
+      //   await updateDoc(doc(db, 'categories', subcat.id), { deleted: true, updatedAt: serverTimestamp() });
+      //   await logActivity({
+      //     userId: restaurant.id,
+      //     userEmail: restaurant.email,
+      //     action: 'delete_subcategory',
+      //     entityType: 'category',
+      //     entityId: subcat.id,
+      //     details: { parentCategoryId: categoryId },
+      //   });
+      // }
     } catch (error) {
       toast.error('Failed to delete category');
     } finally {
