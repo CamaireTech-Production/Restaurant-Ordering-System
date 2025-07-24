@@ -271,6 +271,7 @@ const translations: Record<string, Record<string, string>> = {
     'payment_link_placeholder': 'e.g. https://pay.example.com/abc',
     'delivery_fee': 'Delivery Fee',
     'search_dishes': 'Search dishes...',
+    'currency': 'Currency',
   },
   fr: {
     'restaurant_management': 'Gestion du restaurant',
@@ -544,6 +545,7 @@ const translations: Record<string, Record<string, string>> = {
     'payment_link_placeholder': 'ex: https://pay.example.com/abc',
     'delivery_fee': 'Frais de livraison',
     'search_dishes': 'Rechercher des plats...',
+    'currency': 'Devise',
   },
 };
 
