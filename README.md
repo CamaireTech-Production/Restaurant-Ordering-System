@@ -75,3 +75,28 @@ service cloud.firestore {
 
 ## License
 MIT
+
+# Subcategory Support for Menu Categories
+
+## Overview
+- Categories now support subcategories via a `parentCategoryId` field.
+- Categories with no `parentCategoryId` are main categories; those with a value are subcategories.
+- The UI (admin, restaurant, demo) allows creating, editing, and viewing categories in a tree/expandable list.
+- Dishes can be assigned to either main or subcategories.
+
+## Migration Notes
+- Existing categories will have `parentCategoryId: undefined` (main category).
+- No migration is needed unless you want to organize existing categories into a hierarchy.
+- All category CRUD and dish assignment logic is backward compatible.
+
+## Activity Logging
+- All subcategory-related actions (create, edit, delete, restore, assign to dish, change parent) are logged in the activity log for regular, demo, and admin actions.
+- Log entries include the `parentCategoryId` and relevant details.
+
+## Feature Flag
+- Subcategory support is always enabled; there is no feature flag for this feature.
+
+## UI Usage
+- In the admin and restaurant panels, you can select a parent category when creating or editing a category.
+- The category table displays categories in a tree, with subcategories indented under their parent.
+- You cannot set a category as its own parent or create circular references.
