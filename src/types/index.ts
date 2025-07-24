@@ -160,3 +160,11 @@ export interface PaymentInfo {
   mtnFee?: number;
   orangeFee?: number;
 }
+
+export interface Contact {
+  phone: string;
+  name: string;
+  location: string;
+  count: number;
+  lastOrderDate: any;
+}

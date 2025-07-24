@@ -81,6 +81,11 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, open, onClose }) => {
               path: isDemoUser ? '/demo-order-management' : '/orders',
               icon: <ClipboardList size={20} />,
             },
+            {
+              name: t('contacts', language),
+              path: isDemoUser ? '/demo-contacts' : '/contacts',
+              icon: <User size={20} />,
+            },
           ]
         : []
     ),

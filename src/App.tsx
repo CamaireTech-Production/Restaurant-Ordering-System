@@ -41,6 +41,8 @@ import DemoOrderManagement from './pages/demo/DemoOrderManagement';
 import DemoPublicMenuPage from './pages/demo/DemoPublicMenuPage';
 import DemoPublicOrderPage from './pages/demo/DemoPublicOrderPage';
 import DemoRestaurantDetail from './pages/admin/DemoRestaurantDetail';
+import ContactsPage from './pages/restaurant/contacts/ContactsPage';
+import DemoContactsPage from './pages/demo/contacts/DemoContactsPage';
 
 const CustomerOrdersPage = React.lazy(() => import('./pages/client/customer/OrdersPage'));
 
@@ -179,6 +181,7 @@ function App() {
                     </AdminProtectedRoute>
                   }
                 />
+                <Route path="/contacts" element={<ContactsPage />} />
                 <Route path="/demo-login" element={
                   <DemoAuthProvider>
                     <DemoLogin />
@@ -229,6 +232,7 @@ function App() {
                     </AdminProtectedRoute>
                   }
                 />
+                <Route path="/demo-contacts" element={<DemoContactsPage />} />
                 {/* Default routes */}
                 <Route path="/" element={<Navigate to="/login" replace />} />
                 <Route path="*" element={<Navigate to="/login" replace />} />
