@@ -11,9 +11,14 @@ import { validateCameroonPhone, formatCameroonPhone } from '../../utils/paymentU
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import designSystem from '../../designSystem';
 import { logActivity } from '../../services/activityLogService';
+import { currencies } from '../../data/currencies';
+import CurrencyDropdown from '../../components/ui/CurrencyDropdown';
+import { t } from '../../utils/i18n';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 const DemoProfileEdit: React.FC = () => {
   const { demoAccount, currentUser, refreshDemoAccount } = useDemoAuth();
+  const { language } = useLanguage();
   
   const [phone, setPhone] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
@@ -26,12 +31,14 @@ const DemoProfileEdit: React.FC = () => {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [phoneError, setPhoneError] = useState('');
+  const [currency, setCurrency] = useState(demoAccount?.currency || 'XAF');
 
   useEffect(() => {
     if (demoAccount) {
       // Set phone number without +237 prefix since we have a fixed prefix section
       setPhone(demoAccount.phone || '');
       setPaymentInfo(demoAccount.paymentInfo || {});
+      setCurrency(demoAccount.currency || 'XAF');
     }
   }, [demoAccount]);
 
@@ -123,6 +130,7 @@ const DemoProfileEdit: React.FC = () => {
       await updateDoc(doc(db, 'demoAccounts', currentUser.uid), {
         phone: phone,
         paymentInfo,
+        currency,
         updatedAt: serverTimestamp()
       });
       // Log activity
@@ -261,7 +269,18 @@ const DemoProfileEdit: React.FC = () => {
                     </p>
                   )}
                 </div>
-
+                {/* Currency Dropdown */}
+                <div>
+                  <label htmlFor="currency" className="block text-sm font-medium text-gray-700">
+                    {t('currency', language)}
+                  </label>
+                  <CurrencyDropdown
+                    value={currency}
+                    onChange={setCurrency}
+                    currencies={currencies}
+                    language={language}
+                  />
+                </div>
                 {/* Payment Information */}
                 <div className="border-t border-gray-200 pt-6">
                   <PaymentSetup
