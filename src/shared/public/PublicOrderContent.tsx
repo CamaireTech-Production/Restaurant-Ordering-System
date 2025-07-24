@@ -95,7 +95,9 @@ const PublicOrderContent: React.FC<PublicOrderContentProps> = ({ restaurant, cat
         checkoutLocation,
         restaurant.paymentInfo,
         language,
-        checkoutName
+        checkoutName,
+        restaurant.deliveryFee || 0,
+        restaurant.currency || 'XAF'
       );
       
       // Send WhatsApp message

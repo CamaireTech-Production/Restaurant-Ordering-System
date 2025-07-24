@@ -1,5 +1,7 @@
 import { PaymentInfo } from '../types';
 import { t } from './i18n';
+import { getPaymentFee } from '../data/paymentFees';
+import { getCurrencySymbol } from '../data/currencies';
 
 // Cameroon mobile money USSD codes
 export const CAMEROON_PAYMENT_CODES = {
@@ -43,42 +45,80 @@ export const generatePaymentMessage = (
   customerLocation: string,
   paymentInfo?: PaymentInfo,
   language: string = 'en',
-  customerName?: string
+  customerName?: string,
+  deliveryFee: number = 0,
+  currencyCode: string = 'XAF'
 ): string => {
+  const currencySymbol = getCurrencySymbol(currencyCode) || 'FCFA';
   const itemsList = orderItems
-    .map(item => `- ${item.title} x ${item.quantity} = ${(item.price * item.quantity).toLocaleString()} FCFA`)
+    .map(item => `- ${item.title} x ${item.quantity} = ${(item.price * item.quantity).toLocaleString()} ${currencySymbol}`)
     .join('\n');
 
-  let message = `🍽️ *${t('new_order_from', language)} ${restaurantName}*\n\n`;
-  message += `📋 *${t('order_details', language)}*\n${itemsList}\n\n`;
-  message += `💰 *${t('total', language)}: ${totalAmount.toLocaleString()} FCFA*\n\n`;
-  message += `📞 *${t('customer_phone', language)}:* ${customerPhone}\n`;
-  if (customerName) {
-    message += `👤 *${t('customer_name', language)}:* ${customerName}\n`;
+  // Build message with text labels instead of emoji for iOS compatibility
+  let message = `${t('order_label', language)} *${restaurantName}*\n\n`;
+  message += `${t('details_label', language)}\n${itemsList}\n\n`;
+  message += `${t('total_label', language)}: ${totalAmount.toLocaleString()} ${currencySymbol}\n`;
+  if (deliveryFee > 0) {
+    message += `${t('delivery_label', language)}: ${deliveryFee.toLocaleString()} ${currencySymbol}\n`;
   }
-  message += `📍 *${t('customer_location', language)}:* ${customerLocation}\n\n`;
 
-  // Add payment information if available
-  if (paymentInfo && (paymentInfo.momo || paymentInfo.om)) {
-    message += `💳 *${t('payment_methods', language)}*\n`;
+  // Payment method fees breakdown
+  let mtnFee = 0, orangeFee = 0;
+  if (paymentInfo) {
+    mtnFee = getPaymentFee(currencyCode, 'mtn') * totalAmount;
+    orangeFee = getPaymentFee(currencyCode, 'orange') * totalAmount;
+  }
+  const mtnGrandTotal = totalAmount + mtnFee + deliveryFee;
+  const orangeGrandTotal = totalAmount + orangeFee + deliveryFee;
+  if (paymentInfo?.mtnMerchantCode || paymentInfo?.momo) {
+    message += `\n${t('payment_method_label', language)}: MTN Mobile Money\n`;
     if (paymentInfo.momo) {
-      const momoCode = generatePaymentCode('momo', paymentInfo.momo.number, totalAmount);
-      message += `📱 *${t('mtn_mobile_money', language)}*\n`;
+      const momoCode = generatePaymentCode('momo', paymentInfo.momo.number, mtnGrandTotal);
       message += `   ${t('number', language)}: ${paymentInfo.momo.number}\n`;
       message += `   ${t('name', language)}: ${paymentInfo.momo.name}\n`;
-      message += `   ${t('ussd_code', language)}: _*${momoCode}*_\n\n`;
+      message += `   ${t('ussd_code', language)}: _*${momoCode}*_\n`;
     }
+    if (paymentInfo.mtnMerchantCode) {
+      message += `   ${t('mtn_merchant_code', language)}: ${paymentInfo.mtnMerchantCode}\n`;
+    }
+    message += `   ${t('transaction_fee', language)}: ${mtnFee.toLocaleString()} ${currencySymbol}\n`;
+    message += `   ${t('total', language)}: ${mtnGrandTotal.toLocaleString()} ${currencySymbol}\n`;
+  }
+  if (paymentInfo?.orangeMerchantCode || paymentInfo?.om) {
+    message += `\n${t('payment_method_label', language)}: Orange Money\n`;
     if (paymentInfo.om) {
-      const omCode = generatePaymentCode('om', paymentInfo.om.number, totalAmount);
-      message += `📱 *${t('orange_money', language)}*\n`;
+      const omCode = generatePaymentCode('om', paymentInfo.om.number, orangeGrandTotal);
       message += `   ${t('number', language)}: ${paymentInfo.om.number}\n`;
       message += `   ${t('name', language)}: ${paymentInfo.om.name}\n`;
-      message += `   ${t('ussd_code', language)}: _*${omCode}*_\n\n`;
+      message += `   ${t('ussd_code', language)}: _*${omCode}*_\n`;
     }
-    message += `💡 *${t('payment_instructions', language)}*\n`;
-    message += `1. ${t('copy_ussd_code', language)}\n`;
-    message += `2. ${t('open_phone_app', language)}\n`;
-    message += `3. ${t('complete_payment_and_send_screenshot', language)}\n`;
+    if (paymentInfo.orangeMerchantCode) {
+      message += `   ${t('orange_merchant_code', language)}: ${paymentInfo.orangeMerchantCode}\n`;
+    }
+    message += `   ${t('transaction_fee', language)}: ${orangeFee.toLocaleString()} ${currencySymbol}\n`;
+    message += `   ${t('total', language)}: ${orangeGrandTotal.toLocaleString()} ${currencySymbol}\n`;
+  }
+  if (paymentInfo?.paymentLink) {
+    message += `\n${t('link_label', language)}: ${paymentInfo.paymentLink}\n`;
+  }
+  message += `\n${t('phone_label', language)}: ${customerPhone}\n`;
+  if (customerName) {
+    message += `${t('customer_label', language)}: ${customerName}\n`;
+  }
+  message += `${t('location_label', language)}: ${customerLocation}\n\n`;
+
+  // Payment instructions
+  if (paymentInfo && (paymentInfo.momo || paymentInfo.om || paymentInfo.paymentLink)) {
+    message += `${t('instructions_label', language)}\n`;
+    if (paymentInfo.momo || paymentInfo.om) {
+      message += `1. ${t('copy_ussd_code', language)}\n`;
+      message += `2. ${t('open_phone_app', language)}\n`;
+      message += `3. ${t('complete_payment_and_send_screenshot', language)}\n`;
+    }
+    if (paymentInfo.paymentLink) {
+      message += `${t('follow_payment_link', language)}: ${paymentInfo.paymentLink}\n`;
+      message += `${t('pay_now', language)}\n`;
+    }
   }
   return message;
 };

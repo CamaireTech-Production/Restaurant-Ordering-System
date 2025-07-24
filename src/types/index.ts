@@ -119,6 +119,7 @@ export interface DemoAccount {
   // Payment information for Cameroon context
   paymentInfo?: PaymentInfo;
   currency?: string;
+  deliveryFee?: number;
 }
 
 // Admin Types

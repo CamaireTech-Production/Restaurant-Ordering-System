@@ -11,6 +11,12 @@ interface PaymentSetupProps {
   isRequired?: boolean;
   deliveryFee?: number;
   onDeliveryFeeChange?: (fee: number) => void;
+  mtnMerchantCode?: string;
+  setMtnMerchantCode?: (v: string) => void;
+  orangeMerchantCode?: string;
+  setOrangeMerchantCode?: (v: string) => void;
+  paymentLink?: string;
+  setPaymentLink?: (v: string) => void;
 }
 
 const PaymentSetup: React.FC<PaymentSetupProps> = ({
@@ -18,7 +24,13 @@ const PaymentSetup: React.FC<PaymentSetupProps> = ({
   onPaymentInfoChange,
   isRequired = false,
   deliveryFee,
-  onDeliveryFeeChange
+  onDeliveryFeeChange,
+  mtnMerchantCode,
+  setMtnMerchantCode,
+  orangeMerchantCode,
+  setOrangeMerchantCode,
+  paymentLink,
+  setPaymentLink
 }) => {
   const [errors, setErrors] = useState<{
     momoNumber?: string;
@@ -166,18 +178,18 @@ const PaymentSetup: React.FC<PaymentSetupProps> = ({
         <h3 className="text-lg font-bold text-gray-900 mb-4">{t('merchant_codes', language)}</h3>
         <div className="mb-4">
           <h4 className="text-md font-semibold text-gray-900 mb-2">{t('mtn_merchant_code', language)}</h4>
-          <input type="text" value={paymentInfo.mtnMerchantCode || ''} onChange={e => onPaymentInfoChange({ ...paymentInfo, mtnMerchantCode: e.target.value })} className="w-full border border-gray-300 rounded-md p-2" placeholder={t('mtn_merchant_code_placeholder', language)} />
+          <input type="text" value={typeof mtnMerchantCode === 'string' ? mtnMerchantCode : (paymentInfo.mtnMerchantCode || '')} onChange={e => setMtnMerchantCode ? setMtnMerchantCode(e.target.value) : onPaymentInfoChange({ ...paymentInfo, mtnMerchantCode: e.target.value })} className="w-full border border-gray-300 rounded-md p-2" placeholder={t('mtn_merchant_code_placeholder', language)} />
         </div>
         <div className="mb-4">
           <h4 className="text-md font-semibold text-gray-900 mb-2">{t('orange_merchant_code', language)}</h4>
-          <input type="text" value={paymentInfo.orangeMerchantCode || ''} onChange={e => onPaymentInfoChange({ ...paymentInfo, orangeMerchantCode: e.target.value })} className="w-full border border-gray-300 rounded-md p-2" placeholder={t('orange_merchant_code_placeholder', language)} />
+          <input type="text" value={typeof orangeMerchantCode === 'string' ? orangeMerchantCode : (paymentInfo.orangeMerchantCode || '')} onChange={e => setOrangeMerchantCode ? setOrangeMerchantCode(e.target.value) : onPaymentInfoChange({ ...paymentInfo, orangeMerchantCode: e.target.value })} className="w-full border border-gray-300 rounded-md p-2" placeholder={t('orange_merchant_code_placeholder', language)} />
         </div>
       </div>
 
       {/* Payment Links Section */}
       <div className="mb-10">
         <h3 className="text-lg font-bold text-gray-900 mb-4">{t('payment_link', language)}</h3>
-        <input type="text" value={paymentInfo.paymentLink || ''} onChange={e => onPaymentInfoChange({ ...paymentInfo, paymentLink: e.target.value })} className="w-full border border-gray-300 rounded-md p-2" placeholder={t('payment_link_placeholder', language)} />
+        <input type="text" value={typeof paymentLink === 'string' ? paymentLink : (paymentInfo.paymentLink || '')} onChange={e => setPaymentLink ? setPaymentLink(e.target.value) : onPaymentInfoChange({ ...paymentInfo, paymentLink: e.target.value })} className="w-full border border-gray-300 rounded-md p-2" placeholder={t('payment_link_placeholder', language)} />
       </div>
 
       {/* Delivery Fees Section */}

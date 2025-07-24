@@ -354,7 +354,19 @@ const ProfileSetup: React.FC = () => {
             {/* Payment Info Section */}
             {paymentInfoEnabled && (
               <div className="mt-8">
-                <PaymentSetup paymentInfo={paymentInfo} onPaymentInfoChange={setPaymentInfo} isRequired={false} deliveryFee={deliveryFee} onDeliveryFeeChange={setDeliveryFee} />
+                <PaymentSetup
+                  paymentInfo={paymentInfo}
+                  onPaymentInfoChange={setPaymentInfo}
+                  isRequired={false}
+                  deliveryFee={deliveryFee}
+                  onDeliveryFeeChange={setDeliveryFee}
+                  mtnMerchantCode={mtnMerchantCode}
+                  setMtnMerchantCode={setMtnMerchantCode}
+                  orangeMerchantCode={orangeMerchantCode}
+                  setOrangeMerchantCode={setOrangeMerchantCode}
+                  paymentLink={paymentLink}
+                  setPaymentLink={setPaymentLink}
+                />
               </div>
             )}
 

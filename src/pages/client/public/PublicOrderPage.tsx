@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { db } from '../../../firebase/config';
-import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, onSnapshot } from 'firebase/firestore';
 import PublicOrderContent from '../../../shared/public/PublicOrderContent';
 import { createOrder } from '../../../services/orderService';
 import { logActivity } from '../../../services/activityLogService';
@@ -14,14 +14,16 @@ const PublicOrderPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchRestaurantData = async () => {
-      if (!restaurantId) return;
+    if (!restaurantId) return;
+    // Listen for real-time updates to the restaurant document
+    const unsub = onSnapshot(doc(db, 'restaurants', restaurantId), (restaurantDoc) => {
+      if (restaurantDoc.exists()) {
+        setRestaurant({ id: restaurantDoc.id, ...restaurantDoc.data() });
+      }
+    });
+    // Fetch categories and menu items (these can remain as one-time fetches, or you can add onSnapshot for them too if needed)
+    const fetchData = async () => {
       try {
-        // Fetch restaurant details
-        const restaurantDoc = await getDoc(doc(db, 'restaurants', restaurantId));
-        if (restaurantDoc.exists()) {
-          setRestaurant({ id: restaurantDoc.id, ...restaurantDoc.data() });
-        }
         // Fetch categories
         const categoriesQuery = query(
           collection(db, 'categories'),
@@ -72,7 +74,8 @@ const PublicOrderPage: React.FC = () => {
         setLoading(false);
       }
     };
-    fetchRestaurantData();
+    fetchData();
+    return () => unsub();
   }, [restaurantId]);
 
   // Custom createOrder with activity log

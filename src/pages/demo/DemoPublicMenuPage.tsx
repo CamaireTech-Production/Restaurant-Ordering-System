@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { db } from '../../firebase/config';
-import { collection, query, where, getDocs, doc, getDoc, orderBy } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, onSnapshot } from 'firebase/firestore';
 import PublicMenuContent from '../../shared/public/PublicMenuContent';
 
 const DemoPublicMenuPage: React.FC = () => {
@@ -12,15 +12,16 @@ const DemoPublicMenuPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!demoId) return;
+    // Listen for real-time updates to the demo account document
+    const unsub = onSnapshot(doc(db, 'demoAccounts', demoId), (restaurantDoc) => {
+      if (restaurantDoc.exists()) {
+        setRestaurant({ id: restaurantDoc.id, ...restaurantDoc.data() });
+      }
+    });
+    // Fetch categories and menu items (these can remain as one-time fetches, or you can add onSnapshot for them too if needed)
     const fetchDemoData = async () => {
-      if (!demoId) return;
-      setLoading(true);
       try {
-        // Fetch demo account as restaurant
-        const demoDoc = await getDoc(doc(db, 'demoAccounts', demoId));
-        if (demoDoc.exists()) {
-          setRestaurant({ id: demoDoc.id, ...demoDoc.data() });
-        }
         // Fetch categories
         const categoriesQuery = query(
           collection(db, 'demoAccounts', demoId, 'categories'),
@@ -32,7 +33,6 @@ const DemoPublicMenuPage: React.FC = () => {
           ...(doc.data() as any),
           deleted: (doc.data() as any).deleted
         }));
-        // Filter categories and menu items for public view
         const filteredCategories = categoriesData.filter(
           cat => cat.status === 'active' && (cat.deleted === undefined || cat.deleted === false)
         );
@@ -59,12 +59,9 @@ const DemoPublicMenuPage: React.FC = () => {
             deleted: data.deleted
           };
         });
-        // Filter categories and menu items for public view
         const filteredMenuItems = menuItemsData.filter(
           item => item.status === 'active' && (item.deleted === undefined || item.deleted === false)
         );
-        console.log('Filtered demo categories:', filteredCategories);
-        console.log('Filtered demo menuItems:', filteredMenuItems);
         setMenuItems(filteredMenuItems);
       } catch (error) {
         setCategories([]);
@@ -74,6 +71,7 @@ const DemoPublicMenuPage: React.FC = () => {
       }
     };
     fetchDemoData();
+    return () => unsub();
   }, [demoId]);
 
   return (

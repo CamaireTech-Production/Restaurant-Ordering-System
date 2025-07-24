@@ -32,6 +32,10 @@ const DemoProfileEdit: React.FC = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [phoneError, setPhoneError] = useState('');
   const [currency, setCurrency] = useState(demoAccount?.currency || 'XAF');
+  const [deliveryFee, setDeliveryFee] = useState(demoAccount?.deliveryFee || 0);
+  const [mtnMerchantCode, setMtnMerchantCode] = useState(demoAccount?.paymentInfo?.mtnMerchantCode || '');
+  const [orangeMerchantCode, setOrangeMerchantCode] = useState(demoAccount?.paymentInfo?.orangeMerchantCode || '');
+  const [paymentLink, setPaymentLink] = useState(demoAccount?.paymentInfo?.paymentLink || '');
 
   useEffect(() => {
     if (demoAccount) {
@@ -39,6 +43,10 @@ const DemoProfileEdit: React.FC = () => {
       setPhone(demoAccount.phone || '');
       setPaymentInfo(demoAccount.paymentInfo || {});
       setCurrency(demoAccount.currency || 'XAF');
+      setDeliveryFee(demoAccount.deliveryFee || 0);
+      setMtnMerchantCode(demoAccount.paymentInfo?.mtnMerchantCode || '');
+      setOrangeMerchantCode(demoAccount.paymentInfo?.orangeMerchantCode || '');
+      setPaymentLink(demoAccount.paymentInfo?.paymentLink || '');
     }
   }, [demoAccount]);
 
@@ -129,8 +137,14 @@ const DemoProfileEdit: React.FC = () => {
     try {
       await updateDoc(doc(db, 'demoAccounts', currentUser.uid), {
         phone: phone,
-        paymentInfo,
+        paymentInfo: {
+          ...paymentInfo,
+          mtnMerchantCode,
+          orangeMerchantCode,
+          paymentLink,
+        },
         currency,
+        deliveryFee,
         updatedAt: serverTimestamp()
       });
       // Log activity
@@ -287,6 +301,15 @@ const DemoProfileEdit: React.FC = () => {
                     paymentInfo={paymentInfo}
                     onPaymentInfoChange={setPaymentInfo}
                     isRequired={false}
+                    deliveryFee={deliveryFee}
+                    onDeliveryFeeChange={setDeliveryFee}
+                    // Keep merchant codes and payment link in sync
+                    mtnMerchantCode={mtnMerchantCode}
+                    setMtnMerchantCode={setMtnMerchantCode}
+                    orangeMerchantCode={orangeMerchantCode}
+                    setOrangeMerchantCode={setOrangeMerchantCode}
+                    paymentLink={paymentLink}
+                    setPaymentLink={setPaymentLink}
                   />
                 </div>
 
