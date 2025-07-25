@@ -302,6 +302,7 @@ const translations: Record<string, Record<string, string>> = {
     'dish_count': 'Dishes',
     'final_total_order': 'Final Total',
     'customer_info': 'Customer Info',
+    'order_now': 'Order Now',
   },
   fr: {
     'restaurant_management': 'Gestion du restaurant',
@@ -606,6 +607,7 @@ const translations: Record<string, Record<string, string>> = {
     'dish_count': 'Plats',
     'final_total_order': 'Total final',
     'customer_info': 'Infos client',
+    'order_now': 'Commander',
   },
 };
 

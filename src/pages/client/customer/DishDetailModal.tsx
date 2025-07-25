@@ -3,6 +3,7 @@ import designSystem from '../../../designSystem';
 import { Dish as MenuItem } from '../../../types/index';
 import { t } from '../../../utils/i18n';
 import { useLanguage } from '../../../contexts/LanguageContext';
+import { getCurrencySymbol } from '../../../data/currencies';
 
 interface DishDetailModalProps {
   isOpen: boolean;
@@ -13,10 +14,12 @@ interface DishDetailModalProps {
   incrementItem?: (itemId: string) => void;
   decrementItem?: (itemId: string) => void;
   categoryName?: string;
+  currencyCode?: string;
 }
 
-export default function DishDetailModal({ isOpen, dish, onClose, addToCart, inCart, incrementItem, decrementItem, categoryName }: DishDetailModalProps) {
+export default function DishDetailModal({ isOpen, dish, onClose, addToCart, inCart, incrementItem, decrementItem, categoryName, currencyCode }: DishDetailModalProps) {
   const { language } = useLanguage();
+  const currencySymbol = getCurrencySymbol(currencyCode || 'XAF') || 'FCFA';
   if (!dish) return null;
 
   return (
@@ -51,7 +54,7 @@ export default function DishDetailModal({ isOpen, dish, onClose, addToCart, inCa
       )}
       <p className="text-gray-700 mb-4">{dish.description || t('no_description_available', language)}</p>
       <div className="flex justify-between items-center mb-4">
-        <span className="font-medium text-lg">{dish.price.toLocaleString()} FCFA</span>
+        <span className="font-medium text-lg">{dish.price.toLocaleString()} {currencySymbol}</span>
         {addToCart && (
           <div>
             {!inCart ? (
@@ -59,7 +62,7 @@ export default function DishDetailModal({ isOpen, dish, onClose, addToCart, inCa
                 onClick={() => addToCart(dish)}
                 className="inline-flex justify-center items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
               >
-                Add to Cart
+                {t('order_now', language)}
               </button>
             ) : (
               <div className="flex items-center gap-2">

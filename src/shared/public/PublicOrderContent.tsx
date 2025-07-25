@@ -617,7 +617,7 @@ const PublicOrderContent: React.FC<PublicOrderContentProps> = ({ restaurant, cat
                                       className="inline-flex justify-center items-center px-3 py-2 mt-4 border border-transparent rounded-md shadow-sm text-xs sm:text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
                                     >
                                       <PlusCircle size={14} className="mr-2" />
-                                      {t('add_to_cart', language)}
+                                      {t('order_now', language)}
                                     </button>
                                   ) : (
                                     <div className="flex items-center gap-1">
@@ -685,7 +685,7 @@ const PublicOrderContent: React.FC<PublicOrderContentProps> = ({ restaurant, cat
                                   className="inline-flex justify-center items-center px-3 py-2 mt-4 border border-transparent rounded-md shadow-sm text-xs sm:text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
                                 >
                                   <PlusCircle size={14} className="mr-2" />
-                                  {t('add_to_cart', language)}
+                                  {t('order_now', language)}
                                 </button>
                               ) : (
                                 <div className="flex items-center gap-1">
@@ -856,6 +856,7 @@ const PublicOrderContent: React.FC<PublicOrderContentProps> = ({ restaurant, cat
           incrementItem={incrementItem}
           decrementItem={decrementItem}
           categoryName={selectedDish ? (categories.find(cat => cat.id === selectedDish.categoryId)?.title || '') : ''}
+          currencyCode={restaurant?.currency}
         />
       </div>
     </>
