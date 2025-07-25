@@ -14,23 +14,27 @@ const DemoCategoryManagement: React.FC = () => {
   const { demoAccount, loading } = useDemoAuth();
   const isDemoUser = useIsDemoUser();
   const [categories, setCategories] = useState<any[]>([]);
+  const [menuItems, setMenuItems] = useState<any[]>([]);
   const [catLoading, setCatLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchCategories = async () => {
+    const fetchCategoriesAndMenuItems = async () => {
       if (!demoAccount?.id) return;
       try {
         const categoriesSnapshot = await getDocs(collection(db, 'demoAccounts', demoAccount.id, 'categories'));
         const categoriesData = categoriesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         setCategories(categoriesData);
+        const menuItemsSnapshot = await getDocs(collection(db, 'demoAccounts', demoAccount.id, 'menuItems'));
+        const menuItemsData = menuItemsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setMenuItems(menuItemsData.filter((item: any) => !item.deleted));
       } catch (error) {
-        toast.error('Failed to load categories');
+        toast.error('Failed to load categories or menu items');
       } finally {
         setCatLoading(false);
       }
     };
-    fetchCategories();
+    fetchCategoriesAndMenuItems();
   }, [demoAccount]);
 
   useEffect(() => {
@@ -118,6 +122,20 @@ const DemoCategoryManagement: React.FC = () => {
   const handleDelete = async (categoryId: string) => {
     if (!demoAccount?.id) return;
     try {
+      // Check for subcategories
+      const subcategories = categories.filter(cat => cat.parentCategoryId === categoryId && !cat.deleted);
+      if (subcategories.length > 0) {
+        toast.error('Cannot delete category with subcategories. Please delete or reassign subcategories first.');
+        await logActivity({
+          userId: demoAccount.id,
+          userEmail: demoAccount.email,
+          action: 'demo_delete_category_failed_subcategories',
+          entityType: 'category',
+          entityId: categoryId,
+          details: { subcategoryCount: subcategories.length },
+        });
+        return;
+      }
       await updateDoc(doc(db, 'demoAccounts', demoAccount.id, 'categories', categoryId), {
         deleted: true,
         updatedAt: serverTimestamp(),
@@ -131,6 +149,18 @@ const DemoCategoryManagement: React.FC = () => {
         entityType: 'category',
         entityId: categoryId,
       });
+      // Optionally, recursively soft-delete all subcategories (uncomment to enable)
+      // for (const subcat of subcategories) {
+      //   await updateDoc(doc(db, 'demoAccounts', demoAccount.id, 'categories', subcat.id), { deleted: true, updatedAt: serverTimestamp() });
+      //   await logActivity({
+      //     userId: demoAccount.id,
+      //     userEmail: demoAccount.email,
+      //     action: 'demo_delete_subcategory',
+      //     entityType: 'category',
+      //     entityId: subcat.id,
+      //     details: { parentCategoryId: categoryId },
+      //   });
+      // }
     } catch (error) {
       toast.error('Failed to delete category');
     }
@@ -179,6 +209,7 @@ const DemoCategoryManagement: React.FC = () => {
         onDelete={handleDelete}
         onToggleStatus={handleToggleStatus}
         isDemoUser={isDemoUser}
+        menuItems={menuItems}
       />
     </DashboardLayout>
   );

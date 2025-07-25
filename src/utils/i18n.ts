@@ -296,6 +296,10 @@ const translations: Record<string, Record<string, string>> = {
     'no_contacts_found': 'No contacts found.',
     'bulk_whatsapp_placeholder': 'Bulk WhatsApp sending coming soon!',
     'loading': 'Loading',
+    'parent_category': 'Parent Category',
+    'none': 'None',
+    'parent_category_hint': 'Select a parent category to make this a subcategory, or choose None for a main category.',
+    'dish_count': 'Dishes',
   },
   fr: {
     'restaurant_management': 'Gestion du restaurant',
@@ -594,6 +598,10 @@ const translations: Record<string, Record<string, string>> = {
     'no_contacts_found': 'Aucun contact trouvé.',
     'bulk_whatsapp_placeholder': 'Envoi WhatsApp en masse bientôt disponible !',
     'loading': 'Chargement',
+    'parent_category': 'Catégorie parente',
+    'none': 'Aucune',
+    'parent_category_hint': 'Sélectionnez une catégorie parente pour créer une sous-catégorie, ou choisissez Aucune pour une catégorie principale.',
+    'dish_count': 'Plats',
   },
 };
 

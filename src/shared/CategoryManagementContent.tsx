@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { PlusCircle, Edit, Trash2, Eye, EyeOff, Search, X, Layers, ArrowUp, ArrowDown, ArrowUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Eye, EyeOff, Search, X, Layers, ArrowUp, ArrowDown, ArrowUpDown, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
 import Modal from '../components/ui/Modal';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import designSystem from '../designSystem';
@@ -17,11 +17,12 @@ interface CategoryManagementContentProps {
   onDelete: (categoryId: string) => void;
   onToggleStatus: (category: any) => void;
   isDemoUser: boolean;
+  menuItems?: any[];
 }
 
 
 
-const initialFormState = { title: '', status: 'active', order: 0 };
+const initialFormState = { title: '', status: 'active', order: 0, parentCategoryId: '' };
 
 const CategoryManagementContent: React.FC<CategoryManagementContentProps> = ({
   categories,
@@ -30,6 +31,7 @@ const CategoryManagementContent: React.FC<CategoryManagementContentProps> = ({
   onEdit,
   onDelete,
   onToggleStatus,
+  menuItems,
 }) => {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -78,10 +80,47 @@ const CategoryManagementContent: React.FC<CategoryManagementContentProps> = ({
     });
   }, [filteredCategories, sortField, sortDirection]);
 
-  const totalPages = Math.ceil(sortedCategories.length / itemsPerPage);
+  // Accordion state for expanded main category
+  const [expandedCategoryId, setExpandedCategoryId] = useState<string | null>(null);
+
+  // Main categories for pagination
+  const mainCategories = sortedCategories.filter(cat => !cat.parentCategoryId);
+  const totalPages = Math.ceil(mainCategories.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const currentItems = sortedCategories.slice(startIndex, endIndex);
+  const currentMainCategories = mainCategories.slice(startIndex, endIndex);
+
+  // Helper: build tree structure for categories
+  const buildCategoryTree = (mainCats: any[], allCats: any[]) => {
+    const map = new Map();
+    allCats.forEach(cat => map.set(cat.id, { ...cat, children: [] }));
+    mainCats.forEach(main => {
+      map.set(main.id, { ...main, children: [] });
+    });
+    map.forEach(cat => {
+      if (cat.parentCategoryId && map.has(cat.parentCategoryId)) {
+        map.get(cat.parentCategoryId).children.push(cat);
+      }
+    });
+    return currentMainCategories.map(main => map.get(main.id));
+  };
+  const categoryTree = buildCategoryTree(currentMainCategories, sortedCategories);
+
+  // Helper to count dishes for a category
+  const getDishCount = (catId: string) => {
+    if (!menuItems) return 0;
+    // If parent category, sum its own dishes and all its subcategories' dishes
+    const cat = categories.find((c: any) => c.id === catId);
+    if (cat && !cat.parentCategoryId) {
+      // Parent: sum own + all subcategories
+      const own = menuItems.filter(item => item.categoryId === catId).length;
+      const subcats = categories.filter((c: any) => c.parentCategoryId === catId);
+      const subcatDishes = subcats.reduce((sum: number, subcat: any) => sum + menuItems.filter(item => item.categoryId === subcat.id).length, 0);
+      return own + subcatDishes;
+    }
+    // Subcategory: just its own
+    return menuItems.filter(item => item.categoryId === catId).length;
+  };
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -166,6 +205,7 @@ const CategoryManagementContent: React.FC<CategoryManagementContentProps> = ({
       title: category.title,
       status: category.status,
       order: category.order || 0,
+      parentCategoryId: category.parentCategoryId || '',
     });
     setIsModalOpen(true);
   };
@@ -239,8 +279,8 @@ const CategoryManagementContent: React.FC<CategoryManagementContentProps> = ({
           <div className="flex items-center space-x-4">
             <p className="text-sm text-gray-700">
               {t('showing_results', language)} <span className="font-medium">{startIndex + 1}</span> to{' '}
-              <span className="font-medium">{Math.min(endIndex, sortedCategories.length)}</span>{' '}
-              {t('of_results', language)} <span className="font-medium">{sortedCategories.length}</span>
+              <span className="font-medium">{Math.min(endIndex, mainCategories.length)}</span>{' '}
+              {t('of_results', language)} <span className="font-medium">{mainCategories.length}</span>
             </p>
             <div className="flex items-center space-x-2">
               <label htmlFor="itemsPerPage" className="text-sm text-gray-700">{t('items_per_page', language)}</label>
@@ -298,6 +338,9 @@ const CategoryManagementContent: React.FC<CategoryManagementContentProps> = ({
                   )}
                 </button>
               </th>
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: designSystem.colors.text }}>
+                {t('dish_count', language)}
+              </th>
               <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: designSystem.colors.text }}>{t('status_column', language)}</th>
               <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: designSystem.colors.text }}>{t('actions_column', language)}</th>
             </tr>
@@ -309,28 +352,46 @@ const CategoryManagementContent: React.FC<CategoryManagementContentProps> = ({
                   <LoadingSpinner size={40} />
                 </td>
               </tr>
-            ) : currentItems.length === 0 ? (
+            ) : currentMainCategories.length === 0 ? (
               <tr>
                 <td colSpan={4} className="px-6 py-10 text-center" style={{ color: designSystem.colors.text }}>
                   {visibleCategories.length === 0 ? t('no_categories_found', language) : t('no_categories_match', language)}
                 </td>
               </tr>
             ) : (
-              currentItems.map((category) => (
-                <tr key={category.id} style={{ background: designSystem.colors.white }} className="hover:bg-gray-50">
+              // Render tree structure with accordion
+              categoryTree.map((category) => (
+                <React.Fragment key={category.id}>
+                  <tr
+                    style={{ background: designSystem.colors.white, cursor: category.children.length > 0 ? 'pointer' : 'default' }}
+                    className={`hover:bg-gray-50 ${expandedCategoryId === category.id ? 'bg-gray-50' : ''}`}
+                    onClick={() => setExpandedCategoryId(expandedCategoryId === category.id ? null : category.id)}
+                  >
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <div className="flex-shrink-0 h-10 w-10 flex items-center justify-center rounded-full" style={{ background: designSystem.colors.statusDefaultBg }}>
                         <Layers size={20} style={{ color: designSystem.colors.secondary }} />
                       </div>
-                      <div className="ml-4">
+                        <div className="ml-4 flex items-center gap-2">
                         <div className="text-sm font-medium" style={{ color: designSystem.colors.primary }}>{category.title}</div>
-                      </div>
+                          {category.children.length > 0 && (
+                            <span className="ml-2 flex items-center">
+                              {expandedCategoryId === category.id ? (
+                                <ChevronDown size={18} style={{ color: designSystem.colors.secondary }} />
+                              ) : (
+                                <ChevronRight size={18} style={{ color: designSystem.colors.secondary }} />
+                              )}
+                            </span>
+                          )}
+                        </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm" style={{ color: designSystem.colors.primary }}>{category.order || 0}</div>
                   </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm" style={{ color: designSystem.colors.primary }}>{getDishCount(category.id)}</div>
+                    </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
                       className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
@@ -345,21 +406,78 @@ const CategoryManagementContent: React.FC<CategoryManagementContentProps> = ({
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div className="flex justify-end space-x-2">
                       <button
-                        onClick={() => onToggleStatus(category)}
+                          onClick={e => { e.stopPropagation(); onToggleStatus(category); }}
                         title={category.status === 'active' ? t('deactivate', language) : t('activate', language)}
                         style={{ color: designSystem.colors.secondary }}
                       >
                         {category.status === 'active' ? <EyeOff size={18} /> : <Eye size={18} />}
                       </button>
                       <button
-                        onClick={() => openEditModal(category)}
+                          onClick={e => { e.stopPropagation(); openEditModal(category); }}
+                          title={t('edit', language)}
+                          style={{ color: designSystem.colors.secondary }}
+                        >
+                          <Edit size={18} />
+                        </button>
+                        <button
+                          onClick={e => { e.stopPropagation(); setCategoryToDelete(category); setDeleteConfirmOpen(true); }}
+                          title={t('delete', language)}
+                          style={{ color: designSystem.colors.secondary }}
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                  {/* Accordion: Render subcategories only if expanded */}
+                  {expandedCategoryId === category.id && category.children && category.children.map((subcat: any) => (
+                    <tr key={subcat.id} style={{ background: designSystem.colors.white }} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center ml-8">
+                          <span className="mr-2">└</span>
+                          <div className="flex-shrink-0 h-8 w-8 flex items-center justify-center rounded-full" style={{ background: designSystem.colors.statusDefaultBg }}>
+                            <Layers size={18} style={{ color: designSystem.colors.secondary }} />
+                          </div>
+                          <div className="ml-3">
+                            <div className="text-sm font-medium" style={{ color: designSystem.colors.primary }}>{subcat.title}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm" style={{ color: designSystem.colors.primary }}>{subcat.order || 0}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm" style={{ color: designSystem.colors.primary }}>{getDishCount(subcat.id)}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span
+                          className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
+                          style={{
+                            background: subcat.status === 'active' ? designSystem.colors.statusReadyBg : designSystem.colors.statusPendingBg,
+                            color: subcat.status === 'active' ? designSystem.colors.statusReadyText : designSystem.colors.statusPendingText,
+                          }}
+                        >
+                          {subcat.status === 'active' ? t('active', language) : t('inactive', language)}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <div className="flex justify-end space-x-2">
+                          <button
+                            onClick={e => { e.stopPropagation(); onToggleStatus(subcat); }}
+                            title={subcat.status === 'active' ? t('deactivate', language) : t('activate', language)}
+                            style={{ color: designSystem.colors.secondary }}
+                          >
+                            {subcat.status === 'active' ? <EyeOff size={18} /> : <Eye size={18} />}
+                          </button>
+                          <button
+                            onClick={e => { e.stopPropagation(); openEditModal(subcat); }}
                         title={t('edit', language)}
                         style={{ color: designSystem.colors.secondary }}
                       >
                         <Edit size={18} />
                       </button>
                       <button
-                        onClick={() => { setCategoryToDelete(category); setDeleteConfirmOpen(true); }}
+                            onClick={e => { e.stopPropagation(); setCategoryToDelete(subcat); setDeleteConfirmOpen(true); }}
                         title={t('delete', language)}
                         style={{ color: designSystem.colors.secondary }}
                       >
@@ -368,6 +486,8 @@ const CategoryManagementContent: React.FC<CategoryManagementContentProps> = ({
                     </div>
                   </td>
                 </tr>
+                  ))}
+                </React.Fragment>
               ))
             )}
           </tbody>
@@ -380,8 +500,8 @@ const CategoryManagementContent: React.FC<CategoryManagementContentProps> = ({
           <div className="flex items-center space-x-4">
             <p className="text-sm text-gray-700">
               {t('showing_results', language)} <span className="font-medium">{startIndex + 1}</span> to{' '}
-              <span className="font-medium">{Math.min(endIndex, sortedCategories.length)}</span>{' '}
-              {t('of_results', language)} <span className="font-medium">{sortedCategories.length}</span>
+              <span className="font-medium">{Math.min(endIndex, mainCategories.length)}</span>{' '}
+              {t('of_results', language)} <span className="font-medium">{mainCategories.length}</span>
             </p>
             <div className="flex items-center space-x-2">
               <label htmlFor="itemsPerPageBottom" className="text-sm text-gray-700">{t('items_per_page', language)}</label>
@@ -447,6 +567,25 @@ const CategoryManagementContent: React.FC<CategoryManagementContentProps> = ({
               className="mt-1 block w-full py-3 px-3 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
             />
             <p className="mt-1 text-xs text-gray-500">{t('display_order_hint', language)}</p>
+          </div>
+          <div>
+            <label htmlFor="parentCategoryId" className="block text-sm font-medium text-gray-700">{t('parent_category', language)}</label>
+            <select
+              id="parentCategoryId"
+              name="parentCategoryId"
+              value={formData.parentCategoryId}
+              onChange={handleInputChange}
+              className="mt-1 block w-full py-3 px-3 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
+            >
+              <option value="">{t('none', language)}</option>
+              {visibleCategories
+                .filter(cat => !editingCategory || cat.id !== editingCategory.id)
+                .filter(cat => !cat.parentCategoryId)
+                .map(cat => (
+                  <option key={cat.id} value={cat.id}>{cat.title}</option>
+                ))}
+            </select>
+            <p className="mt-1 text-xs text-gray-500">{t('parent_category_hint', language)}</p>
           </div>
           <div className="flex justify-end gap-2 pt-2">
             <button

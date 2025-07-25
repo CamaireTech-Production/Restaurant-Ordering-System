@@ -58,9 +58,9 @@ export interface Category {
   title: string;
   status: 'active' | 'inactive';
   restaurantId: string;
-  order: number;
-  createdAt: any;
-  updatedAt?: any;
+  order?: number;
+  deleted?: boolean;
+  parentCategoryId?: string | null;
 }
 
 // Table Types
