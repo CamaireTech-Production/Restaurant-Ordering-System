@@ -617,7 +617,7 @@ const PublicOrderContent: React.FC<PublicOrderContentProps> = ({ restaurant, cat
                                       className="inline-flex justify-center items-center px-3 py-2 mt-4 border border-transparent rounded-md shadow-sm text-xs sm:text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
                                     >
                                       <PlusCircle size={14} className="mr-2" />
-                                      {t('add_to_cart', language)}
+                                      {t('order_now', language)}
                                     </button>
                                   ) : (
                                     <div className="flex items-center gap-1">
@@ -685,7 +685,7 @@ const PublicOrderContent: React.FC<PublicOrderContentProps> = ({ restaurant, cat
                                   className="inline-flex justify-center items-center px-3 py-2 mt-4 border border-transparent rounded-md shadow-sm text-xs sm:text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
                                 >
                                   <PlusCircle size={14} className="mr-2" />
-                                  {t('add_to_cart', language)}
+                                  {t('order_now', language)}
                                 </button>
                               ) : (
                                 <div className="flex items-center gap-1">
@@ -753,7 +753,10 @@ const PublicOrderContent: React.FC<PublicOrderContentProps> = ({ restaurant, cat
               <p className="mt-1 text-sm text-gray-500">{t('add_items_to_start_order', language)}</p>
             </div>
           ) : showCheckout ? (
-            <form onSubmit={e => { e.preventDefault(); handlePlaceOrder(); }}>
+            <form onSubmit={handlePlaceOrder} className="space-y-4">
+              <div className="mb-2 text-gray-600 text-sm">
+                {t('checkout_instructions', language)}
+              </div>
               <button type="button" onClick={() => setShowCheckout(false)} className="mb-4 text-primary hover:underline">&larr; {t('back_to_cart', language)}</button>
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">{t('customer_name', language)} ({t('optional', language)})</label>
@@ -856,6 +859,7 @@ const PublicOrderContent: React.FC<PublicOrderContentProps> = ({ restaurant, cat
           incrementItem={incrementItem}
           decrementItem={decrementItem}
           categoryName={selectedDish ? (categories.find(cat => cat.id === selectedDish.categoryId)?.title || '') : ''}
+          currencyCode={restaurant?.currency}
         />
       </div>
     </>

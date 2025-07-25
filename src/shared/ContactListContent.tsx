@@ -5,6 +5,9 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { Download, Search, Users, MessageCircle } from 'lucide-react';
 import Papa from 'papaparse';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
+import Modal from '../components/ui/Modal';
+import designSystem from '../designSystem';
+import toast from 'react-hot-toast';
 
 interface ContactListContentProps {
   contacts: Contact[];
@@ -18,6 +21,9 @@ const ContactListContent: React.FC<ContactListContentProps> = ({ contacts, loadi
   const [sortDir, setSortDir] = useState<'desc' | 'asc'>('desc');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [massMsgOpen, setMassMsgOpen] = useState(false);
+  const [selectedContacts, setSelectedContacts] = useState<string[]>([]);
+  const [message, setMessage] = useState('');
 
   // Filter and sort
   const filteredContacts = useMemo(() => {
@@ -105,10 +111,29 @@ const ContactListContent: React.FC<ContactListContentProps> = ({ contacts, loadi
     URL.revokeObjectURL(url);
   };
 
-  // Bulk WhatsApp placeholder
   const handleBulkWhatsApp = () => {
-    alert(t('bulk_whatsapp_placeholder', language));
+    setMassMsgOpen(true);
   };
+
+  const handleContactToggle = (phone: string) => {
+    setSelectedContacts(prev => prev.includes(phone) ? prev.filter(p => p !== phone) : [...prev, phone]);
+  };
+
+  const handleSendMassMessage = () => {
+    setMassMsgOpen(false);
+    setSelectedContacts([]);
+    setMessage('');
+    toast.success(t('mass_message_sent_placeholder', language));
+  };
+
+  // Mass message modal state for search
+  const [contactSearch, setContactSearch] = useState('');
+  const filteredModalContacts = useMemo(() => {
+    const s = contactSearch.toLowerCase();
+    return contacts.filter(c =>
+      c.name?.toLowerCase().includes(s) || c.phone.includes(s)
+    );
+  }, [contacts, contactSearch]);
 
   return (
     <div className="shadow rounded-lg overflow-hidden" style={{ background: '#fff' }}>
@@ -190,6 +215,65 @@ const ContactListContent: React.FC<ContactListContentProps> = ({ contacts, loadi
           </div>
         </div>
       </div>
+      <Modal isOpen={massMsgOpen} onClose={() => setMassMsgOpen(false)} title={t('send_bulk_whatsapp', language)} className="max-w-2xl">
+        <div className="mb-2 text-gray-600 text-sm">{t('mass_message_instructions', language)}</div>
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-xs text-gray-500">{t('selected_contacts', language)}: <span className="font-semibold text-primary">{selectedContacts.length}</span></span>
+          <input
+            type="text"
+            value={contactSearch}
+            onChange={e => setContactSearch(e.target.value)}
+            placeholder={t('search_contacts_placeholder', language)}
+            className="ml-2 px-4 py-2 border border-gray-200 rounded text-sm focus:ring-primary focus:border-primary"
+            style={{ minWidth: 200 }}
+          />
+        </div>
+        <div className="overflow-y-auto border rounded-md mb-6 custom-thin-scrollbar" style={{ maxHeight: '220px' }}>
+          {filteredModalContacts.map((c) => (
+            <div
+              key={c.phone}
+              className={`flex items-center px-3 py-2 cursor-pointer border-b last:border-b-0 ${selectedContacts.includes(c.phone) ? 'border-l-4' : ''}`}
+              style={selectedContacts.includes(c.phone)
+                ? {
+                    background: designSystem.colors.secondary + '10',
+                    borderLeft: `4px solid ${designSystem.colors.secondary}`,
+                    borderColor: designSystem.colors.secondary
+                  }
+                : {}}
+              onClick={() => handleContactToggle(c.phone)}
+            >
+              <input
+                type="checkbox"
+                checked={selectedContacts.includes(c.phone)}
+                onChange={() => handleContactToggle(c.phone)}
+                className="mr-3 accent-primary"
+                onClick={e => e.stopPropagation()}
+              />
+              <span className={`font-medium ${selectedContacts.includes(c.phone) ? 'text-primary' : ''}`}>{c.name || '-'}</span>
+              <span className="ml-2 text-xs text-gray-500">{c.phone}</span>
+              {c.location && <span className="ml-2 text-xs text-gray-400">({c.location})</span>}
+            </div>
+          ))}
+        </div>
+        <div className="text-gray-600 text-xs mb-2 pt-8">
+          {t('mass_message_compose_instructions', language)}
+        </div>
+        <textarea
+          className="w-full border border-gray-300 rounded-md p-2 mb-2 focus:ring-primary focus:border-primary"
+          rows={6}
+          value={message}
+          onChange={e => setMessage(e.target.value)}
+          placeholder={t('mass_message_placeholder', language)}
+        />
+        <button
+          className="w-full py-2 px-4 rounded-md bg-primary text-white font-semibold hover:bg-primary-dark transition-colors"
+          style={{ background: designSystem.colors.primary }}
+          onClick={handleSendMassMessage}
+          disabled={selectedContacts.length === 0 || !message.trim()}
+        >
+          {t('send_message', language)}
+        </button>
+      </Modal>
     </div>
   );
 };

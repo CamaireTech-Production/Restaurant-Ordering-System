@@ -216,6 +216,7 @@ const OrderManagementContent: React.FC<OrderManagementContentProps> = ({
                   )}
                   <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: designSystem.colors.text }}>{t('status_order', language)}</th>
                   <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: designSystem.colors.text }}>{t('total_order', language)}</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: designSystem.colors.text }}>{t('final_total_order', language) || 'Final Total'}</th>
                   <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: designSystem.colors.text }}>{t('customer_info', language)}</th>
                   <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer select-none" style={{ color: designSystem.colors.text }} onClick={handleSortDate}>
                     {t('date_order', language)}
@@ -270,6 +271,21 @@ const OrderManagementContent: React.FC<OrderManagementContentProps> = ({
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm" style={{ color: designSystem.colors.primary }}>
                         {order.totalAmount.toLocaleString()} {currencySymbol}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-bold" style={{ color: designSystem.colors.primary }}>
+                        {/* Show both MTN and Orange final totals if both fees are present */}
+                        {order.mtnFee !== undefined && order.mtnFee !== null && (
+                          <div>MTN: {(order.totalAmount + (order.mtnFee || 0) + (order.deliveryFee || 0)).toLocaleString()} {currencySymbol}</div>
+                        )}
+                        {order.orangeFee !== undefined && order.orangeFee !== null && (
+                          <div>Orange: {(order.totalAmount + (order.orangeFee || 0) + (order.deliveryFee || 0)).toLocaleString()} {currencySymbol}</div>
+                        )}
+                        {/* If no fees, just show totalAmount */}
+                        {order.mtnFee == null && order.orangeFee == null && (
+                          <div>{order.totalAmount.toLocaleString()} {currencySymbol}</div>
+                        )}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -453,6 +469,18 @@ const OrderManagementContent: React.FC<OrderManagementContentProps> = ({
                   <td colSpan={3} className="px-4 py-2 text-right" style={{ color: designSystem.colors.primary }}>{t('delivery_fee', language)}</td>
                   <td className="px-4 py-2 text-right" style={{ color: designSystem.colors.primary }}>
                     {viewOrder.deliveryFee !== undefined && viewOrder.deliveryFee !== null ? viewOrder.deliveryFee.toLocaleString() : '-'} {currencySymbol}
+                  </td>
+                </tr>
+                <tr>
+                  <td colSpan={3} className="px-4 py-2 text-right font-bold" style={{ color: designSystem.colors.primary }}>{t('final_total_order', language) || 'Final Total'} (MTN)</td>
+                  <td className="px-4 py-2 text-right font-bold" style={{ color: designSystem.colors.primary }}>
+                    {(viewOrder.totalAmount + (viewOrder.mtnFee || 0) + (viewOrder.deliveryFee || 0)).toLocaleString()} {currencySymbol}
+                  </td>
+                </tr>
+                <tr>
+                  <td colSpan={3} className="px-4 py-2 text-right font-bold" style={{ color: designSystem.colors.primary }}>{t('final_total_order', language) || 'Final Total'} (Orange)</td>
+                  <td className="px-4 py-2 text-right font-bold" style={{ color: designSystem.colors.primary }}>
+                    {(viewOrder.totalAmount + (viewOrder.orangeFee || 0) + (viewOrder.deliveryFee || 0)).toLocaleString()} {currencySymbol}
                   </td>
                 </tr>
               </tfoot>
