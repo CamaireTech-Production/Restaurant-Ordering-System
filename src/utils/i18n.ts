@@ -304,6 +304,11 @@ const translations: Record<string, Record<string, string>> = {
     'customer_info': 'Customer Info',
     'order_now': 'Order Now',
     'checkout_instructions': 'Please enter your information so we can confirm your order and contact you for delivery or pickup.',
+    'mass_message_instructions': 'Select contacts to send a message. Selected contacts will be highlighted.',
+    'mass_message_compose_instructions': 'You can use {name} for the contact name, {phone} for the phone number, and {location} for the location in your message.',
+    'mass_message_placeholder': 'Type your message here... Example: Hello {name}, your order is ready!',
+    'mass_message_sent_placeholder': 'Message sent (simulation).',
+    'send_message': 'Send Message',
   },
   fr: {
     'restaurant_management': 'Gestion du restaurant',
@@ -610,6 +615,11 @@ const translations: Record<string, Record<string, string>> = {
     'customer_info': 'Infos client',
     'order_now': 'Commander',
     'checkout_instructions': 'Veuillez entrer vos informations afin que nous puissions confirmer votre commande et vous contacter pour la livraison ou le retrait.',
+    'mass_message_instructions': 'Sélectionnez les contacts à qui envoyer un message. Les contacts sélectionnés seront surlignés.',
+    'mass_message_compose_instructions': 'Vous pouvez utiliser {name} pour le nom, {phone} pour le numéro, et {location} pour le lieu dans votre message.',
+    'mass_message_placeholder': 'Tapez votre message ici... Exemple : Bonjour {name}, votre commande est prête !',
+    'mass_message_sent_placeholder': 'Message envoyé (simulation).',
+    'send_message': 'Envoyer le message',
   },
 };
 
