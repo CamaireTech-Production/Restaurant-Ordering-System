@@ -303,6 +303,7 @@ const translations: Record<string, Record<string, string>> = {
     'final_total_order': 'Final Total',
     'customer_info': 'Customer Info',
     'order_now': 'Order Now',
+    'checkout_instructions': 'Please enter your information so we can confirm your order and contact you for delivery or pickup.',
   },
   fr: {
     'restaurant_management': 'Gestion du restaurant',
@@ -608,6 +609,7 @@ const translations: Record<string, Record<string, string>> = {
     'final_total_order': 'Total final',
     'customer_info': 'Infos client',
     'order_now': 'Commander',
+    'checkout_instructions': 'Veuillez entrer vos informations afin que nous puissions confirmer votre commande et vous contacter pour la livraison ou le retrait.',
   },
 };
 

@@ -753,7 +753,10 @@ const PublicOrderContent: React.FC<PublicOrderContentProps> = ({ restaurant, cat
               <p className="mt-1 text-sm text-gray-500">{t('add_items_to_start_order', language)}</p>
             </div>
           ) : showCheckout ? (
-            <form onSubmit={e => { e.preventDefault(); handlePlaceOrder(); }}>
+            <form onSubmit={handlePlaceOrder} className="space-y-4">
+              <div className="mb-2 text-gray-600 text-sm">
+                {t('checkout_instructions', language)}
+              </div>
               <button type="button" onClick={() => setShowCheckout(false)} className="mb-4 text-primary hover:underline">&larr; {t('back_to_cart', language)}</button>
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">{t('customer_name', language)} ({t('optional', language)})</label>
