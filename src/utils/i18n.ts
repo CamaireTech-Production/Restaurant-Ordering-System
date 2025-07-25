@@ -300,6 +300,8 @@ const translations: Record<string, Record<string, string>> = {
     'none': 'None',
     'parent_category_hint': 'Select a parent category to make this a subcategory, or choose None for a main category.',
     'dish_count': 'Dishes',
+    'final_total_order': 'Final Total',
+    'customer_info': 'Customer Info',
   },
   fr: {
     'restaurant_management': 'Gestion du restaurant',
@@ -602,6 +604,8 @@ const translations: Record<string, Record<string, string>> = {
     'none': 'Aucune',
     'parent_category_hint': 'Sélectionnez une catégorie parente pour créer une sous-catégorie, ou choisissez Aucune pour une catégorie principale.',
     'dish_count': 'Plats',
+    'final_total_order': 'Total final',
+    'customer_info': 'Infos client',
   },
 };
 
