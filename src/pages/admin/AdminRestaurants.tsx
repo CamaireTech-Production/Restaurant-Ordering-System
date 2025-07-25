@@ -1,14 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import AdminDashboardLayout from '../../components/layout/AdminDashboardLayout';
-import { getFirestore, collection, getDocs, orderBy, query, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { getFirestore, collection, getDocs, orderBy, query, doc, updateDoc, serverTimestamp, addDoc } from 'firebase/firestore';
 import { collection as firestoreCollection, getDocs as firestoreGetDocs, orderBy as firestoreOrderBy, query as firestoreQuery } from 'firebase/firestore';
 import toast from 'react-hot-toast';
-import { Eye, EyeOff, Trash2, RotateCcw } from 'lucide-react';
+import { Eye, EyeOff, Trash2, RotateCcw, X, Upload } from 'lucide-react';
 import { useAdminAuth } from '../../contexts/AdminAuthContext';
 import { logActivity } from '../../services/activityLogService';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import designSystem from '../../designSystem';
 import { useNavigate, useLocation } from 'react-router-dom';
+import Modal from '../../components/ui/Modal';
+import emailjs from 'emailjs-com';
+import { currencies } from '../../data/currencies';
 
 const TABS = [
   { key: 'regular', label: 'Regular Restaurants' },
@@ -23,8 +26,15 @@ const AdminRestaurants: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'regular' | 'demo'>('regular');
   const [confirmAction, setConfirmAction] = useState<null | { type: string; restaurant: any }>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [newRestaurant, setNewRestaurant] = useState({ name: '', email: '', address: '', password: '', description: '', logo: '', phone: '', currency: 'XAF' });
+  const [, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [generatePasswordChecked, setGeneratePasswordChecked] = useState(true);
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const [creating, setCreating] = useState(false);
 
   // Set activeTab from query param on mount or when location.search changes
   useEffect(() => {
@@ -212,10 +222,51 @@ const AdminRestaurants: React.FC = () => {
     );
   };
 
+  // Password generator
+  function generatePassword(length = 10) {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()';
+    let password = '';
+    for (let i = 0; i < length; i++) {
+      password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return password;
+  }
+  // Auto-generate password when modal opens or checkbox is checked
+  React.useEffect(() => {
+    if (showCreateModal && generatePasswordChecked) {
+      setNewRestaurant(r => ({ ...r, password: generatePassword(12) }));
+    }
+  }, [showCreateModal, generatePasswordChecked]);
+
+  // Convert file to base64
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = error => reject(error);
+    });
+  };
+
+  const handleLogoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setLogoFile(file);
+      setLogoPreview(URL.createObjectURL(file));
+      const base64 = await fileToBase64(file);
+      setNewRestaurant(r => ({ ...r, logo: base64 }));
+    }
+  };
+  const removeLogo = () => {
+    setLogoFile(null);
+    setLogoPreview(null);
+    setNewRestaurant(r => ({ ...r, logo: '' }));
+  };
+
   return (
     <AdminDashboardLayout>
       <h1 className="text-2xl font-bold mb-4">Restaurants</h1>
-      <div className="mb-4 flex gap-2">
+      <div className="mb-4 flex gap-2 items-center">
         {TABS.map(tab => (
           <button
             key={tab.key}
@@ -225,6 +276,12 @@ const AdminRestaurants: React.FC = () => {
             {tab.label}
           </button>
         ))}
+        <button
+          className="ml-auto px-4 py-2 rounded bg-primary text-white font-semibold hover:bg-primary-dark transition-colors"
+          onClick={() => setShowCreateModal(true)}
+        >
+          + Create Restaurant
+        </button>
       </div>
       {loading ? (
         <div className="flex justify-center items-center h-32">
@@ -273,6 +330,202 @@ const AdminRestaurants: React.FC = () => {
           </div>
         </div>
       )}
+      <Modal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} title="Create Restaurant">
+        <form className="space-y-4" onSubmit={async e => {
+          e.preventDefault();
+          setCreating(true);
+          try {
+            const db = getFirestore();
+            const now = serverTimestamp();
+            const docRef = await addDoc(collection(db, 'restaurants'), {
+              name: newRestaurant.name,
+              email: newRestaurant.email,
+              address: newRestaurant.address,
+              password: newRestaurant.password,
+              description: newRestaurant.description,
+              logo: newRestaurant.logo,
+              phone: newRestaurant.phone,
+              currency: newRestaurant.currency,
+              createdAt: now,
+              updatedAt: now,
+              isDeleted: false,
+              isDeactivated: false,
+            });
+            // Log activity
+            await logActivity({
+              userId: currentAdmin?.id,
+              userEmail: currentAdmin?.email,
+              action: 'restaurant_created',
+              entityType: 'restaurant',
+              entityId: docRef.id,
+              details: { name: newRestaurant.name, email: newRestaurant.email },
+            });
+            // Send welcome email via EmailJS
+            try {
+              await emailjs.send(
+                'service_lzpifzc',
+                'template_mmhwuik',
+                {
+                  to_email: newRestaurant.email,
+                  to_name: newRestaurant.name,
+                  password: newRestaurant.password,
+                  company_name: 'RestoFlow',
+                  company_email: 'support@restoflowapp.com',
+                  website_link: 'https://app.restoflowapp.com/login',
+                  logo_url: 'https://app.restoflowapp.com/icons/icon-512x512.png',
+                },
+                'WDnTI-GHk5wUQas1o'
+              );
+              toast.success('Restaurant created and welcome email sent!');
+            } catch (emailErr) {
+              toast.error('Restaurant created, but failed to send welcome email.');
+            }
+            setShowCreateModal(false);
+            setNewRestaurant({ name: '', email: '', address: '', password: '', description: '', logo: '', phone: '', currency: 'XAF' });
+            setLogoFile(null);
+            setLogoPreview(null);
+            fetchRestaurants();
+          } catch (err) {
+            toast.error('Failed to create restaurant.');
+          } finally {
+            setCreating(false);
+          }
+        }}>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+            <input
+              type="text"
+              className="w-full border border-gray-300 rounded-md p-2 focus:ring-primary focus:border-primary"
+              value={newRestaurant.name}
+              onChange={e => setNewRestaurant(r => ({ ...r, name: e.target.value }))}
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <input
+              type="email"
+              className="w-full border border-gray-300 rounded-md p-2 focus:ring-primary focus:border-primary"
+              value={newRestaurant.email}
+              onChange={e => setNewRestaurant(r => ({ ...r, email: e.target.value }))}
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+            <input
+              type="text"
+              className="w-full border border-gray-300 rounded-md p-2 focus:ring-primary focus:border-primary"
+              value={newRestaurant.address}
+              onChange={e => setNewRestaurant(r => ({ ...r, address: e.target.value }))}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+            <textarea
+              className="w-full border border-gray-300 rounded-md p-2 focus:ring-primary focus:border-primary"
+              value={newRestaurant.description}
+              onChange={e => setNewRestaurant(r => ({ ...r, description: e.target.value }))}
+              rows={2}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Logo</label>
+            <div className="flex items-center gap-6 flex-wrap">
+              {logoPreview || newRestaurant.logo ? (
+                <div className="relative">
+                  <img
+                    src={logoPreview || (typeof newRestaurant.logo === 'string' && newRestaurant.logo.startsWith('data:') ? newRestaurant.logo : undefined)}
+                    alt="Restaurant logo preview"
+                    className="w-24 h-24 object-cover rounded-lg"
+                  />
+                  <button
+                    type="button"
+                    onClick={removeLogo}
+                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              ) : (
+                <label
+                  htmlFor="logo-upload"
+                  className="cursor-pointer flex flex-col items-center justify-center w-24 h-24 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary transition-colors"
+                >
+                  <Upload size={24} className="text-gray-400" />
+                  <span className="mt-2 text-xs text-gray-500">Upload logo</span>
+                </label>
+              )}
+              <input
+                id="logo-upload"
+                type="file"
+                accept="image/*"
+                onChange={handleLogoChange}
+                className="hidden"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+            <input
+              type="tel"
+              className="w-full border border-gray-300 rounded-md p-2 focus:ring-primary focus:border-primary"
+              value={newRestaurant.phone}
+              onChange={e => setNewRestaurant(r => ({ ...r, phone: e.target.value }))}
+              placeholder="e.g. 612345678"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Currency</label>
+            <select
+              className="w-full border border-gray-300 rounded-md p-2 focus:ring-primary focus:border-primary"
+              value={newRestaurant.currency}
+              onChange={e => setNewRestaurant(r => ({ ...r, currency: e.target.value }))}
+            >
+              {currencies.map(opt => (
+                <option key={opt.code} value={opt.code}>{opt.label}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+              Password
+              <input
+                type="checkbox"
+                className="ml-2 accent-primary"
+                checked={generatePasswordChecked}
+                onChange={e => setGeneratePasswordChecked(e.target.checked)}
+                id="generate-password-checkbox"
+              />
+              <span className="text-xs text-gray-500">Generate password</span>
+            </label>
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                className="w-full border border-gray-300 rounded-md p-2 focus:ring-primary focus:border-primary pr-10"
+                value={newRestaurant.password}
+                onChange={e => setNewRestaurant(r => ({ ...r, password: e.target.value }))}
+                required
+                readOnly={generatePasswordChecked}
+              />
+              <button
+                type="button"
+                className="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400"
+                tabIndex={-1}
+                onClick={() => setShowPassword(v => !v)}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <button type="button" className="px-4 py-2 bg-gray-200 rounded" onClick={() => setShowCreateModal(false)} disabled={creating}>Cancel</button>
+            <button type="submit" className="px-4 py-2 bg-primary text-white rounded font-semibold flex items-center justify-center min-w-[100px] disabled:opacity-60" disabled={creating}>
+              {creating ? (<><LoadingSpinner size={18} color="#fff" /> <span className="ml-2">Creating...</span></>) : 'Create'}
+            </button>
+          </div>
+        </form>
+      </Modal>
     </AdminDashboardLayout>
   );
 };

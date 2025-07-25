@@ -13,6 +13,7 @@
     "@headlessui/react": "^2.2.4",
     "browser-image-compression": "^2.0.2",
     "chroma-js": "^3.1.2",
+    "emailjs-com": "^3.2.0",
     "firebase": "^10.10.0",
     "firebase-admin": "^13.4.0",
     "lucide-react": "^0.344.0",
